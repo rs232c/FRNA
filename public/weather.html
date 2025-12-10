@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather - Weather - Fall River, MA News Aggregator</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dark-theme weather-sun">
+    <div class="top-bar">
+        <div class="container">
+            <div class="top-bar-content">
+                <div><a href="index.html" style="color:#e0e0e0; text-decoration:none;">&larr; Back to Home</a></div>
+                <div class="location-weather-top">
+                    <span class="location">Fall River, MA</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <nav class="main-nav">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">FRNA</div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="index.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-gray-700 hover:text-gray-100" data-tab="all">Home</a>
+                    <a href="index.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-gray-700 hover:text-gray-100" data-tab="news">News</a>
+                    <a href="index.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-gray-700 hover:text-gray-100" data-tab="entertainment">Entertainment</a>
+                    <a href="index.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-gray-700 hover:text-gray-100" data-tab="sports">Sports</a>
+                    <a href="media.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-gray-700 hover:text-gray-100">Media</a>
+                    <a href="weather.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-700 text-blue-400">Weather</a>
+                    <a href="events.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-gray-700 hover:text-gray-100">Events</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="container main-content">
+        <h1 style="margin-bottom:2rem;">Weather & Forecast - Fall River, MA</h1>
+        
+        <div class="tile weather-tile" style="max-width:900px; margin:0 auto 2rem;">
+            <div class="weather-header">
+                <h3>Current Conditions</h3>
+                <div class="weather-current">
+                    <span class="weather-temp-large">36°F</span>
+                    <span class="weather-icon-large">☀️</span>
+                </div>
+                <div class="weather-condition">Clear</div>
+                
+                <div style="margin-top:0.5rem; color:#b0b0b0; font-size:1rem;">Feels like: 34°F</div>
+                
+                
+                <div style="margin-top:0.25rem; color:#b0b0b0; font-size:0.9rem;">Humidity: 65%</div>
+                
+                
+                <div style="margin-top:0.25rem; color:#b0b0b0; font-size:0.9rem;">Wind: 5 mph</div>
+                
+            </div>
+            <div class="weather-forecast">
+                <h4 style="margin-bottom:1rem; color:#e0e0e0;">7-Day Forecast</h4>
+                <div class="forecast-list">
+                    
+                    <div class="forecast-item">
+                        <div class="forecast-day">Today</div>
+                        <div class="forecast-icon">⛅</div>
+                        <div class="forecast-temps">
+                            <span class="forecast-high">43°</span>
+                            <span class="forecast-low">30°</span>
+                        </div>
+                        <div style="font-size:0.85rem; color:#b0b0b0; margin-top:0.25rem;">Partly Cloudy</div>
+                    </div>
+                    
+                    <div class="forecast-item">
+                        <div class="forecast-day">Sun</div>
+                        <div class="forecast-icon">☁️</div>
+                        <div class="forecast-temps">
+                            <span class="forecast-high">41°</span>
+                            <span class="forecast-low">26°</span>
+                        </div>
+                        <div style="font-size:0.85rem; color:#b0b0b0; margin-top:0.25rem;">Cloudy</div>
+                    </div>
+                    
+                    <div class="forecast-item">
+                        <div class="forecast-day">Mon</div>
+                        <div class="forecast-icon">☀️</div>
+                        <div class="forecast-temps">
+                            <span class="forecast-high">29°</span>
+                            <span class="forecast-low">12°</span>
+                        </div>
+                        <div style="font-size:0.85rem; color:#b0b0b0; margin-top:0.25rem;">Sunny</div>
+                    </div>
+                    
+                    <div class="forecast-item">
+                        <div class="forecast-day">Tue</div>
+                        <div class="forecast-icon">☁️</div>
+                        <div class="forecast-temps">
+                            <span class="forecast-high">35°</span>
+                            <span class="forecast-low">32°</span>
+                        </div>
+                        <div style="font-size:0.85rem; color:#b0b0b0; margin-top:0.25rem;">Cloudy</div>
+                    </div>
+                    
+                    <div class="forecast-item">
+                        <div class="forecast-day">Wed</div>
+                        <div class="forecast-icon">🌧️</div>
+                        <div class="forecast-temps">
+                            <span class="forecast-high">46°</span>
+                            <span class="forecast-low">36°</span>
+                        </div>
+                        <div style="font-size:0.85rem; color:#b0b0b0; margin-top:0.25rem;">Rain</div>
+                    </div>
+                    
+                </div>
+                <a href="https://www.wunderground.com/weather/us/ma/fall-river" target="_blank" class="forecast-link">View Full Weather Forecast on Weather Underground →</a>
+            </div>
+        </div>
+        
+        
+        <div class="weather-news-section">
+            <h2 style="margin-bottom:1.5rem; color:#e0e0e0;">Weather News & Updates</h2>
+            <div class="articles-grid">
+                
+                <div class="tile article-tile" data-category="news">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">WPRI 12 Fall River - 2025-12-09</div>
+                        <h3 class="tile-title-small"><a href="https://www.wpri.com/weather/winter-weather/homeless-shelters-brace-for-influx-as-cold-weather-moves-in/" target="_blank" rel="noopener">Homeless shelters brace for influx as cold weather moves in</a></h3>
+                        <div class="tile-summary-small">With frigid weather making its way through the region, a number of cities and towns are opening up their warming shelters so those experiencing homele...</div>
+                        <div class="tile-engagement">
+                            <a href="https://www.wpri.com/weather/winter-weather/homeless-shelters-brace-for-influx-as-cold-weather-moves-in/" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Fall River Reporter - 2025-12-09</div>
+                        <h3 class="tile-title-small"><a href="https://fallriverreporter.com/fsi-gabriel-house-file-cross-claims-against-each-other-over-recalled-sprinkler-heads/?utm_source=rss&utm_medium=rss&utm_campaign=fsi-gabriel-house-file-cross-claims-against-each-other-over-recalled-sprinkler-heads" target="_blank" rel="noopener">FSI, Gabriel House, file cross claims against each other over recalled sprinkler heads</a></h3>
+                        <div class="tile-summary-small">Community FSI, Gabriel House, file cross claims against each other over recalled sprinkler heads Published 1 hour ago on December 8, 2025 By Ken Paiva...</div>
+                        <div class="tile-engagement">
+                            <a href="https://fallriverreporter.com/fsi-gabriel-house-file-cross-claims-against-each-other-over-recalled-sprinkler-heads/?utm_source=rss&utm_medium=rss&utm_campaign=fsi-gabriel-house-file-cross-claims-against-each-other-over-recalled-sprinkler-heads" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Fall River Reporter - 2025-12-09</div>
+                        <h3 class="tile-title-small"><a href="https://fallriverreporter.com/outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash/?utm_source=rss&utm_medium=rss&utm_campaign=outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash" target="_blank" rel="noopener">Outpouring of community support for “amazing family” who lost 3-year-old daughter in pedestrian crash</a></h3>
+                        <div class="tile-summary-small">Causes Outpouring of community support for “amazing family” who lost 3-year-old daughter in pedestrian crash Published 52 seconds ago on December 8, 2...</div>
+                        <div class="tile-engagement">
+                            <a href="https://fallriverreporter.com/outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash/?utm_source=rss&utm_medium=rss&utm_campaign=outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">WPRI 12 Fall River - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://www.wpri.com/news/local-news/se-mass/man-accused-of-firing-gun-from-fall-river-apartment-window/" target="_blank" rel="noopener">Man accused of firing gun from Fall River apartment window</a></h3>
+                        <div class="tile-summary-small">A man is facing several charges after he allegedly shot a gun from a window in Fall River over the weekend....</div>
+                        <div class="tile-engagement">
+                            <a href="https://www.wpri.com/news/local-news/se-mass/man-accused-of-firing-gun-from-fall-river-apartment-window/" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">WPRI 12 Fall River - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://www.wpri.com/news/local-news/south-county/ridot-adding-129-spots-to-kingston-station-parking-lot/" target="_blank" rel="noopener">RIDOT adding 129 spots to Kingston station parking lot</a></h3>
+                        <div class="tile-summary-small">Anyone looking to hop aboard an Amtrak train or take a ride down the South County Bike Path may find it easier to get a parking spot next summer....</div>
+                        <div class="tile-engagement">
+                            <a href="https://www.wpri.com/news/local-news/south-county/ridot-adding-129-spots-to-kingston-station-parking-lot/" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">WPRI 12 Fall River - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://www.wpri.com/news/local-news/se-mass/man-accused-of-breaking-into-lakeville-hardware-store/" target="_blank" rel="noopener">Man accused of breaking into Lakeville hardware store</a></h3>
+                        <div class="tile-summary-small">Police have arrested a man accused of breaking into a Lakeville hardware store over the weekend....</div>
+                        <div class="tile-engagement">
+                            <a href="https://www.wpri.com/news/local-news/se-mass/man-accused-of-breaking-into-lakeville-hardware-store/" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Fall River Reporter - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://fallriverreporter.com/child-family-services-is-hiring-in-plymouth/?utm_source=rss&utm_medium=rss&utm_campaign=child-family-services-is-hiring-in-plymouth" target="_blank" rel="noopener">Child & Family Services Is Hiring in Plymouth</a></h3>
+                        <div class="tile-summary-small">Jobs Child & Family Services Is Hiring in Plymouth Published 4 hours ago on December 8, 2025 By leonbg Share Tweet Child & Family Services is expandin...</div>
+                        <div class="tile-engagement">
+                            <a href="https://fallriverreporter.com/child-family-services-is-hiring-in-plymouth/?utm_source=rss&utm_medium=rss&utm_campaign=child-family-services-is-hiring-in-plymouth" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Fall River Reporter - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://fallriverreporter.com/massachusetts-next-affordability-crisis-property-taxes-explode-lawmakers-scramble/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-next-affordability-crisis-property-taxes-explode-lawmakers-scramble" target="_blank" rel="noopener">Massachusetts’ Next Affordability Crisis: Property Taxes Explode, Lawmakers Scramble</a></h3>
+                        <div class="tile-summary-small">latest Massachusetts’ Next Affordability Crisis: Property Taxes Explode, Lawmakers Scramble Published 1 hour ago on December 8, 2025 By State House Ne...</div>
+                        <div class="tile-engagement">
+                            <a href="https://fallriverreporter.com/massachusetts-next-affordability-crisis-property-taxes-explode-lawmakers-scramble/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-next-affordability-crisis-property-taxes-explode-lawmakers-scramble" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Google News (Fall River, MA) - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://news.google.com/rss/articles/CBMipwFBVV95cUxNR0luSk52VmNsek9oYWNEcEdPNUt4S05RNWNiVGRuRmNVSTVGT05WOFdISEF5SFc4dVJPUThvRjB4djAtY0xGcklCZzdGM0JWc1dUTG5yRnp0ZU1LMkZhQnRBcFVkSF9uTnQ1c1ZvZDdmZU9NV2JkN2JFWHg2UnREcFUxQWVPd2tqNUcyZWJ2aDV3cllhZm5hQ25BZm5Eb2hwa2RtMldaMNIBpwFBVV95cUxNR0luSk52VmNsek9oYWNEcEdPNUt4S05RNWNiVGRuRmNVSTVGT05WOFdISEF5SFc4dVJPUThvRjB4djAtY0xGcklCZzdGM0JWc1dUTG5yRnp0ZU1LMkZhQnRBcFVkSF9uTnQ1c1ZvZDdmZU9NV2JkN2JFWHg2UnREcFUxQWVPd2tqNUcyZWJ2aDV3cllhZm5hQ25BZm5Eb2hwa2RtMldaMA?oc=5" target="_blank" rel="noopener">Massachusetts State Police respond to crash on Route 140 that injured man - Fall River Reporter</a></h3>
+                        <div class="tile-summary-small"><a href="https://news. com/rss/articles/CBMipwFBVV95cUxNR0luSk52VmNsek9oYWNEcEdPNUt4S05RNWNiVGRuRmNVSTVGT05WOFdISEF5SFc4dVJPUThvRjB4djAtY0xGcklCZzdGM0...</div>
+                        <div class="tile-engagement">
+                            <a href="https://news.google.com/rss/articles/CBMipwFBVV95cUxNR0luSk52VmNsek9oYWNEcEdPNUt4S05RNWNiVGRuRmNVSTVGT05WOFdISEF5SFc4dVJPUThvRjB4djAtY0xGcklCZzdGM0JWc1dUTG5yRnp0ZU1LMkZhQnRBcFVkSF9uTnQ1c1ZvZDdmZU9NV2JkN2JFWHg2UnREcFUxQWVPd2tqNUcyZWJ2aDV3cllhZm5hQ25BZm5Eb2hwa2RtMldaMNIBpwFBVV95cUxNR0luSk52VmNsek9oYWNEcEdPNUt4S05RNWNiVGRuRmNVSTVGT05WOFdISEF5SFc4dVJPUThvRjB4djAtY0xGcklCZzdGM0JWc1dUTG5yRnp0ZU1LMkZhQnRBcFVkSF9uTnQ1c1ZvZDdmZU9NV2JkN2JFWHg2UnREcFUxQWVPd2tqNUcyZWJ2aDV3cllhZm5hQ25BZm5Eb2hwa2RtMldaMA?oc=5" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Fall River Reporter - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://fallriverreporter.com/fall-river-man-held-on-bail-facing-several-charges-after-police-make-arrest-in-city-shooting/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-man-held-on-bail-facing-several-charges-after-police-make-arrest-in-city-shooting" target="_blank" rel="noopener">Fall River man held on bail, facing several charges, after police make arrest in city shooting</a></h3>
+                        <div class="tile-summary-small">Crime Fall River man held on bail, facing several charges, after police make arrest in city shooting Published 1 hour ago on December 8, 2025 By Ken P...</div>
+                        <div class="tile-engagement">
+                            <a href="https://fallriverreporter.com/fall-river-man-held-on-bail-facing-several-charges-after-police-make-arrest-in-city-shooting/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-man-held-on-bail-facing-several-charges-after-police-make-arrest-in-city-shooting" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">WPRI 12 Fall River - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://www.wpri.com/news/local-news/south-county/abandoned-bearded-dragon-rescued-from-empty-richmond-apartment/" target="_blank" rel="noopener">Abandoned bearded dragon rescued from empty Richmond apartment</a></h3>
+                        <div class="tile-summary-small">A bearded dragon has been given a new lease on life after an animal control officer found him abandoned in an empty house in Richmond....</div>
+                        <div class="tile-engagement">
+                            <a href="https://www.wpri.com/news/local-news/south-county/abandoned-bearded-dragon-rescued-from-empty-richmond-apartment/" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Fall River Reporter - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://fallriverreporter.com/fall-river-man-accused-of-stabbing-former-mayor-will-flanagan-ordered-to-be-hospitalized-at-bridgewater-state-hospital-on-separate-case/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-man-accused-of-stabbing-former-mayor-will-flanagan-ordered-to-be-hospitalized-at-bridgewater-state-hospital-on-separate-case" target="_blank" rel="noopener">Fall River man accused of stabbing former mayor Will Flanagan ordered to be hospitalized at Bridgewater State Hospital on separate case</a></h3>
+                        <div class="tile-summary-small">Crime Fall River man accused of stabbing former mayor Will Flanagan ordered to be hospitalized at Bridgewater State Hospital on separate case Publishe...</div>
+                        <div class="tile-engagement">
+                            <a href="https://fallriverreporter.com/fall-river-man-accused-of-stabbing-former-mayor-will-flanagan-ordered-to-be-hospitalized-at-bridgewater-state-hospital-on-separate-case/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-man-accused-of-stabbing-former-mayor-will-flanagan-ordered-to-be-hospitalized-at-bridgewater-state-hospital-on-separate-case" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">WPRI 12 Fall River - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://www.wpri.com/news/local-news/south-county/south-kingstown-police-offer-ship-to-station-program-to-combat-porch-piracy/" target="_blank" rel="noopener">South Kingstown police offer 'Ship to Station' program to combat porch piracy</a></h3>
+                        <div class="tile-summary-small">Residents can once again ship their packages to the police station to prevent theft this holiday season....</div>
+                        <div class="tile-engagement">
+                            <a href="https://www.wpri.com/news/local-news/south-county/south-kingstown-police-offer-ship-to-station-program-to-combat-porch-piracy/" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Google News (Fall River, MA) - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://news.google.com/rss/articles/CBMiqAFBVV95cUxPWkU1d2RzemVuUFl3OXMwYTRKZnZsMkU3WG5SQVZ3bHRvVlZJR3BlN1hDaEt5R1BEWDhMMm1iakgxMVF5SnNXSlBwc3VucWdGYWtGSGJRd3hSMUlzNExyZTRHTmVSNk5wYmFaaFE5X3pNY2JlMWdsSS1uMmtoQ3dKcDAxOVMxX0Rtby1PSUxRbzFYektDZDg3Z0VMZ24xZ0ZmR1BtTEpJaEPSAagBQVVfeXFMT1pFNXdkc3plblBZdzlzMGE0SmZ2bDJFN1huUkFWd2x0b1ZWSUdwZTdYQ2hLeUdQRFg4TDJtYmpIMTFReUpzV0pQcHN1bnFnRmFrRkhiUXd4UjFJczRMcmU0R05lUjZOcGJhWmhROV96TWNiZTFnbEktbjJraEN3SnAwMTlTMV9EbW8tT0lMUW8xWHpLQ2Q4N2dFTGduMWdGZkdQbUxKSWhD?oc=5" target="_blank" rel="noopener">Massachusetts State Police announce third area Sobriety Checkpoint of 2025 - Fall River Reporter</a></h3>
+                        <div class="tile-summary-small"><a href="https://news. com/rss/articles/CBMiqAFBVV95cUxPWkU1d2RzemVuUFl3OXMwYTRKZnZsMkU3WG5SQVZ3bHRvVlZJR3BlN1hDaEt5R1BEWDhMMm1iakgxMVF5SnNXSlBwc3VucW...</div>
+                        <div class="tile-engagement">
+                            <a href="https://news.google.com/rss/articles/CBMiqAFBVV95cUxPWkU1d2RzemVuUFl3OXMwYTRKZnZsMkU3WG5SQVZ3bHRvVlZJR3BlN1hDaEt5R1BEWDhMMm1iakgxMVF5SnNXSlBwc3VucWdGYWtGSGJRd3hSMUlzNExyZTRHTmVSNk5wYmFaaFE5X3pNY2JlMWdsSS1uMmtoQ3dKcDAxOVMxX0Rtby1PSUxRbzFYektDZDg3Z0VMZ24xZ0ZmR1BtTEpJaEPSAagBQVVfeXFMT1pFNXdkc3plblBZdzlzMGE0SmZ2bDJFN1huUkFWd2x0b1ZWSUdwZTdYQ2hLeUdQRFg4TDJtYmpIMTFReUpzV0pQcHN1bnFnRmFrRkhiUXd4UjFJczRMcmU0R05lUjZOcGJhWmhROV96TWNiZTFnbEktbjJraEN3SnAwMTlTMV9EbW8tT0lMUW8xWHpLQ2Q4N2dFTGduMWdGZkdQbUxKSWhD?oc=5" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Fall River Reporter - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://fallriverreporter.com/massachusetts-state-police-announce-third-area-sobriety-checkpoint-of-2025/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-state-police-announce-third-area-sobriety-checkpoint-of-2025" target="_blank" rel="noopener">Massachusetts State Police announce third area Sobriety Checkpoint of 2025</a></h3>
+                        <div class="tile-summary-small">Community Massachusetts State Police announce third area Sobriety Checkpoint of 2025 Published 3 hours ago on December 8, 2025 By Ken Paiva State Poli...</div>
+                        <div class="tile-engagement">
+                            <a href="https://fallriverreporter.com/massachusetts-state-police-announce-third-area-sobriety-checkpoint-of-2025/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-state-police-announce-third-area-sobriety-checkpoint-of-2025" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Fall River Reporter - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://fallriverreporter.com/massachusetts-state-police-respond-to-crash-on-route-140-that-injured-man/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-state-police-respond-to-crash-on-route-140-that-injured-man" target="_blank" rel="noopener">Massachusetts State Police respond to crash on Route 140 that injured man</a></h3>
+                        <div class="tile-summary-small">Community Massachusetts State Police respond to crash on Route 140 that injured man Published 36 seconds ago on December 8, 2025 By Ken Paiva Submitte...</div>
+                        <div class="tile-engagement">
+                            <a href="https://fallriverreporter.com/massachusetts-state-police-respond-to-crash-on-route-140-that-injured-man/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-state-police-respond-to-crash-on-route-140-that-injured-man" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Google News (Fall River, MA) - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://news.google.com/rss/articles/CBMirAFBVV95cUxQY0V5WHc3a0dwUDlvRm12ZHR3enZGckE5clY1S2ZKejB2VzRsYXRxTmpQeWpoeVB0cUVFR1lLQTI0d0ZBSnhYckhxV2U2UnY5UmhCVmZNN0VTUy1UWmpfNHVYRmlkZUFnc050OVhnQlhNR3JnTG1naVpKa2FhUi1SZl9qb2xfeGt6d2h0QURVRzcxcWRpckxpZnkxUlBJRUZ2ZVVETEVPQmhZMFZw0gGsAUFVX3lxTFBjRXlYdzdrR3BQOW9GbXZkdHd6dkZyQTlyVjVLZkp6MHZXNGxhdHFOalB5amh5UHRxRUVHWUtBMjR3RkFKeFhySHFXZTZSdjlSaEJWZk03RVNTLVRaal80dVhGaWRlQWdzTnQ5WGdCWE1HcmdMbWdpWkprYWFSLVJmX2pvbF94a3p3aHRBRFVHNzFxZGlyTGlmeTFSUElFRnZlVURMRU9CaFkwVnA?oc=5" target="_blank" rel="noopener">Man accused of firing gun from Fall River apartment window - WPRI.com</a></h3>
+                        <div class="tile-summary-small"><a href="https://news. com/rss/articles/CBMirAFBVV95cUxQY0V5WHc3a0dwUDlvRm12ZHR3enZGckE5clY1S2ZKejB2VzRsYXRxTmpQeWpoeVB0cUVFR1lLQTI0d0ZBSnhYckhxV2U2Un...</div>
+                        <div class="tile-engagement">
+                            <a href="https://news.google.com/rss/articles/CBMirAFBVV95cUxQY0V5WHc3a0dwUDlvRm12ZHR3enZGckE5clY1S2ZKejB2VzRsYXRxTmpQeWpoeVB0cUVFR1lLQTI0d0ZBSnhYckhxV2U2UnY5UmhCVmZNN0VTUy1UWmpfNHVYRmlkZUFnc050OVhnQlhNR3JnTG1naVpKa2FhUi1SZl9qb2xfeGt6d2h0QURVRzcxcWRpckxpZnkxUlBJRUZ2ZVVETEVPQmhZMFZw0gGsAUFVX3lxTFBjRXlYdzdrR3BQOW9GbXZkdHd6dkZyQTlyVjVLZkp6MHZXNGxhdHFOalB5amh5UHRxRUVHWUtBMjR3RkFKeFhySHFXZTZSdjlSaEJWZk03RVNTLVRaal80dVhGaWRlQWdzTnQ5WGdCWE1HcmdMbWdpWkprYWFSLVJmX2pvbF94a3p3aHRBRFVHNzFxZGlyTGlmeTFSUElFRnZlVURMRU9CaFkwVnA?oc=5" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Google News (Fall River, MA) - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://news.google.com/rss/articles/CBMiuwFBVV95cUxObnJldGxTZldla2pORFhoWWFPTTVtZGVqR0NIeWU2SUNZOGtVMTBsbWdLQ2txSms1d3JBajZsUVAwUHgyUFI2UkUtanBfMmdIcjVpa2hwVF9UUVlkS2owOXhGcHBiSm5NVERTOHpLbHp3eDdBWlRheFpzWktZM1dBa2R5Zjlqb3FGanVsMlhjbExFTWF1VnF0ZHRIUmw4ZXJpaVpHckxGS1l5NUhRenN6amNqd1lNd3J4T2pN0gG7AUFVX3lxTE5ucmV0bFNmV2Vrak5EWGhZYU9NNW1kZWpHQ0h5ZTZJQ1k4a1UxMGxtZ0tDa3FKazV3ckFqNmxRUDBQeDJQUjZSRS1qcF8yZ0hyNWlraHBUX1RRWWRLajA5eEZwcGJKbk1URFM4ektsend4N0FaVGF4WnNaS1kzV0FrZHlmOWpvcUZqdWwyWGNsTEVNYXVWcXRkdEhSbDhlcmlpWkdyTEZLWXk1SFF6c3pqY2p3WU13cnhPak0?oc=5" target="_blank" rel="noopener">Massachusetts State Police, local police, hoping for new leads in cold case homicide - Fall River Reporter</a></h3>
+                        <div class="tile-summary-small"><a href="https://news. com/rss/articles/CBMiuwFBVV95cUxObnJldGxTZldla2pORFhoWWFPTTVtZGVqR0NIeWU2SUNZOGtVMTBsbWdLQ2txSms1d3JBajZsUVAwUHgyUFI2UkUtanBfMm...</div>
+                        <div class="tile-engagement">
+                            <a href="https://news.google.com/rss/articles/CBMiuwFBVV95cUxObnJldGxTZldla2pORFhoWWFPTTVtZGVqR0NIeWU2SUNZOGtVMTBsbWdLQ2txSms1d3JBajZsUVAwUHgyUFI2UkUtanBfMmdIcjVpa2hwVF9UUVlkS2owOXhGcHBiSm5NVERTOHpLbHp3eDdBWlRheFpzWktZM1dBa2R5Zjlqb3FGanVsMlhjbExFTWF1VnF0ZHRIUmw4ZXJpaVpHckxGS1l5NUhRenN6amNqd1lNd3J4T2pN0gG7AUFVX3lxTE5ucmV0bFNmV2Vrak5EWGhZYU9NNW1kZWpHQ0h5ZTZJQ1k4a1UxMGxtZ0tDa3FKazV3ckFqNmxRUDBQeDJQUjZSRS1qcF8yZ0hyNWlraHBUX1RRWWRLajA5eEZwcGJKbk1URFM4ektsend4N0FaVGF4WnNaS1kzV0FrZHlmOWpvcUZqdWwyWGNsTEVNYXVWcXRkdEhSbDhlcmlpWkdyTEZLWXk1SFF6c3pqY2p3WU13cnhPak0?oc=5" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Fall River Reporter - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://fallriverreporter.com/man-held-without-bail-in-fall-river-superior-court-after-series-of-car-thefts-and-motor-vehicle-break-ins-across-the-south-coast/?utm_source=rss&utm_medium=rss&utm_campaign=man-held-without-bail-in-fall-river-superior-court-after-series-of-car-thefts-and-motor-vehicle-break-ins-across-the-south-coast" target="_blank" rel="noopener">Man held without bail in Fall River Superior Court after series of car thefts and motor vehicle break-ins across the South Coast</a></h3>
+                        <div class="tile-summary-small">Crime Man held without bail in Fall River Superior Court after series of car thefts and motor vehicle break-ins across the South Coast Published 2 hou...</div>
+                        <div class="tile-engagement">
+                            <a href="https://fallriverreporter.com/man-held-without-bail-in-fall-river-superior-court-after-series-of-car-thefts-and-motor-vehicle-break-ins-across-the-south-coast/?utm_source=rss&utm_medium=rss&utm_campaign=man-held-without-bail-in-fall-river-superior-court-after-series-of-car-thefts-and-motor-vehicle-break-ins-across-the-south-coast" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tile article-tile" data-category="None">
+                    <div class="category-badge-small" style="background-color: #1e88e5;">
+                        🌤️ Weather
+                    </div>
+                    
+                    <div class="tile-content">
+                        <div class="tile-source">Fall River Reporter - 2025-12-08</div>
+                        <h3 class="tile-title-small"><a href="https://fallriverreporter.com/massachusetts-state-police-local-police-hoping-for-new-leads-in-cold-case-homicide/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-state-police-local-police-hoping-for-new-leads-in-cold-case-homicide" target="_blank" rel="noopener">Massachusetts State Police, local police, hoping for new leads in cold case homicide</a></h3>
+                        <div class="tile-summary-small">Crime Massachusetts State Police, local police, hoping for new leads in cold case homicide Published 29 seconds ago on December 8, 2025 By Ken Paiva S...</div>
+                        <div class="tile-engagement">
+                            <a href="https://fallriverreporter.com/massachusetts-state-police-local-police-hoping-for-new-leads-in-cold-case-homicide/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-state-police-local-police-hoping-for-new-leads-in-cold-case-homicide" target="_blank" rel="noopener" class="read-original-small">Read Full Article &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+    </main>
+    
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2025 Fall River, MA News Aggregator. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav">
+        <a href="index.html" class="mobile-nav-item">
+            <span class="mobile-nav-icon">🏠</span>
+            <span class="mobile-nav-label">Home</span>
+        </a>
+        <a href="weather.html" class="mobile-nav-item">
+            <span class="mobile-nav-icon">🌤️</span>
+            <span class="mobile-nav-label">Weather</span>
+        </a>
+        <a href="events.html" class="mobile-nav-item">
+            <span class="mobile-nav-icon">📅</span>
+            <span class="mobile-nav-label">Events</span>
+        </a>
+        <a href="media.html" class="mobile-nav-item">
+            <span class="mobile-nav-icon">🎥</span>
+            <span class="mobile-nav-label">Media</span>
+        </a>
+    </nav>
+    
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="Back to top">↑</button>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obituaries - Fall River, MA News Aggregator</title>
+    <meta name="description" content="Remembering loved ones from Fall River, MA. View obituaries and memorial services.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'serif': ['Georgia', 'Times New Roman', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .lazy-image { opacity: 0; transition: opacity 0.3s; }
+        .lazy-image.loaded { opacity: 1; }
+        
+        /* Obituary-specific elegant styling */
+        .obituary-name {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        
+        .obituary-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .obituary-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .hero-overlay {
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+        }
+    </style>
+</head>
+<body class="bg-[#f8f8f8] text-gray-800 min-h-screen">
+    <!-- Top Bar -->
+    <div class="bg-white border-b border-gray-200 py-3">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="w-full sm:w-auto flex-1">
+                    <div class="relative flex items-center bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                        <span class="text-gray-400 mr-2">🔍</span>
+                        <input type="text" placeholder="Search by name..." class="bg-transparent border-none outline-none text-gray-800 placeholder-gray-400 flex-1 w-full sm:w-64" id="obituarySearch">
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="funeralHomeFilter" class="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-800 text-sm focus:border-gray-400 focus:outline-none">
+                        <option value="">All Funeral Homes</option>
+                        
+                        <option value="Google News (Fall River, MA)">Google News (Fall River, MA)</option>
+                        
+                    </select>
+                    <a href="mailto:obituaries@fallrivernews.local?subject=Submit Obituary" class="bg-[#6b7280] hover:bg-[#4b5563] text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Submit an Obituary
+                    </a>
+                    <a href="/admin" id="hamburgerMenuLink" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors inline-flex items-center justify-center w-10 h-10" title="Admin Panel">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </a>
+                    <script>
+                        // Update hamburger menu link based on session
+                        (function() {
+                            fetch('/api/session-check')
+                                .then(response => response.json())
+                                .then(data => {
+                                    const link = document.getElementById('hamburgerMenuLink');
+                                    if (data.logged_in && data.zip_code) {
+                                        link.href = `/admin/${data.zip_code}`;
+                                    } else {
+                                        link.href = '/admin';
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error('Error checking session:', err);
+                                });
+                        })();
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-gray-200 py-3 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-2xl font-semibold text-gray-800">FRNA</div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="../index.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-[#161616]/50 hover:text-gray-100" data-tab="all">Home</a>
+                    <a href="local-news.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-[#161616]/50 hover:text-gray-100">Local News</a>
+                    <a href="crime.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-[#161616]/50 hover:text-gray-100">Crime & Public Safety</a>
+                    <a href="sports.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-[#161616]/50 hover:text-gray-100">Sports</a>
+                    <a href="events.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-[#161616]/50 hover:text-gray-100">Entertainment & Events</a>
+                    <a href="business.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-[#161616]/50 hover:text-gray-100">Business & Development</a>
+                    <a href="schools.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-[#161616]/50 hover:text-gray-100">Schools</a>
+                    <a href="food.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-[#161616]/50 hover:text-gray-100">Food & Drink</a>
+                    <a href="obituaries.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-[#161616] text-blue-400">Obituaries</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Fixed Location Badge (Top-Left) -->
+        <div class="fixed top-4 left-4 z-50 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+            Fall River · 02720
+        </div>
+        
+        <!-- Fixed Weather Pill (Top-Right) -->
+        <a href="https://www.wunderground.com/weather/us/ma/fall-river" target="_blank" rel="noopener" class="fixed top-4 right-4 z-50 flex items-center gap-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <span class="text-xl">🌤️</span>
+            <div class="text-white">
+                <div class="font-bold text-sm leading-tight">36°F</div>
+                <div class="text-blue-100 text-xs">Clear</div>
+            </div>
+        </a>
+        
+        <!-- Page Header -->
+        <div class="mb-12 text-center">
+            <h1 class="text-5xl font-light obituary-name text-gray-900 mb-4">Obituaries</h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">Remembering and honoring the lives of those we've lost in Fall River</p>
+        </div>
+        
+        <!-- Hero Obituary (Today's Most Prominent) -->
+        
+        
+        
+        <div class="mb-16">
+            <div class="relative rounded-lg overflow-hidden shadow-lg" style="height: 500px;">
+                
+                <div class="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
+                    <div class="text-center text-gray-600">
+                        <div class="text-6xl mb-4">🕊️</div>
+                        <div class="text-2xl obituary-name">Taiquan Teixeira</div>
+                    </div>
+                </div>
+                
+                <div class="hero-overlay absolute inset-0 flex items-end">
+                    <div class="w-full p-8 lg:p-12 text-white">
+                        <h2 class="text-4xl lg:text-5xl obituary-name mb-4 font-normal">Taiquan Teixeira</h2>
+                        <div class="text-lg text-gray-200 mb-4">
+                            
+                            December 06, 2025
+                            
+                        </div>
+                        <div class="text-sm text-gray-300 mb-6">Google News (Fall River, MA)</div>
+                        <a href="https://news.google.com/rss/articles/CBMihgFBVV95cUxNS1dtaW1OSjBIMXlBNHlXNjIxM3NtemxCcDBwaGZNVExZQ3pUTnhMejB6dmxUc2habUtCLWFrbUtsTUdDVlpibEJGWkJPYWtfYl9VUk5XMmFqbUZKYkRQN0hSSzhuNVo4NG5ja3kzTVBrQ3pJeHZGYjdyUnBLVHdvc0ZiMDMyQQ?oc=5" target="_blank" rel="noopener" class="inline-block bg-white/90 hover:bg-white text-gray-900 px-6 py-3 rounded-lg font-medium transition-colors">
+                            View Full Obituary →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+        <!-- Today's Obituaries Section -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-light obituary-name text-gray-900 mb-2">Today's Obituaries</h2>
+            <p class="text-gray-600">Remembering those who passed away recently</p>
+        </div>
+        
+        <!-- Obituaries Grid -->
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="obituariesGrid">
+            
+            <article class="obituary-card bg-white rounded-lg overflow-hidden shadow-sm" data-name="janice mary fisher obituary - fall river herald news" data-funeral-home="google news (fall river, ma)">
+                <!-- Photo or Placeholder -->
+                
+                <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div class="text-center text-gray-500">
+                        <div class="text-4xl mb-2">🕊️</div>
+                        <div class="text-xs">No Photo</div>
+                    </div>
+                </div>
+                
+                
+                <!-- Content -->
+                <div class="p-6">
+                    <h3 class="text-xl obituary-name text-gray-900 mb-3 font-normal">
+                        <a href="https://news.google.com/rss/articles/CBMiXkFVX3lxTE02dGhIcUhvZ0pDVEZIdG1nd05BZ3haLXYzalhnOXJYbzdSU0hjN0oxaE9SRjZJeWRjMTdIbnNkZmxqTFA0MTg3T2NtejRCdnpXTm5BTW8tOU1wZkdpWkE?oc=5" target="_blank" rel="noopener" class="hover:text-gray-700 transition-colors">
+                            Janice Mary Fisher
+                        </a>
+                    </h3>
+                    
+                    <div class="text-sm text-gray-600 mb-3">
+                        
+                        December 05, 2025
+                        
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 mb-4 border-t border-gray-100 pt-3">
+                        Google News (Fall River, MA)
+                    </div>
+                    
+                    
+                    <p class="text-sm text-gray-600 line-clamp-2 mb-4"><a href="https://news. com/rss/articles/CBMiXkFVX3lxTE02dGhIcUhvZ0pDVEZIdG1nd05BZ3haLXYzalhnOXJYbzdSU0hjN0oxaE9SRjZJeWRj...</p>
+                    
+                    
+                    <a href="https://news.google.com/rss/articles/CBMiXkFVX3lxTE02dGhIcUhvZ0pDVEZIdG1nd05BZ3haLXYzalhnOXJYbzdSU0hjN0oxaE9SRjZJeWRjMTdIbnNkZmxqTFA0MTg3T2NtejRCdnpXTm5BTW8tOU1wZkdpWkE?oc=5" target="_blank" rel="noopener" class="text-sm text-[#6b7280] hover:text-[#4b5563] font-medium inline-flex items-center">
+                        Read More →
+                    </a>
+                </div>
+            </article>
+            
+            <article class="obituary-card bg-white rounded-lg overflow-hidden shadow-sm" data-name="seraphim g. nobrega jr. obituary - fall river herald news" data-funeral-home="google news (fall river, ma)">
+                <!-- Photo or Placeholder -->
+                
+                <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div class="text-center text-gray-500">
+                        <div class="text-4xl mb-2">🕊️</div>
+                        <div class="text-xs">No Photo</div>
+                    </div>
+                </div>
+                
+                
+                <!-- Content -->
+                <div class="p-6">
+                    <h3 class="text-xl obituary-name text-gray-900 mb-3 font-normal">
+                        <a href="https://news.google.com/rss/articles/CBMiXkFVX3lxTE5hbXF3aTFBVHVOYno4a1luZVVuVkZKNjVLbW1KbkdCaV96VVBRR1NxZXdUdW9iN0l3aVFHdlgteFpPbTEzMFFYMkpGQkduU2R3dkVzczNocU1raGdGR1E?oc=5" target="_blank" rel="noopener" class="hover:text-gray-700 transition-colors">
+                            Seraphim G. Nobrega Jr.
+                        </a>
+                    </h3>
+                    
+                    <div class="text-sm text-gray-600 mb-3">
+                        
+                        December 04, 2025
+                        
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 mb-4 border-t border-gray-100 pt-3">
+                        Google News (Fall River, MA)
+                    </div>
+                    
+                    
+                    <p class="text-sm text-gray-600 line-clamp-2 mb-4"><a href="https://news. com/rss/articles/CBMiXkFVX3lxTE5hbXF3aTFBVHVOYno4a1luZVVuVkZKNjVLbW1KbkdCaV96VVBRR1NxZXdUdW9iN0l3...</p>
+                    
+                    
+                    <a href="https://news.google.com/rss/articles/CBMiXkFVX3lxTE5hbXF3aTFBVHVOYno4a1luZVVuVkZKNjVLbW1KbkdCaV96VVBRR1NxZXdUdW9iN0l3aVFHdlgteFpPbTEzMFFYMkpGQkduU2R3dkVzczNocU1raGdGR1E?oc=5" target="_blank" rel="noopener" class="text-sm text-[#6b7280] hover:text-[#4b5563] font-medium inline-flex items-center">
+                        Read More →
+                    </a>
+                </div>
+            </article>
+            
+            <article class="obituary-card bg-white rounded-lg overflow-hidden shadow-sm" data-name="joao ricardo raimundo obituary (2025) - fall river, ma - silva-faria funeral home - fall river chapel - legacy | obituary" data-funeral-home="google news (fall river, ma)">
+                <!-- Photo or Placeholder -->
+                
+                <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div class="text-center text-gray-500">
+                        <div class="text-4xl mb-2">🕊️</div>
+                        <div class="text-xs">No Photo</div>
+                    </div>
+                </div>
+                
+                
+                <!-- Content -->
+                <div class="p-6">
+                    <h3 class="text-xl obituary-name text-gray-900 mb-3 font-normal">
+                        <a href="https://news.google.com/rss/articles/CBMiggFBVV95cUxPMGRtWmxDZWREb3ZqTWNPY3F2em85SC1PZjU4N2ZsRmJNamVDLXFZaDVPVklPTUJCWjBtb3phODVrWUlFRzZjZmNCdWhsNkk0LVVXbmpxRjBOSENWSVNSYU1UVm5pb1BRZmFDN3A2UUhsRWs1Q0t0SlpCcldqWGJid1FR?oc=5" target="_blank" rel="noopener" class="hover:text-gray-700 transition-colors">
+                            Joao Ricardo Raimundo
+                        </a>
+                    </h3>
+                    
+                    <div class="text-sm text-gray-600 mb-3">
+                        
+                        December 04, 2025
+                        
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 mb-4 border-t border-gray-100 pt-3">
+                        Google News (Fall River, MA)
+                    </div>
+                    
+                    
+                    <p class="text-sm text-gray-600 line-clamp-2 mb-4"><a href="https://news. com/rss/articles/CBMiggFBVV95cUxPMGRtWmxDZWREb3ZqTWNPY3F2em85SC1PZjU4N2ZsRmJNamVDLXFZaDVPVklPTUJC...</p>
+                    
+                    
+                    <a href="https://news.google.com/rss/articles/CBMiggFBVV95cUxPMGRtWmxDZWREb3ZqTWNPY3F2em85SC1PZjU4N2ZsRmJNamVDLXFZaDVPVklPTUJCWjBtb3phODVrWUlFRzZjZmNCdWhsNkk0LVVXbmpxRjBOSENWSVNSYU1UVm5pb1BRZmFDN3A2UUhsRWs1Q0t0SlpCcldqWGJid1FR?oc=5" target="_blank" rel="noopener" class="text-sm text-[#6b7280] hover:text-[#4b5563] font-medium inline-flex items-center">
+                        Read More →
+                    </a>
+                </div>
+            </article>
+            
+            <article class="obituary-card bg-white rounded-lg overflow-hidden shadow-sm" data-name="margaret "peggy" raymond obituary - fall river herald news" data-funeral-home="google news (fall river, ma)">
+                <!-- Photo or Placeholder -->
+                
+                <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div class="text-center text-gray-500">
+                        <div class="text-4xl mb-2">🕊️</div>
+                        <div class="text-xs">No Photo</div>
+                    </div>
+                </div>
+                
+                
+                <!-- Content -->
+                <div class="p-6">
+                    <h3 class="text-xl obituary-name text-gray-900 mb-3 font-normal">
+                        <a href="https://news.google.com/rss/articles/CBMiXkFVX3lxTE1XZUhfbndoUGNuMndyZGpBNkk1T1VXVk1KbzRPSlFtdnVSakxxZ21zbFRVVWF5UDkzSU1BeVM3RXN0cTdQakVHbmJURk5kOWFHUkVsNjNnOW1kMWY5OEE?oc=5" target="_blank" rel="noopener" class="hover:text-gray-700 transition-colors">
+                            Margaret "Peggy" Raymond
+                        </a>
+                    </h3>
+                    
+                    <div class="text-sm text-gray-600 mb-3">
+                        
+                        December 03, 2025
+                        
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 mb-4 border-t border-gray-100 pt-3">
+                        Google News (Fall River, MA)
+                    </div>
+                    
+                    
+                    <p class="text-sm text-gray-600 line-clamp-2 mb-4"><a href="https://news. com/rss/articles/CBMiXkFVX3lxTE1XZUhfbndoUGNuMndyZGpBNkk1T1VXVk1KbzRPSlFtdnVSakxxZ21zbFRVVWF5UDkz...</p>
+                    
+                    
+                    <a href="https://news.google.com/rss/articles/CBMiXkFVX3lxTE1XZUhfbndoUGNuMndyZGpBNkk1T1VXVk1KbzRPSlFtdnVSakxxZ21zbFRVVWF5UDkzSU1BeVM3RXN0cTdQakVHbmJURk5kOWFHUkVsNjNnOW1kMWY5OEE?oc=5" target="_blank" rel="noopener" class="text-sm text-[#6b7280] hover:text-[#4b5563] font-medium inline-flex items-center">
+                        Read More →
+                    </a>
+                </div>
+            </article>
+            
+            <article class="obituary-card bg-white rounded-lg overflow-hidden shadow-sm" data-name="william krueger obituary - fall river, ma - dignity memorial" data-funeral-home="google news (fall river, ma)">
+                <!-- Photo or Placeholder -->
+                
+                <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div class="text-center text-gray-500">
+                        <div class="text-4xl mb-2">🕊️</div>
+                        <div class="text-xs">No Photo</div>
+                    </div>
+                </div>
+                
+                
+                <!-- Content -->
+                <div class="p-6">
+                    <h3 class="text-xl obituary-name text-gray-900 mb-3 font-normal">
+                        <a href="https://news.google.com/rss/articles/CBMiiAFBVV95cUxNRjI5RmlHWnI1eXNaSmVocG9ya1dKdmVXRXRVX3RkZzlyR3RxampFUDdhNGdkZHNDc2RYS2lRN1hVOGxPVFF3TFpzRFBoaFVVZnZEN2dCQ2JEbk94MTB3R2JwSG5VOExXQkF6TEQ1VGV0X0h6ZlA3X0xxQTQ1OHlSQ2tIeXp6WDdH?oc=5" target="_blank" rel="noopener" class="hover:text-gray-700 transition-colors">
+                            William Krueger
+                        </a>
+                    </h3>
+                    
+                    <div class="text-sm text-gray-600 mb-3">
+                        
+                        December 03, 2025
+                        
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 mb-4 border-t border-gray-100 pt-3">
+                        Google News (Fall River, MA)
+                    </div>
+                    
+                    
+                    <p class="text-sm text-gray-600 line-clamp-2 mb-4"><a href="https://news. com/rss/articles/CBMiiAFBVV95cUxNRjI5RmlHWnI1eXNaSmVocG9ya1dKdmVXRXRVX3RkZzlyR3RxampFUDdhNGdkZHND...</p>
+                    
+                    
+                    <a href="https://news.google.com/rss/articles/CBMiiAFBVV95cUxNRjI5RmlHWnI1eXNaSmVocG9ya1dKdmVXRXRVX3RkZzlyR3RxampFUDdhNGdkZHNDc2RYS2lRN1hVOGxPVFF3TFpzRFBoaFVVZnZEN2dCQ2JEbk94MTB3R2JwSG5VOExXQkF6TEQ1VGV0X0h6ZlA3X0xxQTQ1OHlSQ2tIeXp6WDdH?oc=5" target="_blank" rel="noopener" class="text-sm text-[#6b7280] hover:text-[#4b5563] font-medium inline-flex items-center">
+                        Read More →
+                    </a>
+                </div>
+            </article>
+            
+            <article class="obituary-card bg-white rounded-lg overflow-hidden shadow-sm" data-name="eduino da camara obituary (2025) - fall river, ma - silva-faria funeral home - fall river chapel - legacy | obituary" data-funeral-home="google news (fall river, ma)">
+                <!-- Photo or Placeholder -->
+                
+                <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div class="text-center text-gray-500">
+                        <div class="text-4xl mb-2">🕊️</div>
+                        <div class="text-xs">No Photo</div>
+                    </div>
+                </div>
+                
+                
+                <!-- Content -->
+                <div class="p-6">
+                    <h3 class="text-xl obituary-name text-gray-900 mb-3 font-normal">
+                        <a href="https://news.google.com/rss/articles/CBMihgFBVV95cUxPVlpzeTlkQVNyeU1qdHRfV0pEaHdCRjJxWlVKUXVNX0dLaG9jYjBHNTdRdXRDSUZhTjNxMG4zcTJkMU1CRy1IOXJTMmdLdVVnX05qa2tJNnV0cjlqYWRVN1NXRHQ3OHA1VVNNdjZRb0lKa2EtNVBha1NyTThRaVk1NjlpM1E3QQ?oc=5" target="_blank" rel="noopener" class="hover:text-gray-700 transition-colors">
+                            Eduino Da Camara
+                        </a>
+                    </h3>
+                    
+                    <div class="text-sm text-gray-600 mb-3">
+                        
+                        December 03, 2025
+                        
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 mb-4 border-t border-gray-100 pt-3">
+                        Google News (Fall River, MA)
+                    </div>
+                    
+                    
+                    <p class="text-sm text-gray-600 line-clamp-2 mb-4"><a href="https://news. com/rss/articles/CBMihgFBVV95cUxPVlpzeTlkQVNyeU1qdHRfV0pEaHdCRjJxWlVKUXVNX0dLaG9jYjBHNTdRdXRDSUZh...</p>
+                    
+                    
+                    <a href="https://news.google.com/rss/articles/CBMihgFBVV95cUxPVlpzeTlkQVNyeU1qdHRfV0pEaHdCRjJxWlVKUXVNX0dLaG9jYjBHNTdRdXRDSUZhTjNxMG4zcTJkMU1CRy1IOXJTMmdLdVVnX05qa2tJNnV0cjlqYWRVN1NXRHQ3OHA1VVNNdjZRb0lKa2EtNVBha1NyTThRaVk1NjlpM1E3QQ?oc=5" target="_blank" rel="noopener" class="text-sm text-[#6b7280] hover:text-[#4b5563] font-medium inline-flex items-center">
+                        Read More →
+                    </a>
+                </div>
+            </article>
+            
+            <article class="obituary-card bg-white rounded-lg overflow-hidden shadow-sm" data-name="anthony correia obituary (2025) - fall river, ma - silva-faria funeral home - fall river chapel - legacy | obituary" data-funeral-home="google news (fall river, ma)">
+                <!-- Photo or Placeholder -->
+                
+                <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div class="text-center text-gray-500">
+                        <div class="text-4xl mb-2">🕊️</div>
+                        <div class="text-xs">No Photo</div>
+                    </div>
+                </div>
+                
+                
+                <!-- Content -->
+                <div class="p-6">
+                    <h3 class="text-xl obituary-name text-gray-900 mb-3 font-normal">
+                        <a href="https://news.google.com/rss/articles/CBMihAFBVV95cUxQaHhkY0ZrTExtbzg1YXFPLVJXR1JnaXNESUhHYTNmN3hjVzdGRFlHMFlpNGYwd0xzUHlRQ05lSjdBLWoySmRZY0REVFFkSEdCRzRjZVBQMGNZSXluM3ZFczZMZHBHSFo3cmtrZ0s4aE5mVzZJeTlpZXBNbmd5VUp3aWpsYTk?oc=5" target="_blank" rel="noopener" class="hover:text-gray-700 transition-colors">
+                            Anthony Correia
+                        </a>
+                    </h3>
+                    
+                    <div class="text-sm text-gray-600 mb-3">
+                        
+                        December 02, 2025
+                        
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 mb-4 border-t border-gray-100 pt-3">
+                        Google News (Fall River, MA)
+                    </div>
+                    
+                    
+                    <p class="text-sm text-gray-600 line-clamp-2 mb-4"><a href="https://news. com/rss/articles/CBMihAFBVV95cUxQaHhkY0ZrTExtbzg1YXFPLVJXR1JnaXNESUhHYTNmN3hjVzdGRFlHMFlpNGYwd0xz...</p>
+                    
+                    
+                    <a href="https://news.google.com/rss/articles/CBMihAFBVV95cUxQaHhkY0ZrTExtbzg1YXFPLVJXR1JnaXNESUhHYTNmN3hjVzdGRFlHMFlpNGYwd0xzUHlRQ05lSjdBLWoySmRZY0REVFFkSEdCRzRjZVBQMGNZSXluM3ZFczZMZHBHSFo3cmtrZ0s4aE5mVzZJeTlpZXBNbmd5VUp3aWpsYTk?oc=5" target="_blank" rel="noopener" class="text-sm text-[#6b7280] hover:text-[#4b5563] font-medium inline-flex items-center">
+                        Read More →
+                    </a>
+                </div>
+            </article>
+            
+        </div>
+        
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
+            <p>&copy; 2025 Fall River, MA News. All rights reserved.</p>
+            <p class="mt-2">If you would like to submit an obituary, please <a href="mailto:obituaries@fallrivernews.local" class="text-[#6b7280] hover:text-[#4b5563] underline">contact us</a>.</p>
+        </div>
+    </footer>
+    
+    <script src="../js/main.js"></script>
+    <script>
+        // Obituary search and filter functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('obituarySearch');
+            const funeralHomeFilter = document.getElementById('funeralHomeFilter');
+            const obituariesGrid = document.getElementById('obituariesGrid');
+            
+            function filterObituaries() {
+                const searchTerm = (searchInput?.value || '').toLowerCase();
+                const selectedHome = (funeralHomeFilter?.value || '').toLowerCase();
+                const articles = obituariesGrid?.querySelectorAll('article') || [];
+                
+                let visibleCount = 0;
+                
+                articles.forEach(article => {
+                    const name = article.dataset.name || '';
+                    const funeralHome = article.dataset.funeralHome || '';
+                    
+                    let matches = true;
+                    
+                    // Search by name
+                    if (searchTerm && !name.includes(searchTerm)) {
+                        matches = false;
+                    }
+                    
+                    // Filter by funeral home
+                    if (selectedHome && funeralHome !== selectedHome) {
+                        matches = false;
+                    }
+                    
+                    if (matches) {
+                        article.style.display = '';
+                        visibleCount++;
+                    } else {
+                        article.style.display = 'none';
+                    }
+                });
+                
+                // Show message if no results
+                let noResultsMsg = obituariesGrid?.querySelector('.no-results-message');
+                if (visibleCount === 0 && (searchTerm || selectedHome)) {
+                    if (!noResultsMsg) {
+                        noResultsMsg = document.createElement('div');
+                        noResultsMsg.className = 'no-results-message col-span-full bg-white rounded-lg p-12 text-center border border-gray-200';
+                        noResultsMsg.innerHTML = `
+                            <div class="text-4xl mb-4">🔍</div>
+                            <h3 class="text-xl obituary-name text-gray-900 mb-2">No obituaries found</h3>
+                            <p class="text-gray-600 text-sm">Try adjusting your search or filter criteria.</p>
+                        `;
+                        obituariesGrid.appendChild(noResultsMsg);
+                    }
+                    noResultsMsg.style.display = 'block';
+                } else if (noResultsMsg) {
+                    noResultsMsg.style.display = 'none';
+                }
+            }
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', filterObituaries);
+            }
+            
+            if (funeralHomeFilter) {
+                funeralHomeFilter.addEventListener('change', filterObituaries);
+            }
+            
+            // Lazy load images
+            if ('IntersectionObserver' in window) {
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            if (img.dataset.src) {
+                                img.src = img.dataset.src;
+                                img.removeAttribute('data-src');
+                                img.classList.add('loaded');
+                                observer.unobserve(img);
+                            }
+                        }
+                    });
+                }, { rootMargin: '50px' });
+                
+                document.querySelectorAll('img[data-src]').forEach(img => {
+                    imageObserver.observe(img);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
