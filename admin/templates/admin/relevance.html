@@ -1,0 +1,167 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Relevance{% if zip_code %} - Zip {{ zip_code }}{% endif %}{% endblock %}
+
+{% block content %}
+<div id="relevanceTab" class="tab-content">
+    <div class="relevance-container">
+        <h2 style="margin-bottom: 1.5rem; color: #e0e0e0;">Relevance Scoring Configuration</h2>
+        
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white; position: relative;">
+            <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="toggleExplanation('bayesianExplanation')">
+                <h3 style="margin: 0; color: white; font-size: 1.3rem;">🧠 Bayesian Learning System</h3>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span id="bayesianExplanationToggle" style="font-size: 1.2rem; user-select: none; color: white;">▼</span>
+                    <button onclick="event.stopPropagation(); closeExplanation('bayesianExplanation')" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold;" title="Close">×</button>
+                </div>
+            </div>
+            <div id="bayesianExplanation" style="margin-top: 1rem; display: none;">
+                <div style="color: white; font-size: 0.95rem; line-height: 1.8;">
+                    <p style="margin: 0 0 1rem 0;">
+                        The system uses a <strong>Naive Bayes classifier</strong> - a machine learning algorithm that learns from your article rejections to automatically filter similar content in the future. This intelligent system gets smarter over time as you curate your news feed.
+                    </p>
+                    <h4 style="margin: 1rem 0 0.5rem 0; font-size: 1.1rem; color: rgba(255,255,255,0.95);">How It Works:</h4>
+                    <ul style="margin: 0.5rem 0 1rem 0; padding-left: 1.5rem;">
+                        <li style="margin-bottom: 0.5rem;"><strong>Feature Extraction:</strong> When you reject an article, the system extracts key features including keywords (important nouns, verbs), nearby towns mentioned (Cape Cod, Tiverton, Somerset, etc.), topics/categories, and whether Fall River is mentioned.</li>
+                        <li style="margin-bottom: 0.5rem;"><strong>Pattern Learning:</strong> The system stores these patterns in a database, tracking which features are associated with rejections vs. acceptances. It uses Laplace smoothing to handle new, unseen features gracefully.</li>
+                        <li style="margin-bottom: 0.5rem;"><strong>Probability Calculation:</strong> For new articles, it calculates P(reject | features) - the probability that an article should be rejected based on its features. If this probability exceeds 70%, the article is automatically filtered.</li>
+                        <li style="margin-bottom: 0.5rem;"><strong>Context Awareness:</strong> The system is smart enough to allow articles about nearby towns if they also mention Fall River or have high local relevance scores, even if the Bayesian model suggests rejection.</li>
+                    </ul>
+                    <h4 style="margin: 1rem 0 0.5rem 0; font-size: 1.1rem; color: rgba(255,255,255,0.95);">Activation:</h4>
+                    <p style="margin: 0.5rem 0 1rem 0;">
+                        The Bayesian learning system activates after you've rejected <strong>50 or more articles</strong>. Before that threshold, it's in training mode, learning patterns but not yet auto-filtering. Once active, it will automatically filter articles that match learned rejection patterns.
+                    </p>
+                    <h4 style="margin: 1rem 0 0.5rem 0; font-size: 1.1rem; color: rgba(255,255,255,0.95);">Training:</h4>
+                    <p style="margin: 0.5rem 0 0 0;">
+                        Every time you manually reject an article (move it to trash), the system extracts features and updates its model. The more you reject, the better it gets at identifying similar unwanted content. You can view training statistics in the Stats tab.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 8px;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Auto-Filter Threshold</h3>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <label style="font-weight: 600; color: #1a1a1a;">Minimum Relevance Score:</label>
+                <input type="number" id="relevanceThreshold" value="{{ (settings.get('relevance_threshold', '10') | float) | int }}" step="1" min="0" max="100" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100px;">
+                <button class="save-threshold-btn" style="padding: 0.5rem 1rem; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Save Threshold</button>
+            </div>
+        </div>
+        
+        {% if relevance_config %}
+        <!-- High Relevance Keywords -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #4caf50;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">High Relevance Keywords ({{ relevance_config.get('high_relevance_points', 15) }} points each)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="highRelevanceInput" placeholder="Add keyword" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
+                <button onclick="addRelevanceItem('high_relevance', document.getElementById('highRelevanceInput').value)" style="padding: 0.5rem 1rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="highRelevanceItems">
+                {% for item in relevance_config.get('high_relevance', []) %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #e8f5e9; border-radius: 4px;">
+                    <span style="color: #1a1a1a;">{{ item }}</span>
+                    <button class="remove-relevance-btn" data-category="high_relevance" data-item="{{ item|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">🗑️</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Medium Relevance Keywords -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #ff9800;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Medium Relevance Keywords (5 points each)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="mediumRelevanceInput" placeholder="Add keyword" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
+                <button onclick="addRelevanceItem('medium_relevance', document.getElementById('mediumRelevanceInput').value)" style="padding: 0.5rem 1rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="mediumRelevanceItems">
+                {% for item in relevance_config.get('medium_relevance', []) %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #fff3e0; border-radius: 4px;">
+                    <span style="color: #1a1a1a;">{{ item }}</span>
+                    <button class="remove-relevance-btn" data-category="medium_relevance" data-item="{{ item|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">🗑️</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Local Places -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #2196f3;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Local Places ({{ relevance_config.get('local_places_points', 3) }} points each)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="localPlacesInput" placeholder="Add place" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
+                <button onclick="addRelevanceItem('local_places', document.getElementById('localPlacesInput').value)" style="padding: 0.5rem 1rem; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="localPlacesItems">
+                {% for item in relevance_config.get('local_places', []) %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #e3f2fd; border-radius: 4px;">
+                    <span style="color: #1a1a1a;">{{ item }}</span>
+                    <button class="remove-relevance-btn" data-category="local_places" data-item="{{ item|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">🗑️</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Topic Keywords -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #9c27b0;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Topic Keywords (Custom Points)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="topicKeywordInput" placeholder="Keyword" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 200px; margin-right: 0.5rem;">
+                <input type="number" id="topicPointsInput" placeholder="Points" step="0.1" min="0" max="100" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100px; margin-right: 0.5rem;">
+                <button onclick="addTopicKeyword()" style="padding: 0.5rem 1rem; background: #9c27b0; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="topicKeywordsItems">
+                {% for keyword, points in relevance_config.get('topic_keywords', {}).items() %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #f3e5f5; border-radius: 4px;">
+                    <span style="color: #1a1a1a;"><strong>{{ keyword }}</strong>: {{ "%.1f"|format(points) }} pts</span>
+                    <button class="remove-relevance-btn" data-category="topic_keywords" data-item="{{ keyword|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">🗑️</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Source Credibility -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #00bcd4;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Source Credibility (Points)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="sourceInput" placeholder="Source name" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 200px; margin-right: 0.5rem;">
+                <input type="number" id="sourcePointsInput" placeholder="Points" step="0.1" min="0" max="100" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100px; margin-right: 0.5rem;">
+                <button onclick="addSourceCredibility()" style="padding: 0.5rem 1rem; background: #00bcd4; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="sourceCredibilityItems">
+                {% for source, points in relevance_config.get('source_credibility', {}).items() %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #e0f7fa; border-radius: 4px;">
+                    <span style="color: #1a1a1a;"><strong>{{ source }}</strong>: {{ "%.1f"|format(points) }} pts</span>
+                    <button class="remove-relevance-btn" data-category="source_credibility" data-item="{{ source|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">🗑️</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Clickbait Patterns -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #f44336;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Clickbait Patterns (Negative Impact)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="clickbaitInput" placeholder="Add pattern" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
+                <button onclick="addRelevanceItem('clickbait_patterns', document.getElementById('clickbaitInput').value)" style="padding: 0.5rem 1rem; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="clickbaitPatternsItems">
+                {% for item in relevance_config.get('clickbait_patterns', []) %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #ffebee; border-radius: 4px;">
+                    <span style="color: #1a1a1a;">{{ item }}</span>
+                    <button class="remove-relevance-btn" data-category="clickbait_patterns" data-item="{{ item|e }}" style="margin-left: 0.5rem; background: #d32f2f; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">🗑️</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Bayesian Statistics -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: white;">🧠 Bayesian Learning Statistics</h3>
+            <div id="bayesianStats" style="color: white;">
+                <p>Loading statistics...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

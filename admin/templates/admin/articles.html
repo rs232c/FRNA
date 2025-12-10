@@ -1,0 +1,72 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Articles{% if zip_code %} - Zip {{ zip_code }}{% endif %}{% endblock %}
+
+{% block content %}
+<div id="articlesTab" class="tab-content">
+    <div class="articles-list" id="articles-list" data-zip-code="{{ zip_code or '' }}">
+        <div style="padding: 0.75rem 1rem; background: #1a1a1a; border-bottom: 2px solid #404040; font-weight: 600; color: #e0e0e0;">
+            Showing {{ articles|length }} of {{ stats.total_articles }} article{{ 's' if stats.total_articles != 1 else '' }}{% if stats.rejected_articles > 0 %} ({{ stats.rejected_articles }} in <a href="{{ url_for('admin.trash_tab', zip_code=zip_code) }}" style="color: #0078d4; text-decoration: underline;">🗑️ Trash</a>){% endif %}
+        </div>
+        {% for article in articles %}
+        <div class="article-item {{ 'rejected' if article.get('is_rejected', 0) else '' }}" data-id="{{ article.id }}">
+            <div class="article-info">
+                <div class="article-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>{{ article.title[:80] }}{% if article.title|length > 80 %}...{% endif %}</span>
+                    {% if article.url %}
+                    <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" title="Open article in new window" style="color: #0078d4; text-decoration: none; font-size: 1.1rem; opacity: 0.7; transition: opacity 0.2s;">🔗</a>
+                    {% endif %}
+                </div>
+                <div class="article-meta">
+                    {{ article.source }} - {{ article.published[:10] if article.published else 'N/A' }}
+                    {% if article.category %}
+                    • {{ article.category }}
+                    {% endif %}
+                    {% if article.relevance_score is defined and article.relevance_score is not none %}
+                    • Relevance: <span class="relevance-score-tooltip" data-article-id="{{ article.id }}" style="cursor: help; text-decoration: underline; text-decoration-style: dotted;">{{ "%.0f"|format(article.relevance_score) }}</span>
+                    {% else %}
+                    • Relevance: N/A
+                    {% endif %}
+                    {% if article.local_score is defined and article.local_score is not none %}
+                    • Local Focus: {{ "%.1f"|format(article.local_score) }}/10
+                    <span style="display: inline-block; width: 60px; height: 8px; background: #404040; border-radius: 4px; margin-left: 0.5rem; vertical-align: middle; overflow: hidden;">
+                        <span style="display: block; width: {{ "%.0f"|format((article.local_score / 10) * 100) }}%; height: 100%; background: {% if article.local_score > 6 %}#4caf50{% elif article.local_score > 3 %}#ff9800{% else %}#d32f2f{% endif %};"></span>
+                    </span>
+                    {% else %}
+                    • Local Focus: N/A
+                    {% endif %}
+                </div>
+            </div>
+            <div class="article-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="top-story-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top_story', 0) else 'off' }}" data-action="toggle-top-story"
+                        style="padding: 0.5rem; background: {% if article.get('is_top_story', 0) %}#ff9800{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_top_story', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;" 
+                        title="Mark as top story">
+                    🎩
+                </button>
+                <button class="good-fit-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_good_fit', 0) else 'off' }}" data-action="toggle-good-fit"
+                        style="padding: 0.5rem; background: {% if article.get('is_good_fit', 0) %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_good_fit', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;" 
+                        title="Mark as good fit">
+                    👍
+                </button>
+                <button class="edit-article-btn" data-id="{{ article.id }}" data-action="edit-article"
+                        style="padding: 0.5rem; background: #252525; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;" 
+                        title="Edit article">
+                    ✏️
+                </button>
+                {% if article.get('is_rejected', 0) %}
+                <button class="restore-trash-btn" data-id="{{ article.id }}" data-action="restore-article" 
+                        title="Restore from trash" style="padding: 0.5rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">↩️</button>
+                {% else %}
+                <button class="trash-btn" data-id="{{ article.id }}" data-action="trash-article"
+                        style="padding: 0.5rem; background: #252525; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;" 
+                        title="Delete">
+                    👎
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

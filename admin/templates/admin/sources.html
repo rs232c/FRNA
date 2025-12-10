@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Sources{% if zip_code %} - Zip {{ zip_code }}{% endif %}{% endblock %}
+
+{% block content %}
+<div id="sourcesTab" class="tab-content">
+    <div class="sources-list">
+        {% if sources|length == 0 %}
+        <div style="padding: 2rem; text-align: center; background: #252525; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #404040;">
+            <p style="color: #666; margin-bottom: 1rem;">No sources configured for this zip code.</p>
+            <button onclick="addNewSource()" style="padding: 0.75rem 1.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                + Add Source
+            </button>
+        </div>
+        {% else %}
+        {% for source_key, source_config in sources.items() %}
+        <div class="source-item">
+            <div class="source-info">
+                <div class="source-name">{{ source_config.name }}</div>
+                <div class="source-url">{{ source_config.url }}</div>
+                <div class="source-category">Category: {{ source_config.get('category', 'news') }}</div>
+                {% if source_config.get('_relevance_score') is not none and source_config.get('_relevance_score') >= 0 %}
+                <div class="source-relevance" style="color: #666; font-size: 0.9rem; margin-top: 0.25rem;">
+                    Relevance Score: <strong style="color: {% if source_config.get('_relevance_score', 0) >= 20 %}#4caf50{% elif source_config.get('_relevance_score', 0) >= 10 %}#ff9800{% else %}#f44336{% endif %};">{{ "%.1f"|format(source_config.get('_relevance_score')) }}</strong> points
+                </div>
+                {% else %}
+                <div class="source-relevance" style="color: #999; font-size: 0.9rem; margin-top: 0.25rem; font-style: italic;">
+                    No relevance score set
+                </div>
+                {% endif %}
+            </div>
+            <div class="source-actions">
+                <button class="edit-source-btn" data-source-key="{{ source_key }}" title="Edit source">✏️</button>
+                <div class="toggle-switch">
+                    <label>Enabled:</label>
+                    <label class="switch">
+                        <input type="checkbox" class="source-enabled" data-source="{{ source_key }}" {{ 'checked' if source_config.get('enabled', True) else '' }}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <div style="margin-top: 1.5rem;">
+            <button onclick="addNewSource()" style="padding: 0.75rem 1.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                + Add Source
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

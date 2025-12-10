@@ -1,0 +1,33 @@
+<script>
+// FINAL TRASH + RESTORE — 100% WORKING, NO CURSOR BULLSHIT
+document.addEventListener('click', async function(e) {
+  const btn = e.target.closest('.trash-btn, .restore-btn');
+  if (!btn) return;
+  
+  e.preventDefault();
+  const id = btn.dataset.id;
+  if (!id) return;
+
+  const isTrash = btn.classList.contains('trash-btn');
+  const action = isTrash ? 'trash' : 'restore';
+  const verb = isTrash ? 'Move to trash' : 'Restore';
+
+  if (confirm(`${verb} this article?`)) {
+    try {
+      const resp = await fetch(`/admin/02720/${action}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id: id})
+      });
+      if (resp.ok) {
+        location.reload();
+      } else {
+        alert(`${action} failed`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error');
+    }
+  }
+});
+</script>

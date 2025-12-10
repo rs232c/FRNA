@@ -1,0 +1,67 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Settings{% if zip_code %} - Zip {{ zip_code }}{% endif %}{% endblock %}
+
+{% block content %}
+<div id="settingsTab" class="tab-content">
+    <div class="settings-container">
+        <h2 style="margin-bottom: 1.5rem;">Settings</h2>
+        
+        <div class="settings-section">
+            <h3>Website Regeneration</h3>
+            <div class="settings-controls">
+                <button onclick="regenerateWebsite()" style="margin-right: 1rem;">Regenerate Website</button>
+                <button onclick="regenerateAll()" style="background: #ff9800; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Regenerate All (Fresh Data)</button>
+            </div>
+            <p style="color: #666; margin-top: 0.5rem; font-size: 0.9rem;">
+                <strong>Regenerate Website:</strong> Regenerates the website using existing articles in the database.<br>
+                <strong>Regenerate All:</strong> Fetches fresh data from all sources and regenerates the entire website. This may take several minutes.
+            </p>
+        </div>
+        
+        <div class="settings-section" style="margin-top: 2rem;">
+            <h3>Display Settings</h3>
+            <div class="toggle-switch">
+                <label>Show Images:</label>
+                <label class="switch">
+                    <input type="checkbox" id="showImagesSettings" {{ 'checked' if settings.get('show_images') == '1' else '' }}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="settings-section" style="margin-top: 2rem;">
+            <h3>AI Filtering</h3>
+            <div style="background: #e3f2fd; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #2196f3;">
+                <p style="margin: 0; color: #1565c0; font-size: 0.9rem; line-height: 1.6;">
+                    <strong>AI Relevance Checking:</strong> Uses AI to verify articles are truly about Fall River before ingestion. 
+                    Requires OpenAI API key (set OPENAI_API_KEY environment variable). 
+                    If no API key, uses enhanced heuristic-based filtering.
+                </p>
+            </div>
+            <div class="toggle-switch">
+                <label>Enable AI Filtering:</label>
+                <label class="switch">
+                    <input type="checkbox" id="aiFilteringSettings" {{ 'checked' if settings.get('ai_filtering_enabled') == '1' else '' }}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="settings-section" style="margin-top: 2rem;">
+            <h3>System Information</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Version:</span>
+                    <span class="info-value">{{ version }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Last Generated:</span>
+                    <span class="info-value">{{ last_regeneration or 'Never' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,1 @@
+robocopy . .\backup /E /COPY:DAT /XD backup /MT:32 /R:3 /W:5 /LOG+:backup_log.txt

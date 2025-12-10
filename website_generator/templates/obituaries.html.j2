@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obituaries - {{ title }}</title>
+    <meta name="description" content="Remembering loved ones from {{ locale }}. View obituaries and memorial services.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'serif': ['Georgia', 'Times New Roman', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="{{ css_path }}style.css">
+    <style>
+        .lazy-image { opacity: 0; transition: opacity 0.3s; }
+        .lazy-image.loaded { opacity: 1; }
+        
+        /* Obituary-specific elegant styling */
+        .obituary-name {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        
+        .obituary-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .obituary-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .hero-overlay {
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+        }
+    </style>
+</head>
+<body class="bg-[#f8f8f8] text-gray-800 min-h-screen">
+    <!-- Top Bar -->
+    <div class="bg-white border-b border-gray-200 py-3">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="w-full sm:w-auto flex-1">
+                    <div class="relative flex items-center bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                        <span class="text-gray-400 mr-2">🔍</span>
+                        <input type="text" placeholder="Search by name..." class="bg-transparent border-none outline-none text-gray-800 placeholder-gray-400 flex-1 w-full sm:w-64" id="obituarySearch">
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="funeralHomeFilter" class="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-800 text-sm focus:border-gray-400 focus:outline-none">
+                        <option value="">All Funeral Homes</option>
+                        {% for home in funeral_homes %}
+                        <option value="{{ home }}">{{ home }}</option>
+                        {% endfor %}
+                    </select>
+                    <a href="mailto:obituaries@fallrivernews.local?subject=Submit Obituary" class="bg-[#6b7280] hover:bg-[#4b5563] text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Submit an Obituary
+                    </a>
+                    <a href="/admin" id="hamburgerMenuLink" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors inline-flex items-center justify-center w-10 h-10" title="Admin Panel">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </a>
+                    <script>
+                        // Update hamburger menu link based on session
+                        (function() {
+                            fetch('/api/session-check')
+                                .then(response => response.json())
+                                .then(data => {
+                                    const link = document.getElementById('hamburgerMenuLink');
+                                    if (data.logged_in && data.zip_code) {
+                                        link.href = `/admin/${data.zip_code}`;
+                                    } else {
+                                        link.href = '/admin';
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error('Error checking session:', err);
+                                });
+                        })();
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-gray-200 py-3 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-2xl font-semibold text-gray-800">FRNA</div>
+                {{ nav_tabs }}
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Fixed Location Badge (Top-Left) -->
+        <div class="fixed top-4 left-4 z-50 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+            {{ location_badge_text }}
+        </div>
+        
+        <!-- Fixed Weather Pill (Top-Right) -->
+        <a href="{{ weather_station_url }}" target="_blank" rel="noopener" class="fixed top-4 right-4 z-50 flex items-center gap-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <span class="text-xl">🌤️</span>
+            <div class="text-white">
+                <div class="font-bold text-sm leading-tight">{{ weather.current.temperature }}{{ weather.current.unit }}</div>
+                <div class="text-blue-100 text-xs">{{ weather.current.condition }}</div>
+            </div>
+        </a>
+        
+        <!-- Page Header -->
+        <div class="mb-12 text-center">
+            <h1 class="text-5xl font-light obituary-name text-gray-900 mb-4">Obituaries</h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">Remembering and honoring the lives of those we've lost in {{ locale.split(',')[0] if ',' in locale else locale }}</p>
+        </div>
+        
+        <!-- Hero Obituary (Today's Most Prominent) -->
+        {% if hero_articles and hero_articles|length > 0 %}
+        {% set hero_obit = hero_articles[0] if hero_articles else None %}
+        {% if hero_obit %}
+        <div class="mb-16">
+            <div class="relative rounded-lg overflow-hidden shadow-lg" style="height: 500px;">
+                {% if show_images and hero_obit.image_url %}
+                <img data-src="{{ hero_obit.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ hero_obit.title }}" class="w-full h-full object-cover lazy-image">
+                {% else %}
+                <div class="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
+                    <div class="text-center text-gray-600">
+                        <div class="text-6xl mb-4">🕊️</div>
+                        <div class="text-2xl obituary-name">{{ hero_obit.title.split(' Obituary')[0] if ' Obituary' in hero_obit.title else hero_obit.title }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="hero-overlay absolute inset-0 flex items-end">
+                    <div class="w-full p-8 lg:p-12 text-white">
+                        <h2 class="text-4xl lg:text-5xl obituary-name mb-4 font-normal">{{ hero_obit.title.split(' Obituary')[0] if ' Obituary' in hero_obit.title else hero_obit.title }}</h2>
+                        <div class="text-lg text-gray-200 mb-4">
+                            {% if hero_obit.formatted_date %}
+                            {{ hero_obit.formatted_date.split(' at ')[0] if ' at ' in hero_obit.formatted_date else hero_obit.formatted_date }}
+                            {% endif %}
+                        </div>
+                        <div class="text-sm text-gray-300 mb-6">{{ hero_obit.source_display }}</div>
+                        <a href="{{ hero_obit.url }}" target="_blank" rel="noopener" class="inline-block bg-white/90 hover:bg-white text-gray-900 px-6 py-3 rounded-lg font-medium transition-colors">
+                            View Full Obituary →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+        
+        <!-- Today's Obituaries Section -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-light obituary-name text-gray-900 mb-2">Today's Obituaries</h2>
+            <p class="text-gray-600">Remembering those who passed away recently</p>
+        </div>
+        
+        <!-- Obituaries Grid -->
+        {% if articles and articles|length > 0 %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="obituariesGrid">
+            {% for article in articles %}
+            <article class="obituary-card bg-white rounded-lg overflow-hidden shadow-sm" data-name="{{ article.title.lower() }}" data-funeral-home="{{ article.source_display.lower() }}">
+                <!-- Photo or Placeholder -->
+                {% if show_images and article.image_url %}
+                <div class="relative h-48 overflow-hidden bg-gray-200">
+                    <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" class="w-full h-full object-cover lazy-image">
+                </div>
+                {% else %}
+                <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div class="text-center text-gray-500">
+                        <div class="text-4xl mb-2">🕊️</div>
+                        <div class="text-xs">No Photo</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Content -->
+                <div class="p-6">
+                    <h3 class="text-xl obituary-name text-gray-900 mb-3 font-normal">
+                        <a href="{{ article.url }}" target="_blank" rel="noopener" class="hover:text-gray-700 transition-colors">
+                            {{ article.title.split(' Obituary')[0] if ' Obituary' in article.title else article.title }}
+                        </a>
+                    </h3>
+                    
+                    <div class="text-sm text-gray-600 mb-3">
+                        {% if article.formatted_date %}
+                        {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else article.formatted_date }}
+                        {% else %}
+                        Recently
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 mb-4 border-t border-gray-100 pt-3">
+                        {{ article.source_display }}
+                    </div>
+                    
+                    {% if article.summary %}
+                    <p class="text-sm text-gray-600 line-clamp-2 mb-4">{{ article.summary[:120] }}{% if article.summary|length > 120 %}...{% endif %}</p>
+                    {% endif %}
+                    
+                    <a href="{{ article.url }}" target="_blank" rel="noopener" class="text-sm text-[#6b7280] hover:text-[#4b5563] font-medium inline-flex items-center">
+                        Read More →
+                    </a>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white rounded-lg p-12 text-center border border-gray-200">
+            <div class="text-6xl mb-4">🕊️</div>
+            <h3 class="text-2xl obituary-name text-gray-900 mb-3">No Obituaries Found</h3>
+            <p class="text-gray-600 mb-2">We're updating our obituaries listings.</p>
+            <p class="text-gray-500 text-sm mb-6">Please check back soon for the latest obituaries from {{ locale.split(',')[0] if ',' in locale else locale }}.</p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{{ home_path }}index.html" class="px-6 py-3 bg-[#6b7280] hover:bg-[#4b5563] text-white rounded-lg transition-colors font-medium">← Back to Home</a>
+                <a href="mailto:obituaries@fallrivernews.local?subject=Submit Obituary" class="px-6 py-3 bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors font-medium border border-gray-300">Submit an Obituary</a>
+            </div>
+        </div>
+        {% endif %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
+            <p>&copy; {{ current_year }} {{ locale }} News. All rights reserved.</p>
+            <p class="mt-2">If you would like to submit an obituary, please <a href="mailto:obituaries@fallrivernews.local" class="text-[#6b7280] hover:text-[#4b5563] underline">contact us</a>.</p>
+        </div>
+    </footer>
+    
+    <script src="{{ home_path }}js/main.js"></script>
+    <script>
+        // Obituary search and filter functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('obituarySearch');
+            const funeralHomeFilter = document.getElementById('funeralHomeFilter');
+            const obituariesGrid = document.getElementById('obituariesGrid');
+            
+            function filterObituaries() {
+                const searchTerm = (searchInput?.value || '').toLowerCase();
+                const selectedHome = (funeralHomeFilter?.value || '').toLowerCase();
+                const articles = obituariesGrid?.querySelectorAll('article') || [];
+                
+                let visibleCount = 0;
+                
+                articles.forEach(article => {
+                    const name = article.dataset.name || '';
+                    const funeralHome = article.dataset.funeralHome || '';
+                    
+                    let matches = true;
+                    
+                    // Search by name
+                    if (searchTerm && !name.includes(searchTerm)) {
+                        matches = false;
+                    }
+                    
+                    // Filter by funeral home
+                    if (selectedHome && funeralHome !== selectedHome) {
+                        matches = false;
+                    }
+                    
+                    if (matches) {
+                        article.style.display = '';
+                        visibleCount++;
+                    } else {
+                        article.style.display = 'none';
+                    }
+                });
+                
+                // Show message if no results
+                let noResultsMsg = obituariesGrid?.querySelector('.no-results-message');
+                if (visibleCount === 0 && (searchTerm || selectedHome)) {
+                    if (!noResultsMsg) {
+                        noResultsMsg = document.createElement('div');
+                        noResultsMsg.className = 'no-results-message col-span-full bg-white rounded-lg p-12 text-center border border-gray-200';
+                        noResultsMsg.innerHTML = `
+                            <div class="text-4xl mb-4">🔍</div>
+                            <h3 class="text-xl obituary-name text-gray-900 mb-2">No obituaries found</h3>
+                            <p class="text-gray-600 text-sm">Try adjusting your search or filter criteria.</p>
+                        `;
+                        obituariesGrid.appendChild(noResultsMsg);
+                    }
+                    noResultsMsg.style.display = 'block';
+                } else if (noResultsMsg) {
+                    noResultsMsg.style.display = 'none';
+                }
+            }
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', filterObituaries);
+            }
+            
+            if (funeralHomeFilter) {
+                funeralHomeFilter.addEventListener('change', filterObituaries);
+            }
+            
+            // Lazy load images
+            if ('IntersectionObserver' in window) {
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            if (img.dataset.src) {
+                                img.src = img.dataset.src;
+                                img.removeAttribute('data-src');
+                                img.classList.add('loaded');
+                                observer.unobserve(img);
+                            }
+                        }
+                    });
+                }, { rootMargin: '50px' });
+                
+                document.querySelectorAll('img[data-src]').forEach(img => {
+                    imageObserver.observe(img);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

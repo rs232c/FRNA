@@ -1,0 +1,30 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Trash{% if zip_code %} - Zip {{ zip_code }}{% endif %}{% endblock %}
+
+{% block content %}
+<div id="trashTab" class="tab-content">
+    <div style="padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <h3 style="margin: 0 0 0.75rem 0; color: #fff; font-size: 1.5rem; font-weight: 600;">🗑️ Trash - All Rejected Articles</h3>
+        <p style="margin: 0; color: rgba(255,255,255,0.95); font-size: 1rem; line-height: 1.6;">View all rejected articles - both manually rejected and auto-filtered. Manually rejected articles train the Bayesian model. You can restore any article from here.</p>
+    </div>
+    <div class="articles-list" id="trashList" style="background: transparent;">
+        <p style="padding: 2rem; text-align: center; color: #888; background: #252525; border-radius: 8px; border: 1px solid #404040;">Loading rejected articles...</p>
+    </div>
+</div>
+<script>
+    // Load trash on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof window.loadTrash === 'function') {
+            window.loadTrash();
+        } else {
+            setTimeout(function() {
+                if (typeof window.loadTrash === 'function') {
+                    window.loadTrash();
+                }
+            }, 500);
+        }
+    });
+</script>
+{% endblock %}
+

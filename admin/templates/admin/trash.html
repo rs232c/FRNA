@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Trash{% if zip_code %} - Zip {{ zip_code }}{% endif %}{% endblock %}
+
+{% block content %}
+<div id="trashTab" class="tab-content">
+    <div style="padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <h3 style="margin: 0 0 0.75rem 0; color: #fff; font-size: 1.5rem; font-weight: 600;">🗑️ Trash - All Rejected Articles</h3>
+        <p style="margin: 0; color: rgba(255,255,255,0.95); font-size: 1rem; line-height: 1.6;">View all rejected articles - both manually rejected and auto-filtered. Manually rejected articles train the Bayesian model. You can restore any article from here.</p>
+    </div>
+    <div style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span style="color: #e0e0e0; font-weight: 600; font-size: 0.95rem;">Filter:</span>
+            <button id="trashFilterAll" class="trash-filter-btn active" data-filter="all" style="padding: 0.5rem 1rem; background: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">All</button>
+            <button id="trashFilterManual" class="trash-filter-btn" data-filter="manual" style="padding: 0.5rem 1rem; background: #404040; color: #e0e0e0; border: 1px solid #555; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">🗑️ Manual</button>
+            <button id="trashFilterAuto" class="trash-filter-btn" data-filter="auto" style="padding: 0.5rem 1rem; background: #404040; color: #e0e0e0; border: 1px solid #555; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">🤖 Auto</button>
+        </div>
+        <div id="trashFilterCount" style="color: #888; font-size: 0.9rem; margin-left: auto;">
+            <span id="trashFilterCountText">Loading...</span>
+        </div>
+    </div>
+    <div style="margin-bottom: 1.5rem; position: relative;">
+        <input type="text" id="trashSearchInput" placeholder="🔍 Search by title, source, or reason..." 
+               style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 1rem; background: #252525; border: 1px solid #404040; border-radius: 8px; color: #e0e0e0; font-size: 0.95rem; outline: none; transition: border-color 0.2s;"
+               onfocus="this.style.borderColor='#0078d4';" 
+               onblur="this.style.borderColor='#404040';">
+        <button id="trashSearchClear" onclick="clearTrashSearch()" 
+                style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #888; cursor: pointer; font-size: 1.2rem; padding: 0.25rem 0.5rem; display: none; transition: color 0.2s;"
+                onmouseover="this.style.color='#e0e0e0';" 
+                onmouseout="this.style.color='#888';"
+                title="Clear search">×</button>
+    </div>
+    <div class="articles-list" id="trashList" style="background: transparent;">
+        <p style="padding: 2rem; text-align: center; color: #888; background: #252525; border-radius: 8px; border: 1px solid #404040;">Loading rejected articles...</p>
+    </div>
+</div>
+<script>
+    // Load trash on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof window.loadTrash === 'function') {
+            window.loadTrash();
+        } else {
+            setTimeout(function() {
+                if (typeof window.loadTrash === 'function') {
+                    window.loadTrash();
+                }
+            }, 500);
+        }
+    });
+</script>
+{% endblock %}
+

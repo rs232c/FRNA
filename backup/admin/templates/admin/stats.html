@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Stats{% if zip_code %} - Zip {{ zip_code }}{% endif %}{% endblock %}
+
+{% block content %}
+<div id="statsTab" class="tab-content">
+    <div class="stats-container">
+        <h2 style="margin-bottom: 1.5rem;">Statistics Dashboard</h2>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_articles }}</div>
+                <div class="stat-label">Total Articles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.active_articles }}</div>
+                <div class="stat-label">Active Articles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.rejected_articles }}</div>
+                <div class="stat-label">Rejected Articles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.top_stories }}</div>
+                <div class="stat-label">Top Stories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.disabled_articles }}</div>
+                <div class="stat-label">Disabled Articles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.articles_last_7_days }}</div>
+                <div class="stat-label">Last 7 Days</div>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+            <div class="stats-section">
+                <h3>Articles by Source</h3>
+                <div class="stats-list">
+                    {% for item in stats.articles_by_source %}
+                    <div class="stats-item">
+                        <span class="stats-item-label">{{ item.source }}</span>
+                        <span class="stats-item-value">{{ item.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="stats-section">
+                <h3>Articles by Category</h3>
+                <div class="stats-list">
+                    {% for item in stats.articles_by_category %}
+                    <div class="stats-item">
+                        <span class="stats-item-label">{{ item.category }}</span>
+                        <span class="stats-item-value">{{ item.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        {% if stats.categories_detail %}
+        <div class="stats-section" style="margin-top: 2rem;">
+            <h3 style="margin-bottom: 1rem;">Category Details with Keywords</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+                {% for cat in stats.categories_detail %}
+                <div style="padding: 1rem; background: white; border-radius: 8px; border-left: 4px solid #2196f3; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h4 style="margin: 0 0 0.5rem 0; color: #1a1a1a; font-size: 1.1rem;">{{ cat.category }}</h4>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: #666; font-size: 0.9rem;">Articles:</span>
+                        <span style="font-weight: 600; color: #2196f3;">{{ cat.article_count }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
+                        <span style="color: #666; font-size: 0.9rem;">Keywords:</span>
+                        <span style="font-weight: 600; color: #4caf50;">{{ cat.keyword_count }}</span>
+                    </div>
+                    <div style="padding-top: 0.75rem; border-top: 1px solid #e0e0e0;">
+                        <div style="font-size: 0.85rem; color: #888; margin-bottom: 0.25rem;">Sample Keywords:</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                            {% for keyword in cat.keywords[:8] %}
+                            <span style="padding: 0.2rem 0.5rem; background: #f5f5f5; border-radius: 4px; font-size: 0.8rem; color: #555;">{{ keyword }}</span>
+                            {% endfor %}
+                            {% if cat.keywords|length > 8 %}
+                            <span style="padding: 0.2rem 0.5rem; background: #f5f5f5; border-radius: 4px; font-size: 0.8rem; color: #888;">+{{ cat.keywords|length - 8 }} more</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if stats.source_fetch_stats %}
+        <div class="stats-section" style="margin-top: 2rem;">
+            <h3>Source Fetch Status</h3>
+            <div class="stats-list">
+                {% for item in stats.source_fetch_stats %}
+                <div class="stats-item">
+                    <span class="stats-item-label">{{ item.source }}</span>
+                    <span class="stats-item-value">{{ item.count }} articles</span>
+                    <span class="stats-item-meta">Last: {{ item.last_fetch[:16] if item.last_fetch else 'Never' }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

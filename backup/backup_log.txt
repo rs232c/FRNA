@@ -1,0 +1,963 @@
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Tuesday, December 9, 2025 4:04:43 PM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+  Options : *.* /S /E /COPYALL /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+ERROR : You do not have the Manage Auditing user right.
+*****  You need this to copy auditing information (/COPY:U or /COPYALL).
+
+       Simple Usage :: ROBOCOPY source destination /MIR
+
+             source :: Source Directory (drive:\path or \\server\share\path).
+        destination :: Destination Dir  (drive:\path or \\server\share\path).
+               /MIR :: Mirror a complete directory tree.
+
+    For more usage information run ROBOCOPY /?
+
+                                                          
+****  /MIR can DELETE files as well as copy them !
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Tuesday, December 9, 2025 4:04:54 PM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+  Options : *.* /S /E /COPYALL /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+ERROR : You do not have the Manage Auditing user right.
+*****  You need this to copy auditing information (/COPY:U or /COPYALL).
+
+       Simple Usage :: ROBOCOPY source destination /MIR
+
+             source :: Source Directory (drive:\path or \\server\share\path).
+        destination :: Destination Dir  (drive:\path or \\server\share\path).
+               /MIR :: Mirror a complete directory tree.
+
+    For more usage information run ROBOCOPY /?
+
+                                                          
+****  /MIR can DELETE files as well as copy them !
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Tuesday, December 9, 2025 4:05:30 PM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+	    New File  		     623	C:\FRNA\.gitignore100%  
+	    New File  		    1895	C:\FRNA\add_article.py  0%  100%  
+	    New File  		  402867	C:\FRNA\admin.py100%  
+	    New File  		     958	C:\FRNA\admin_action.html100%  
+	    New File  		    9359	C:\FRNA\admin_backend.py100%  
+	    New File  		    1981	C:\FRNA\admin_handler.py100%  
+	    New File  		    3678	C:\FRNA\ADMIN_LOGIN_INSTRUCTIONS.md100%  
+	    New File  		    2467	C:\FRNA\ADMIN_README.md100%  
+	    New File  		    2900	C:\FRNA\admin_server.py100%  
+	    New File  		   47889	C:\FRNA\aggregator.py100%  
+	    New File  		      18	C:\FRNA\backup.bat100%  
+	    New File  		    2164	C:\FRNA\backup_log.txt100%  
+	    New File  		    6143	C:\FRNA\cache.py100%  
+	    New File  		    1721	C:\FRNA\CHANGELOG.md100%  
+	    New File  		    1768	C:\FRNA\check_admin_duplicates.py100%  
+	    New File  		    1092	C:\FRNA\check_articles.py100%  
+	    New File  		    1238	C:\FRNA\check_duplicates.py100%  
+	    New File  		    5230	C:\FRNA\clean_bad_data.py100%  
+	    New File  		    2598	C:\FRNA\clean_duplicates.py100%  
+	    New File  		    1131	C:\FRNA\clean_management_duplicates.py100%  
+	    New File  		    9624	C:\FRNA\CODE_REVIEW.md100%  
+	    New File  		     464	C:\FRNA\comprehensive_fixes.py100%  
+	    New File  		    8240	C:\FRNA\config.py100%  
+	    New File  		   40294	C:\FRNA\database.py100%  
+	    New File  		    4499	C:\FRNA\deploy.py100%  
+	    New File  		     980	C:\FRNA\enable_some_articles.py100%  
+	    New File  		   1.2 m	C:\FRNA\fallriver_news.db100%  
+	    New File  		     956	C:\FRNA\fast_repull.py100%  
+	    New File  		    1682	C:\FRNA\fetch_more_articles.py100%  
+	    New File  		     616	C:\FRNA\fix_admin_ports.py100%  
+	    New File  		    3373	C:\FRNA\fix_toggle.py100%  
+	    New File  		    4630	C:\FRNA\force_regenerate.py100%  
+	    New File  		    2808	C:\FRNA\force_reingest.py100%  
+	    New File  		   11511	C:\FRNA\JAVASCRIPT_DEBUGGING_GUIDE.md100%  
+	    New File  		       0	C:\FRNA\loadTrash_func.js100%  
+	    New File  		   16064	C:\FRNA\main.py100%  
+	    New File  		    1567	C:\FRNA\metrics.json100%  
+	    New File  		    1777	C:\FRNA\quick_fetch_rss.py100%  
+	    New File  		    1650	C:\FRNA\quick_regenerate.py100%  
+	    New File  		    1512	C:\FRNA\quick_repull.py100%  
+	    New File  		    1467	C:\FRNA\QUICK_START.md100%  
+	    New File  		    7464	C:\FRNA\README.md100%  
+	    New File  		     385	C:\FRNA\requirements.txt100%  
+	    New File  		    5961	C:\FRNA\scrub_database_to_02720.py100%  
+	    New File  		    3602	C:\FRNA\SECURITY_FIXES.md100%  
+	    New File  		   10240	C:\FRNA\serve_website.py100%  
+	    New File  		    2802	C:\FRNA\setup.py100%  
+	    New File  		    2038	C:\FRNA\show_live.py100%  
+	    New File  		    4015	C:\FRNA\simple_admin.py100%  
+	    New File  		    9319	C:\FRNA\social_poster.py100%  
+	    New File  		   45092	C:\FRNA\Sortable.min.js100%  
+	    New File  		     169	C:\FRNA\start_admin.bat100%  
+	    New File  		      86	C:\FRNA\start_admin_debug.bat100%  
+	    New File  		      78	C:\FRNA\start_admin_fixed.bat100%  
+	    New File  		     999	C:\FRNA\start_all.bat100%  
+	    New File  		     203	C:\FRNA\start_website.bat100%  
+	    New File  		     474	C:\FRNA\test_admin.py100%  
+	    New File  		    1996	C:\FRNA\test_feedparser_dates.py100%  
+	    New File  		    1795	C:\FRNA\test_filter.py100%  
+	    New File  		    5203	C:\FRNA\test_setup.py100%  
+	    New File  		    5626	C:\FRNA\test_sources.py100%  
+	    New File  		    1925	C:\FRNA\train_bayesian_from_rejections.py100%  
+	    New File  		    5921	C:\FRNA\TRASH_PAGE_FIXES.md100%  
+	    New File  		    2688	C:\FRNA\update_article_dates.py100%  
+	    New File  		     937	C:\FRNA\WEATHER_API_SETUP.md100%  
+	    New File  		   98474	C:\FRNA\website_generator.py100%  
+	    New File  		   23882	C:\FRNA\website_generator_scripts.py100%  
+	    New File  		    1492	C:\FRNA\website_generator_styles.py100%  
+	    New File  		    3470	C:\FRNA\zip_resolver.py100%  
+	    New File  		   12958	C:\FRNA\cache\6f2f520c521f428c71cb0986aaad8ec7.json100%  
+	    New File  		     835	C:\FRNA\cache\b76707cf5fc8d7f6b9de92850b2d92ec.json100%  
+	    New File  		   18110	C:\FRNA\cache\e1a4479cf7ef888e7f83532455656922.json100%  
+	    New File  		    6580	C:\FRNA\cache\eb214d072a3306aecc67605fe461ed00.json100%  
+	    New File  		    4071	C:\FRNA\monitoring\metrics.py100%  
+	    New File  		      40	C:\FRNA\monitoring\__init__.py100%  
+	    New File  		    6853	C:\FRNA\ingestors\facebook_ingestor.py100%  
+	    New File  		    5046	C:\FRNA\ingestors\fun107_ingestor.py100%  
+	    New File  		    7610	C:\FRNA\ingestors\google_news_ingestor.py100%  
+	    New File  		   19552	C:\FRNA\ingestors\news_ingestor.py100%  
+	    New File  		   11597	C:\FRNA\ingestors\weather_ingestor.py100%  
+	    New File  		      32	C:\FRNA\ingestors\__init__.py100%  
+	    New File  		     623	C:\FRNA\backup\.gitignore100%  
+	    New File  		    1895	C:\FRNA\backup\add_article.py100%  
+	    New File  		  402867	C:\FRNA\backup\admin.py100%  
+	    New File  		     958	C:\FRNA\backup\admin_action.html100%  
+	    New File  		    9359	C:\FRNA\backup\admin_backend.py100%  
+	    New File  		    1981	C:\FRNA\backup\admin_handler.py100%  
+	    New File  		    3678	C:\FRNA\backup\ADMIN_LOGIN_INSTRUCTIONS.md100%  
+	    New File  		    2467	C:\FRNA\backup\ADMIN_README.md100%  
+	    New File  		    2900	C:\FRNA\backup\admin_server.py100%  
+	    New File  		   47889	C:\FRNA\backup\aggregator.py100%  
+	    New File  		      18	C:\FRNA\backup\backup.bat100%  
+	    New File  		    2793	C:\FRNA\backup\backup_log.txt100%  
+	    New File  		    6143	C:\FRNA\backup\cache.py100%  
+	    New File  		    1721	C:\FRNA\backup\CHANGELOG.md100%  
+	    New File  		    1768	C:\FRNA\backup\check_admin_duplicates.py100%  
+	    New File  		    1092	C:\FRNA\backup\check_articles.py100%  
+	    New File  		    1238	C:\FRNA\backup\check_duplicates.py100%  
+	    New File  		    5230	C:\FRNA\backup\clean_bad_data.py100%  
+	    New File  		    2598	C:\FRNA\backup\clean_duplicates.py100%  
+	    New File  		    1131	C:\FRNA\backup\clean_management_duplicates.py100%  
+	    New File  		    9624	C:\FRNA\backup\CODE_REVIEW.md100%  
+	    New File  		     464	C:\FRNA\backup\comprehensive_fixes.py100%  
+	    New File  		    8240	C:\FRNA\backup\config.py100%  
+	    New File  		   40294	C:\FRNA\backup\database.py100%  
+	    New File  		    4499	C:\FRNA\backup\deploy.py100%  
+	    New File  		     980	C:\FRNA\backup\enable_some_articles.py100%  
+	    New File  		   1.2 m	C:\FRNA\backup\fallriver_news.db100%  
+	    New File  		     956	C:\FRNA\backup\fast_repull.py100%  
+	    New File  		    1682	C:\FRNA\backup\fetch_more_articles.py100%  
+	    New File  		     616	C:\FRNA\backup\fix_admin_ports.py100%  
+	    New File  		    3373	C:\FRNA\backup\fix_toggle.py100%  
+	    New File  		    4630	C:\FRNA\backup\force_regenerate.py100%  
+	    New File  		    2808	C:\FRNA\backup\force_reingest.py100%  
+	    New File  		   11511	C:\FRNA\backup\JAVASCRIPT_DEBUGGING_GUIDE.md100%  
+	    New File  		       0	C:\FRNA\backup\loadTrash_func.js100%  
+	    New File  		   16064	C:\FRNA\backup\main.py100%  
+	    New File  		    1567	C:\FRNA\backup\metrics.json100%  
+	    New File  		    1777	C:\FRNA\backup\quick_fetch_rss.py100%  
+	    New File  		    1650	C:\FRNA\backup\quick_regenerate.py100%  
+	    New File  		    1512	C:\FRNA\backup\quick_repull.py100%  
+	    New File  		    1467	C:\FRNA\backup\QUICK_START.md100%  
+	    New File  		    7464	C:\FRNA\backup\README.md100%  
+	    New File  		     385	C:\FRNA\backup\requirements.txt100%  
+	    New File  		    5961	C:\FRNA\backup\scrub_database_to_02720.py100%  
+	    New File  		    3602	C:\FRNA\backup\SECURITY_FIXES.md100%  
+	    New File  		   10240	C:\FRNA\backup\serve_website.py100%  
+	    New File  		    2802	C:\FRNA\backup\setup.py100%  
+	    New File  		    2038	C:\FRNA\backup\show_live.py100%  
+	    New File  		       0	C:\FRNA\backup\simple_admin.py100%  
+	    New File  		    4318	C:\FRNA\tests\test_aggregator.py100%  
+	    New File  		    3596	C:\FRNA\tests\test_database.py100%  
+	    New File  		      53	C:\FRNA\tests\__init__.py100%  
+	    New File  		    8585	C:\FRNA\utils\ai_relevance_checker.py100%  
+	    New File  		    3704	C:\FRNA\website_output\admin.html100%  
+	    New File  		   15098	C:\FRNA\utils\bayesian_learner.py100%  
+	    New File  		   22194	C:\FRNA\utils\category_classifier.py100%  
+	    New File  		    4375	C:\FRNA\website_output\article_0.html100%  
+	    New File  		    3000	C:\FRNA\utils\image_processor.py100%  
+	    New File  		    6935	C:\FRNA\website_output\article_1.html100%  
+	    New File  		   12942	C:\FRNA\utils\relevance_calculator.py100%  
+	    New File  		   21451	C:\FRNA\website_output\events.html100%  
+	    New File  		    5639	C:\FRNA\utils\retry.py100%  
+	    New File  		  309065	C:\FRNA\website_output\index.html100%  
+	    New File  		    5094	C:\FRNA\website_output\media.html100%  
+	    New File  		      25	C:\FRNA\utils\__init__.py100%  
+	    New File  		    2631	C:\FRNA\website_output\trash.html100%  
+	    New File  		   39793	C:\FRNA\website_output\weather.html100%  
+	    New File  		  413780	C:\FRNA\__pycache__\admin.cpython-314.pyc100%  
+	    New File  		   54948	C:\FRNA\__pycache__\aggregator.cpython-314.pyc100%  
+	    New File  		    9415	C:\FRNA\__pycache__\cache.cpython-314.pyc100%  
+	    New File  		    6405	C:\FRNA\__pycache__\config.cpython-314.pyc100%  
+	    New File  		   41079	C:\FRNA\__pycache__\database.cpython-314.pyc100%  
+	    New File  		    6034	C:\FRNA\__pycache__\deploy.cpython-314.pyc100%  
+	    New File  		   11539	C:\FRNA\__pycache__\social_poster.cpython-314.pyc100%  
+	    New File  		  108841	C:\FRNA\__pycache__\website_generator.cpython-314.pyc100%  
+	    New File  		   23665	C:\FRNA\__pycache__\website_generator_scripts.cpython-314.pyc100%  
+	    New File  		    1792	C:\FRNA\__pycache__\website_generator_styles.cpython-314.pyc100%  
+	    New File  		    4719	C:\FRNA\__pycache__\zip_resolver.cpython-314.pyc100%  
+	    New File  		    3662	C:\FRNA\.cursor\plans\bayesian_learning_system.md100%  
+	    New File  		    4304	C:\FRNA\.cursor\plans\fix_zip_data_isolation.md100%  
+	    New File  		    1202	C:\FRNA\.github\workflows\ci.yml100%  
+	    New File  		    7617	C:\FRNA\monitoring\__pycache__\metrics.cpython-314.pyc100%  
+	    New File  		     174	C:\FRNA\monitoring\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		    9314	C:\FRNA\ingestors\__pycache__\facebook_ingestor.cpython-314.pyc100%  
+	    New File  		    6836	C:\FRNA\ingestors\__pycache__\fun107_ingestor.cpython-314.pyc100%  
+	    New File  		    9131	C:\FRNA\ingestors\__pycache__\google_news_ingestor.cpython-314.pyc100%  
+	    New File  		   25960	C:\FRNA\ingestors\__pycache__\news_ingestor.cpython-314.pyc100%  
+	    New File  		   12170	C:\FRNA\ingestors\__pycache__\weather_ingestor.cpython-314.pyc100%  
+	    New File  		     165	C:\FRNA\ingestors\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		     914	C:\FRNA\website_generator\templates\admin.html.j2100%  
+	    New File  		     549	C:\FRNA\website_generator\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		   10153	C:\FRNA\utils\__pycache__\ai_relevance_checker.cpython-314.pyc100%  
+	    New File  		   17307	C:\FRNA\utils\__pycache__\bayesian_learner.cpython-314.pyc100%  
+	    New File  		   25627	C:\FRNA\utils\__pycache__\category_classifier.cpython-314.pyc100%  
+	    New File  		    4328	C:\FRNA\utils\__pycache__\image_processor.cpython-314.pyc100%  
+	    New File  		   13305	C:\FRNA\utils\__pycache__\relevance_calculator.cpython-314.pyc100%  
+	    New File  		    7716	C:\FRNA\utils\__pycache__\retry.cpython-314.pyc100%  
+	    New File  		     154	C:\FRNA\utils\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		    1251	C:\FRNA\website_output\css\style.css100%  
+	    New File  		  135130	C:\FRNA\website_output\js\admin.js100%  
+	    New File  		   43817	C:\FRNA\website_output\js\article-renderer.js100%  
+	    New File  		    3077	C:\FRNA\website_output\js\categorizer.js100%  
+	    New File  		   23687	C:\FRNA\website_output\js\main.js100%  
+	    New File  		   10582	C:\FRNA\website_output\js\news-fetcher.js100%  
+	    New File  		    5725	C:\FRNA\website_output\js\stats.js100%  
+	    New File  		   13251	C:\FRNA\website_output\js\storage.js100%  
+	    New File  		    3452	C:\FRNA\website_output\js\tabs.js100%  
+	    New File  		    6408	C:\FRNA\website_output\js\weather.js100%  
+	    New File  		   10806	C:\FRNA\website_output\js\zip-router.js100%  
+	    New File  		   24010	C:\FRNA\website_output\zip_02720\events.html100%  
+	    New File  		  304986	C:\FRNA\website_output\zip_02720\index.html100%  
+	    New File  		    5094	C:\FRNA\website_output\zip_02720\media.html100%  
+	    New File  		   39030	C:\FRNA\website_output\zip_02720\weather.html100%  
+	    New File  		    2729	C:\FRNA\website_output\zip_02721\events.html100%  
+	    New File  		  255498	C:\FRNA\website_output\zip_02721\index.html100%  
+	    New File  		    2899	C:\FRNA\website_output\zip_02721\media.html100%  
+	    New File  		   37231	C:\FRNA\website_output\zip_02721\weather.html100%  
+	    New File  		    2729	C:\FRNA\website_output\zip_02842\events.html100%  
+	    New File  		  226111	C:\FRNA\website_output\zip_02842\index.html100%  
+	    New File  		    2899	C:\FRNA\website_output\zip_02842\media.html100%  
+	    New File  		   37490	C:\FRNA\website_output\zip_02842\weather.html100%  
+	    New File  		    1251	C:\FRNA\website_output\zip_02720\css\style.css100%  
+	    New File  		   19139	C:\FRNA\website_output\zip_02720\js\main.js100%  
+	    New File  		    1251	C:\FRNA\website_output\zip_02721\css\style.css100%  
+	    New File  		   19139	C:\FRNA\website_output\zip_02721\js\main.js100%  
+	    New File  		    1251	C:\FRNA\website_output\zip_02842\css\style.css100%  
+	    New File  		   19139	C:\FRNA\website_output\zip_02842\js\main.js100%  
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        34        34         1         0         0         0
+   Files :       208       208         0         0         0         0
+   Bytes :    6.44 m    6.44 m         0         0         0         0
+   Times :   0:00:02   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           80,509,976 Bytes/sec.
+   Speed :            4,606.818 MegaBytes/min.
+   Ended : Tuesday, December 9, 2025 4:05:30 PM
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Tuesday, December 9, 2025 4:06:16 PM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+ Exc Dirs : backup
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+	    New File  		     623	C:\FRNA\.gitignore  0%  100%  
+	    New File  		    1895	C:\FRNA\add_article.py100%  
+	    New File  		  402867	C:\FRNA\admin.py100%  
+	    New File  		     958	C:\FRNA\admin_action.html100%  
+	    New File  		    9359	C:\FRNA\admin_backend.py100%  
+	    New File  		    1981	C:\FRNA\admin_handler.py100%  
+	    New File  		    3678	C:\FRNA\ADMIN_LOGIN_INSTRUCTIONS.md100%  
+	    New File  		    2467	C:\FRNA\ADMIN_README.md100%  
+	    New File  		    2900	C:\FRNA\admin_server.py100%  
+	    New File  		   47889	C:\FRNA\aggregator.py100%  
+	    New File  		      81	C:\FRNA\backup.bat100%  
+	    New File  		   17690	C:\FRNA\backup_log.txt100%  
+	    New File  		    6143	C:\FRNA\cache.py100%  
+	    New File  		    1721	C:\FRNA\CHANGELOG.md100%  
+	    New File  		    1768	C:\FRNA\check_admin_duplicates.py100%  
+	    New File  		    1092	C:\FRNA\check_articles.py100%  
+	    New File  		    1238	C:\FRNA\check_duplicates.py100%  
+	    New File  		    5230	C:\FRNA\clean_bad_data.py100%  
+	    New File  		    2598	C:\FRNA\clean_duplicates.py100%  
+	    New File  		    1131	C:\FRNA\clean_management_duplicates.py100%  
+	    New File  		    9624	C:\FRNA\CODE_REVIEW.md100%  
+	    New File  		     464	C:\FRNA\comprehensive_fixes.py100%  
+	    New File  		    8240	C:\FRNA\config.py100%  
+	    New File  		   40294	C:\FRNA\database.py100%  
+	    New File  		    4499	C:\FRNA\deploy.py100%  
+	    New File  		     980	C:\FRNA\enable_some_articles.py100%  
+	    New File  		   1.2 m	C:\FRNA\fallriver_news.db100%  
+	    New File  		     956	C:\FRNA\fast_repull.py100%  
+	    New File  		    1682	C:\FRNA\fetch_more_articles.py100%  
+	    New File  		     616	C:\FRNA\fix_admin_ports.py100%  
+	    New File  		    3373	C:\FRNA\fix_toggle.py100%  
+	    New File  		    4630	C:\FRNA\force_regenerate.py100%  
+	    New File  		    2808	C:\FRNA\force_reingest.py100%  
+	    New File  		   11511	C:\FRNA\JAVASCRIPT_DEBUGGING_GUIDE.md100%  
+	    New File  		       0	C:\FRNA\loadTrash_func.js100%  
+	    New File  		   16064	C:\FRNA\main.py100%  
+	    New File  		    1567	C:\FRNA\metrics.json100%  
+	    New File  		    1777	C:\FRNA\quick_fetch_rss.py100%  
+	    New File  		    1650	C:\FRNA\quick_regenerate.py100%  
+	    New File  		    1512	C:\FRNA\quick_repull.py100%  
+	    New File  		    1467	C:\FRNA\QUICK_START.md100%  
+	    New File  		    7464	C:\FRNA\README.md100%  
+	    New File  		     385	C:\FRNA\requirements.txt100%  
+	    New File  		    5961	C:\FRNA\scrub_database_to_02720.py100%  
+	    New File  		    3602	C:\FRNA\SECURITY_FIXES.md100%  
+	    New File  		   10240	C:\FRNA\serve_website.py100%  
+	    New File  		    2802	C:\FRNA\setup.py100%  
+	    New File  		    2038	C:\FRNA\show_live.py100%  
+	    New File  		    4015	C:\FRNA\simple_admin.py100%  
+	    New File  		    9319	C:\FRNA\social_poster.py100%  
+	    New File  		   45092	C:\FRNA\Sortable.min.js100%  
+	    New File  		     169	C:\FRNA\start_admin.bat100%  
+	    New File  		      86	C:\FRNA\start_admin_debug.bat100%  
+	    New File  		      78	C:\FRNA\start_admin_fixed.bat100%  
+	    New File  		     999	C:\FRNA\start_all.bat100%  
+	    New File  		     203	C:\FRNA\start_website.bat100%  
+	    New File  		     474	C:\FRNA\test_admin.py100%  
+	    New File  		    1996	C:\FRNA\test_feedparser_dates.py100%  
+	    New File  		    1795	C:\FRNA\test_filter.py100%  
+	    New File  		    5203	C:\FRNA\test_setup.py100%  
+	    New File  		    5626	C:\FRNA\test_sources.py100%  
+	    New File  		    1925	C:\FRNA\train_bayesian_from_rejections.py100%  
+	    New File  		    5921	C:\FRNA\TRASH_PAGE_FIXES.md100%  
+	    New File  		    2688	C:\FRNA\update_article_dates.py100%  
+	    New File  		     937	C:\FRNA\WEATHER_API_SETUP.md100%  
+	    New File  		   98474	C:\FRNA\website_generator.py100%  
+	    New File  		   23882	C:\FRNA\website_generator_scripts.py100%  
+	    New File  		    1492	C:\FRNA\website_generator_styles.py100%  
+	    New File  		    3470	C:\FRNA\zip_resolver.py100%  
+	    New File  		   12958	C:\FRNA\cache\6f2f520c521f428c71cb0986aaad8ec7.json100%  
+	    New File  		     835	C:\FRNA\cache\b76707cf5fc8d7f6b9de92850b2d92ec.json100%  
+	    New File  		   18110	C:\FRNA\cache\e1a4479cf7ef888e7f83532455656922.json100%  
+	    New File  		    6580	C:\FRNA\cache\eb214d072a3306aecc67605fe461ed00.json100%  
+	    New File  		    6853	C:\FRNA\ingestors\facebook_ingestor.py100%  
+	    New File  		    5046	C:\FRNA\ingestors\fun107_ingestor.py100%  
+	    New File  		    7610	C:\FRNA\ingestors\google_news_ingestor.py100%  
+	    New File  		   19552	C:\FRNA\ingestors\news_ingestor.py100%  
+	    New File  		   11597	C:\FRNA\ingestors\weather_ingestor.py100%  
+	    New File  		      32	C:\FRNA\ingestors\__init__.py100%  
+	    New File  		    4071	C:\FRNA\monitoring\metrics.py100%  
+	    New File  		      40	C:\FRNA\monitoring\__init__.py100%  
+	    New File  		    4318	C:\FRNA\tests\test_aggregator.py100%  
+	    New File  		    3596	C:\FRNA\tests\test_database.py100%  
+	    New File  		      53	C:\FRNA\tests\__init__.py100%  
+	    New File  		    8585	C:\FRNA\utils\ai_relevance_checker.py100%  
+	    New File  		   15098	C:\FRNA\utils\bayesian_learner.py100%  
+	    New File  		   22194	C:\FRNA\utils\category_classifier.py100%  
+	    New File  		    3000	C:\FRNA\utils\image_processor.py100%  
+	    New File  		   12942	C:\FRNA\utils\relevance_calculator.py100%  
+	    New File  		    5639	C:\FRNA\utils\retry.py100%  
+	    New File  		      25	C:\FRNA\utils\__init__.py100%  
+	    New File  		    3704	C:\FRNA\website_output\admin.html100%  
+	    New File  		    4375	C:\FRNA\website_output\article_0.html100%  
+	    New File  		    6935	C:\FRNA\website_output\article_1.html100%  
+	    New File  		   21451	C:\FRNA\website_output\events.html100%  
+	    New File  		  309065	C:\FRNA\website_output\index.html100%  
+	    New File  		    5094	C:\FRNA\website_output\media.html100%  
+	    New File  		    2631	C:\FRNA\website_output\trash.html100%  
+	    New File  		   39793	C:\FRNA\website_output\weather.html100%  
+	    New File  		  413780	C:\FRNA\__pycache__\admin.cpython-314.pyc100%  
+	    New File  		   54948	C:\FRNA\__pycache__\aggregator.cpython-314.pyc100%  
+	    New File  		    9415	C:\FRNA\__pycache__\cache.cpython-314.pyc100%  
+	    New File  		    6405	C:\FRNA\__pycache__\config.cpython-314.pyc100%  
+	    New File  		   41079	C:\FRNA\__pycache__\database.cpython-314.pyc100%  
+	    New File  		    6034	C:\FRNA\__pycache__\deploy.cpython-314.pyc100%  
+	    New File  		   11539	C:\FRNA\__pycache__\social_poster.cpython-314.pyc100%  
+	    New File  		  108841	C:\FRNA\__pycache__\website_generator.cpython-314.pyc100%  
+	    New File  		   23665	C:\FRNA\__pycache__\website_generator_scripts.cpython-314.pyc100%  
+	    New File  		    1792	C:\FRNA\__pycache__\website_generator_styles.cpython-314.pyc100%  
+	    New File  		    4719	C:\FRNA\__pycache__\zip_resolver.cpython-314.pyc100%  
+	    New File  		    3662	C:\FRNA\.cursor\plans\bayesian_learning_system.md100%  
+	    New File  		    4304	C:\FRNA\.cursor\plans\fix_zip_data_isolation.md100%  
+	    New File  		    1202	C:\FRNA\.github\workflows\ci.yml100%  
+	    New File  		     914	C:\FRNA\website_generator\templates\admin.html.j2100%  
+	    New File  		    7617	C:\FRNA\monitoring\__pycache__\metrics.cpython-314.pyc100%  
+	    New File  		     174	C:\FRNA\monitoring\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		     549	C:\FRNA\website_generator\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		    9314	C:\FRNA\ingestors\__pycache__\facebook_ingestor.cpython-314.pyc100%  
+	    New File  		    6836	C:\FRNA\ingestors\__pycache__\fun107_ingestor.cpython-314.pyc100%  
+	    New File  		    9131	C:\FRNA\ingestors\__pycache__\google_news_ingestor.cpython-314.pyc100%  
+	    New File  		   25960	C:\FRNA\ingestors\__pycache__\news_ingestor.cpython-314.pyc100%  
+	    New File  		   12170	C:\FRNA\ingestors\__pycache__\weather_ingestor.cpython-314.pyc100%  
+	    New File  		     165	C:\FRNA\ingestors\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		   10153	C:\FRNA\utils\__pycache__\ai_relevance_checker.cpython-314.pyc100%  
+	    New File  		   17307	C:\FRNA\utils\__pycache__\bayesian_learner.cpython-314.pyc100%  
+	    New File  		   25627	C:\FRNA\utils\__pycache__\category_classifier.cpython-314.pyc100%  
+	    New File  		    4328	C:\FRNA\utils\__pycache__\image_processor.cpython-314.pyc100%  
+	    New File  		   13305	C:\FRNA\utils\__pycache__\relevance_calculator.cpython-314.pyc100%  
+	    New File  		    7716	C:\FRNA\utils\__pycache__\retry.cpython-314.pyc100%  
+	    New File  		     154	C:\FRNA\utils\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		  135130	C:\FRNA\website_output\js\admin.js100%  
+	    New File  		   43817	C:\FRNA\website_output\js\article-renderer.js100%  
+	    New File  		    3077	C:\FRNA\website_output\js\categorizer.js100%  
+	    New File  		   23687	C:\FRNA\website_output\js\main.js100%  
+	    New File  		   10582	C:\FRNA\website_output\js\news-fetcher.js100%  
+	    New File  		    5725	C:\FRNA\website_output\js\stats.js100%  
+	    New File  		   13251	C:\FRNA\website_output\js\storage.js100%  
+	    New File  		    3452	C:\FRNA\website_output\js\tabs.js100%  
+	    New File  		    6408	C:\FRNA\website_output\js\weather.js100%  
+	    New File  		   10806	C:\FRNA\website_output\js\zip-router.js100%  
+	    New File  		    1251	C:\FRNA\website_output\css\style.css100%  
+	    New File  		    2729	C:\FRNA\website_output\zip_02721\events.html100%  
+	    New File  		  255498	C:\FRNA\website_output\zip_02721\index.html100%  
+	    New File  		    2899	C:\FRNA\website_output\zip_02721\media.html100%  
+	    New File  		   37231	C:\FRNA\website_output\zip_02721\weather.html100%  
+	    New File  		   24010	C:\FRNA\website_output\zip_02720\events.html100%  
+	    New File  		  304986	C:\FRNA\website_output\zip_02720\index.html100%  
+	    New File  		    5094	C:\FRNA\website_output\zip_02720\media.html100%  
+	    New File  		   39030	C:\FRNA\website_output\zip_02720\weather.html100%  
+	    New File  		    2729	C:\FRNA\website_output\zip_02842\events.html100%  
+	    New File  		  226111	C:\FRNA\website_output\zip_02842\index.html100%  
+	    New File  		    2899	C:\FRNA\website_output\zip_02842\media.html100%  
+	    New File  		   37490	C:\FRNA\website_output\zip_02842\weather.html100%  
+	    New File  		    1251	C:\FRNA\website_output\zip_02721\css\style.css100%  
+	    New File  		   19139	C:\FRNA\website_output\zip_02721\js\main.js100%  
+	    New File  		    1251	C:\FRNA\website_output\zip_02720\css\style.css100%  
+	    New File  		    1251	C:\FRNA\website_output\zip_02842\css\style.css100%  
+	    New File  		   19139	C:\FRNA\website_output\zip_02720\js\main.js100%  
+	    New File  		   19139	C:\FRNA\website_output\zip_02842\js\main.js100%  
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        34        33         2         0         0         0
+   Files :       159       159         0         0         0         0
+   Bytes :    4.61 m    4.61 m         0         0         0         0
+   Times :   0:00:01   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           84,832,280 Bytes/sec.
+   Speed :            4,854.142 MegaBytes/min.
+   Ended : Tuesday, December 9, 2025 4:06:16 PM
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Tuesday, December 9, 2025 6:08:51 PM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+ Exc Dirs : backup
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+	    New File  		     623	C:\FRNA\.gitignore100%  
+	    New File  		    1895	C:\FRNA\add_article.py  0%  100%  
+	    New File  		  402602	C:\FRNA\admin.py100%  
+	    New File  		     958	C:\FRNA\admin_action.html100%  
+	    New File  		    9359	C:\FRNA\admin_backend.py100%  
+	    New File  		    1981	C:\FRNA\admin_handler.py100%  
+	    New File  		    3678	C:\FRNA\ADMIN_LOGIN_INSTRUCTIONS.md100%  
+	    New File  		    2467	C:\FRNA\ADMIN_README.md100%  
+	    New File  		    2900	C:\FRNA\admin_server.py100%  
+	    New File  		   47889	C:\FRNA\aggregator.py100%  
+	    New File  		      81	C:\FRNA\backup.bat100%  
+	    New File  		   30013	C:\FRNA\backup_log.txt100%  
+	    New File  		    6143	C:\FRNA\cache.py100%  
+	    New File  		    1721	C:\FRNA\CHANGELOG.md100%  
+	    New File  		    1768	C:\FRNA\check_admin_duplicates.py100%  
+	    New File  		    1092	C:\FRNA\check_articles.py100%  
+	    New File  		    1238	C:\FRNA\check_duplicates.py100%  
+	    New File  		    5230	C:\FRNA\clean_bad_data.py100%  
+	    New File  		    2598	C:\FRNA\clean_duplicates.py100%  
+	    New File  		    1131	C:\FRNA\clean_management_duplicates.py100%  
+	    New File  		    9624	C:\FRNA\CODE_REVIEW.md100%  
+	    New File  		     464	C:\FRNA\comprehensive_fixes.py100%  
+	    New File  		    8240	C:\FRNA\config.py100%  
+	    New File  		   40294	C:\FRNA\database.py100%  
+	    New File  		    4499	C:\FRNA\deploy.py100%  
+	    New File  		     980	C:\FRNA\enable_some_articles.py100%  
+	    New File  		   1.2 m	C:\FRNA\fallriver_news.db100%  
+	    New File  		     956	C:\FRNA\fast_repull.py100%  
+	    New File  		    1682	C:\FRNA\fetch_more_articles.py100%  
+	    New File  		     616	C:\FRNA\fix_admin_ports.py100%  
+	    New File  		    3373	C:\FRNA\fix_toggle.py100%  
+	    New File  		    4630	C:\FRNA\force_regenerate.py100%  
+	    New File  		    2808	C:\FRNA\force_reingest.py100%  
+	    New File  		   11511	C:\FRNA\JAVASCRIPT_DEBUGGING_GUIDE.md100%  
+	    New File  		       0	C:\FRNA\loadTrash_func.js100%  
+	    New File  		   16064	C:\FRNA\main.py100%  
+	    New File  		    1567	C:\FRNA\metrics.json100%  
+	    New File  		    1777	C:\FRNA\quick_fetch_rss.py100%  
+	    New File  		    1650	C:\FRNA\quick_regenerate.py100%  
+	    New File  		    1512	C:\FRNA\quick_repull.py100%  
+	    New File  		    1467	C:\FRNA\QUICK_START.md100%  
+	    New File  		    7464	C:\FRNA\README.md100%  
+	    New File  		     385	C:\FRNA\requirements.txt100%  
+	    New File  		    5961	C:\FRNA\scrub_database_to_02720.py100%  
+	    New File  		    3602	C:\FRNA\SECURITY_FIXES.md100%  
+	    New File  		   10240	C:\FRNA\serve_website.py100%  
+	    New File  		    2802	C:\FRNA\setup.py100%  
+	    New File  		    2038	C:\FRNA\show_live.py100%  
+	    New File  		    4015	C:\FRNA\simple_admin.py100%  
+	    New File  		    9319	C:\FRNA\social_poster.py100%  
+	    New File  		   45092	C:\FRNA\Sortable.min.js100%  
+	    New File  		     169	C:\FRNA\start_admin.bat100%  
+	    New File  		     474	C:\FRNA\test_admin.py100%  
+	    New File  		    1996	C:\FRNA\test_feedparser_dates.py100%  
+	    New File  		    1795	C:\FRNA\test_filter.py100%  
+	    New File  		    5203	C:\FRNA\test_setup.py100%  
+	    New File  		    5626	C:\FRNA\test_sources.py100%  
+	    New File  		    1925	C:\FRNA\train_bayesian_from_rejections.py100%  
+	    New File  		    5921	C:\FRNA\TRASH_PAGE_FIXES.md100%  
+	    New File  		    2688	C:\FRNA\update_article_dates.py100%  
+	    New File  		     937	C:\FRNA\WEATHER_API_SETUP.md100%  
+	    New File  		   98474	C:\FRNA\website_generator.py100%  
+	    New File  		   23882	C:\FRNA\website_generator_scripts.py100%  
+	    New File  		    1492	C:\FRNA\website_generator_styles.py100%  
+	    New File  		    3470	C:\FRNA\zip_resolver.py100%  
+	    New File  		   43390	C:\FRNA\admin\routes.py100%  
+	    New File  		   26417	C:\FRNA\admin\utils.py100%  
+	    New File  		    4081	C:\FRNA\admin\__init__.py100%  
+	    New File  		   12958	C:\FRNA\cache\6f2f520c521f428c71cb0986aaad8ec7.json100%  
+	    New File  		     834	C:\FRNA\cache\b76707cf5fc8d7f6b9de92850b2d92ec.json100%  
+	    New File  		   18110	C:\FRNA\cache\e1a4479cf7ef888e7f83532455656922.json100%  
+	    New File  		    6580	C:\FRNA\cache\eb214d072a3306aecc67605fe461ed00.json100%  
+	    New File  		    6853	C:\FRNA\ingestors\facebook_ingestor.py100%  
+	    New File  		    5046	C:\FRNA\ingestors\fun107_ingestor.py100%  
+	    New File  		    7610	C:\FRNA\ingestors\google_news_ingestor.py100%  
+	    New File  		   19552	C:\FRNA\ingestors\news_ingestor.py100%  
+	    New File  		   11597	C:\FRNA\ingestors\weather_ingestor.py100%  
+	    New File  		      32	C:\FRNA\ingestors\__init__.py100%  
+	    New File  		    4071	C:\FRNA\monitoring\metrics.py100%  
+	    New File  		      40	C:\FRNA\monitoring\__init__.py100%  
+	    New File  		    4318	C:\FRNA\tests\test_aggregator.py100%  
+	    New File  		    3596	C:\FRNA\tests\test_database.py100%  
+	    New File  		      53	C:\FRNA\tests\__init__.py100%  
+	    New File  		    8585	C:\FRNA\utils\ai_relevance_checker.py100%  
+	    New File  		   15098	C:\FRNA\utils\bayesian_learner.py100%  
+	    New File  		   22194	C:\FRNA\utils\category_classifier.py100%  
+	    New File  		    3000	C:\FRNA\utils\image_processor.py100%  
+	    New File  		   12942	C:\FRNA\utils\relevance_calculator.py100%  
+	    New File  		    5639	C:\FRNA\utils\retry.py100%  
+	    New File  		      25	C:\FRNA\utils\__init__.py100%  
+	    New File  		    3704	C:\FRNA\website_output\admin.html100%  
+	    New File  		    4375	C:\FRNA\website_output\article_0.html100%  
+	    New File  		    6935	C:\FRNA\website_output\article_1.html100%  
+	    New File  		   24010	C:\FRNA\website_output\events.html100%  
+	    New File  		  306527	C:\FRNA\website_output\index.html100%  
+	    New File  		    5094	C:\FRNA\website_output\media.html100%  
+	    New File  		    2633	C:\FRNA\website_output\trash.html100%  
+	    New File  		   39362	C:\FRNA\website_output\weather.html100%  
+	    New File  		  414188	C:\FRNA\__pycache__\admin.cpython-314.pyc100%  
+	    New File  		   54948	C:\FRNA\__pycache__\aggregator.cpython-314.pyc100%  
+	    New File  		    9415	C:\FRNA\__pycache__\cache.cpython-314.pyc100%  
+	    New File  		    6405	C:\FRNA\__pycache__\config.cpython-314.pyc100%  
+	    New File  		   41079	C:\FRNA\__pycache__\database.cpython-314.pyc100%  
+	    New File  		    6034	C:\FRNA\__pycache__\deploy.cpython-314.pyc100%  
+	    New File  		   11539	C:\FRNA\__pycache__\social_poster.cpython-314.pyc100%  
+	    New File  		  108841	C:\FRNA\__pycache__\website_generator.cpython-314.pyc100%  
+	    New File  		   23665	C:\FRNA\__pycache__\website_generator_scripts.cpython-314.pyc100%  
+	    New File  		    1792	C:\FRNA\__pycache__\website_generator_styles.cpython-314.pyc100%  
+	    New File  		    4719	C:\FRNA\__pycache__\zip_resolver.cpython-314.pyc100%  
+	    New File  		    3662	C:\FRNA\.cursor\plans\bayesian_learning_system.md100%  
+	    New File  		    4304	C:\FRNA\.cursor\plans\fix_zip_data_isolation.md100%  
+	    New File  		    1202	C:\FRNA\.github\workflows\ci.yml100%  
+	    New File  		    7617	C:\FRNA\monitoring\__pycache__\metrics.cpython-314.pyc100%  
+	    New File  		     174	C:\FRNA\monitoring\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		     914	C:\FRNA\website_generator\templates\admin.html.j2100%  
+	    New File  		     549	C:\FRNA\website_generator\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		   55540	C:\FRNA\admin\__pycache__\routes.cpython-314.pyc100%  
+	    New File  		   31005	C:\FRNA\admin\__pycache__\utils.cpython-314.pyc100%  
+	    New File  		    6192	C:\FRNA\admin\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		    9314	C:\FRNA\ingestors\__pycache__\facebook_ingestor.cpython-314.pyc100%  
+	    New File  		    6836	C:\FRNA\ingestors\__pycache__\fun107_ingestor.cpython-314.pyc100%  
+	    New File  		    9131	C:\FRNA\ingestors\__pycache__\google_news_ingestor.cpython-314.pyc100%  
+	    New File  		   25960	C:\FRNA\ingestors\__pycache__\news_ingestor.cpython-314.pyc100%  
+	    New File  		   12170	C:\FRNA\ingestors\__pycache__\weather_ingestor.cpython-314.pyc100%  
+	    New File  		     165	C:\FRNA\ingestors\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		   10153	C:\FRNA\utils\__pycache__\ai_relevance_checker.cpython-314.pyc100%  
+	    New File  		   17307	C:\FRNA\utils\__pycache__\bayesian_learner.cpython-314.pyc100%  
+	    New File  		   25627	C:\FRNA\utils\__pycache__\category_classifier.cpython-314.pyc100%  
+	    New File  		    4328	C:\FRNA\utils\__pycache__\image_processor.cpython-314.pyc100%  
+	    New File  		   13305	C:\FRNA\utils\__pycache__\relevance_calculator.cpython-314.pyc100%  
+	    New File  		    7716	C:\FRNA\utils\__pycache__\retry.cpython-314.pyc100%  
+	    New File  		     154	C:\FRNA\utils\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		    5727	C:\FRNA\admin\templates\admin\articles.html100%  
+	    New File  		   18814	C:\FRNA\admin\templates\admin\base.html100%  
+	    New File  		    2258	C:\FRNA\admin\templates\admin\categories.html100%  
+	    New File  		    2089	C:\FRNA\admin\templates\admin\keywords.html100%  
+	    New File  		    4312	C:\FRNA\admin\templates\admin\login.html100%  
+	    New File  		    4128	C:\FRNA\admin\templates\admin\main_dashboard.html100%  
+	    New File  		   12844	C:\FRNA\admin\templates\admin\relevance.html100%  
+	    New File  		    3368	C:\FRNA\admin\templates\admin\settings.html100%  
+	    New File  		    2975	C:\FRNA\admin\templates\admin\sources.html100%  
+	    New File  		    3407	C:\FRNA\admin\templates\admin\stats.html100%  
+	    New File  		    1494	C:\FRNA\admin\templates\admin\trash.html100%  
+	    New File  		   55814	C:\FRNA\admin\static\js\admin.js100%  
+	    New File  		    1251	C:\FRNA\website_output\css\style.css100%  
+	    New File  		  135535	C:\FRNA\website_output\js\admin.js100%  
+	    New File  		   43817	C:\FRNA\website_output\js\article-renderer.js100%  
+	    New File  		    3077	C:\FRNA\website_output\js\categorizer.js100%  
+	    New File  		   23687	C:\FRNA\website_output\js\main.js100%  
+	    New File  		   10582	C:\FRNA\website_output\js\news-fetcher.js100%  
+	    New File  		    5725	C:\FRNA\website_output\js\stats.js100%  
+	    New File  		   13251	C:\FRNA\website_output\js\storage.js100%  
+	    New File  		    3452	C:\FRNA\website_output\js\tabs.js100%  
+	    New File  		    6408	C:\FRNA\website_output\js\weather.js100%  
+	    New File  		   10806	C:\FRNA\website_output\js\zip-router.js100%  
+	    New File  		   24010	C:\FRNA\website_output\zip_02720\events.html100%  
+	    New File  		  304986	C:\FRNA\website_output\zip_02720\index.html100%  
+	    New File  		    5094	C:\FRNA\website_output\zip_02720\media.html100%  
+	    New File  		   39030	C:\FRNA\website_output\zip_02720\weather.html100%  
+	    New File  		    2729	C:\FRNA\website_output\zip_02721\events.html100%  
+	    New File  		  255498	C:\FRNA\website_output\zip_02721\index.html100%  
+	    New File  		    2899	C:\FRNA\website_output\zip_02721\media.html100%  
+	    New File  		   37231	C:\FRNA\website_output\zip_02721\weather.html100%  
+	    New File  		    2729	C:\FRNA\website_output\zip_02842\events.html100%  
+	    New File  		  226111	C:\FRNA\website_output\zip_02842\index.html100%  
+	    New File  		    2899	C:\FRNA\website_output\zip_02842\media.html100%  
+	    New File  		   37490	C:\FRNA\website_output\zip_02842\weather.html100%  
+	    New File  		    1251	C:\FRNA\website_output\zip_02720\css\style.css100%  
+	    New File  		   19139	C:\FRNA\website_output\zip_02720\js\main.js100%  
+	    New File  		   19139	C:\FRNA\website_output\zip_02721\js\main.js100%  
+	    New File  		    1251	C:\FRNA\website_output\zip_02721\css\style.css100%  
+	    New File  		    1251	C:\FRNA\website_output\zip_02842\css\style.css100%  
+	    New File  		   19139	C:\FRNA\website_output\zip_02842\js\main.js100%  
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        40        39         2         0         0         0
+   Files :       173       173         0         0         0         0
+   Bytes :    4.92 m    4.92 m         0         0         0         0
+   Times :   0:00:01   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           88,949,362 Bytes/sec.
+   Speed :            5,089.723 MegaBytes/min.
+   Ended : Tuesday, December 9, 2025 6:08:51 PM
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Tuesday, December 9, 2025 6:19:27 PM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+ Exc Dirs : backup
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+	    Newer     		   43437	C:\FRNA\backup_log.txt100%  
+	    Newer     		    8929	C:\FRNA\config.py100%  
+	    Newer     		   1.2 m	C:\FRNA\fallriver_news.db100%  
+	    Newer     		  101728	C:\FRNA\website_generator.py100%  
+	    Newer     		   46577	C:\FRNA\admin\routes.py100%  
+	    Newer     		   28171	C:\FRNA\admin\utils.py100%  
+	    Newer     		    4146	C:\FRNA\admin\__init__.py100%  
+	    Newer     		   24010	C:\FRNA\website_output\events.html100%  
+	    Newer     		  305373	C:\FRNA\website_output\index.html100%  
+	    Newer     		    5094	C:\FRNA\website_output\media.html100%  
+	    Newer     		   39926	C:\FRNA\website_output\weather.html100%  
+	    Newer     		     835	C:\FRNA\cache\b76707cf5fc8d7f6b9de92850b2d92ec.json100%  
+	    Newer     		    6804	C:\FRNA\__pycache__\config.cpython-314.pyc100%  
+	    Newer     		    1251	C:\FRNA\website_output\css\style.css100%  
+	    Newer     		   23687	C:\FRNA\website_output\js\main.js100%  
+	    Newer     		   59197	C:\FRNA\admin\__pycache__\routes.cpython-314.pyc100%  
+	    Newer     		   32663	C:\FRNA\admin\__pycache__\utils.cpython-314.pyc100%  
+	    Newer     		    6265	C:\FRNA\admin\__pycache__\__init__.cpython-314.pyc100%  
+	    Newer     		   60668	C:\FRNA\admin\static\js\admin.js100%  
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        40        39        40         0         0         0
+   Files :       173        19       154         0         0         0
+   Bytes :    4.96 m    2.03 m    2.92 m         0         0         0
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           237,572,555 Bytes/sec.
+   Speed :            13,594.011 MegaBytes/min.
+   Ended : Tuesday, December 9, 2025 6:19:27 PM
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Tuesday, December 9, 2025 7:30:18 PM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+ Exc Dirs : backup
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+	    Newer     		  404632	C:\FRNA\admin.py100%  
+	    Newer     		    4135	C:\FRNA\ADMIN_LOGIN_INSTRUCTIONS.md100%  
+	    Newer     		    2768	C:\FRNA\ADMIN_README.md100%  
+	    Newer     		   45879	C:\FRNA\backup_log.txt  0%  100%  
+	    Newer     		    8929	C:\FRNA\config.py100%  
+	    Newer     		   1.5 m	C:\FRNA\fallriver_news.db
+	  *EXTRA File 		    2089	C:\FRNA\backup\admin\templates\admin\keywords.html100%  
+	    Newer     		    1183	C:\FRNA\metrics.json100%  
+	    New File  		     195	C:\FRNA\start_website.ps1100%  
+	    Newer     		   97171	C:\FRNA\website_generator.py100%  
+	    Newer     		   24713	C:\FRNA\website_generator_scripts.py100%  
+	    Newer     		    2188	C:\FRNA\website_generator_styles.py100%  
+	  *EXTRA File 		   12958	C:\FRNA\backup\cache\6f2f520c521f428c71cb0986aaad8ec7.json
+	  *EXTRA File 		   18110	C:\FRNA\backup\cache\e1a4479cf7ef888e7f83532455656922.json
+	  *EXTRA File 		    6580	C:\FRNA\backup\cache\eb214d072a3306aecc67605fe461ed00.json
+	    Newer     		   62465	C:\FRNA\admin\routes.py100%  
+	    Newer     		   32707	C:\FRNA\admin\utils.py100%  
+	    Newer     		    4562	C:\FRNA\admin\__init__.py100%  
+	    Newer     		   23681	C:\FRNA\utils\category_classifier.py100%  
+	    Newer     		   79251	C:\FRNA\admin\static\js\admin.js100%  
+	    Newer     		   73989	C:\FRNA\admin\__pycache__\routes.cpython-314.pyc100%  
+	    Newer     		   36310	C:\FRNA\admin\__pycache__\utils.cpython-314.pyc100%  
+	    Newer     		   26777	C:\FRNA\utils\__pycache__\category_classifier.cpython-314.pyc100%  
+	    Newer     		   18644	C:\FRNA\admin\templates\admin\base.html100%  
+	    Newer     		    3623	C:\FRNA\admin\templates\admin\categories.html100%  
+	    Newer     		  197073	C:\FRNA\website_output\index.html100%  
+	    Newer     		  415892	C:\FRNA\__pycache__\admin.cpython-314.pyc100%  
+	    Newer     		    6804	C:\FRNA\__pycache__\config.cpython-314.pyc100%  
+	    Newer     		  102875	C:\FRNA\__pycache__\website_generator.cpython-314.pyc100%  
+	    Newer     		   24478	C:\FRNA\__pycache__\website_generator_scripts.cpython-314.pyc100%  
+	    Newer     		    2451	C:\FRNA\__pycache__\website_generator_styles.cpython-314.pyc100%  
+	    Newer     		     835	C:\FRNA\cache\b76707cf5fc8d7f6b9de92850b2d92ec.json100%  
+	    Newer     		    1947	C:\FRNA\website_output\css\style.css100%  
+	    Newer     		   24518	C:\FRNA\website_output\js\main.js100%  
+	    New File  		  143888	C:\FRNA\website_output\category\business.html100%  
+	    New File  		  130657	C:\FRNA\website_output\category\crime.html100%  
+	    New File  		  137353	C:\FRNA\website_output\category\events.html100%  
+	    New File  		   62106	C:\FRNA\website_output\category\food.html100%  
+	    New File  		  404734	C:\FRNA\website_output\category\local-news.html100%  
+	    New File  		  102084	C:\FRNA\website_output\category\obituaries.html100%  
+	    New File  		  119328	C:\FRNA\website_output\category\schools.html100%  
+	    New File  		  191964	C:\FRNA\website_output\category\sports.html100%  
+	    New File  		   60677	C:\FRNA\website_output\category\weather.html100%  
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        41        40        40         0         0         0
+   Files :       179        39       140         0         0         4
+   Bytes :    6.41 m    4.46 m    1.95 m         0         0    38.8 k
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           390,075,500 Bytes/sec.
+   Speed :            22,320.299 MegaBytes/min.
+   Ended : Tuesday, December 9, 2025 7:30:18 PM
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Tuesday, December 9, 2025 7:56:07 PM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+ Exc Dirs : backup
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+	    New File  		    2168	C:\FRNA\.env100%  
+	    New File  		    2141	C:\FRNA\.env.example100%  
+	    Newer     		  404789	C:\FRNA\admin.py
+	  *EXTRA File 		    2089	C:\FRNA\backup\admin\templates\admin\keywords.html100%  
+	    Newer     		   50194	C:\FRNA\backup_log.txt100%  
+	    Newer     		   1.5 m	C:\FRNA\fallriver_news.db
+	  *EXTRA File 		   12958	C:\FRNA\backup\cache\6f2f520c521f428c71cb0986aaad8ec7.json
+	  *EXTRA File 		   18110	C:\FRNA\backup\cache\e1a4479cf7ef888e7f83532455656922.json
+	  *EXTRA File 		    6580	C:\FRNA\backup\cache\eb214d072a3306aecc67605fe461ed00.json100%  
+	    Newer     		     193	C:\FRNA\start_admin.bat100%  
+	    Newer     		   97697	C:\FRNA\website_generator.py100%  
+	    Newer     		   32808	C:\FRNA\admin\utils.py100%  
+	    Newer     		    4656	C:\FRNA\admin\__init__.py100%  
+	    Newer     		   11994	C:\FRNA\ingestors\weather_ingestor.py100%  
+	    Newer     		   77134	C:\FRNA\admin\static\js\admin.js100%  
+	    Newer     		   73925	C:\FRNA\admin\__pycache__\routes.cpython-314.pyc100%  
+	    Newer     		    6673	C:\FRNA\admin\__pycache__\__init__.cpython-314.pyc100%  
+	    Newer     		   12969	C:\FRNA\ingestors\__pycache__\weather_ingestor.cpython-314.pyc100%  
+	    Newer     		  198533	C:\FRNA\website_output\index.html100%  
+	    Newer     		  103501	C:\FRNA\__pycache__\website_generator.cpython-314.pyc100%  
+	    Newer     		     833	C:\FRNA\cache\b76707cf5fc8d7f6b9de92850b2d92ec.json100%  
+	    Newer     		  131944	C:\FRNA\website_output\category\business.html100%  
+	    Newer     		   94402	C:\FRNA\website_output\category\crime.html100%  
+	    Newer     		  103940	C:\FRNA\website_output\category\events.html100%  
+	    Newer     		   49267	C:\FRNA\website_output\category\food.html100%  
+	    Newer     		  328173	C:\FRNA\website_output\category\local-news.html100%  
+	    Newer     		   89906	C:\FRNA\website_output\category\obituaries.html100%  
+	    Newer     		   99527	C:\FRNA\website_output\category\schools.html100%  
+	    Newer     		  157918	C:\FRNA\website_output\category\sports.html100%  
+	    Newer     		   60827	C:\FRNA\website_output\category\weather.html100%  
+	    Newer     		   24518	C:\FRNA\website_output\js\main.js100%  
+	    Newer     		    1947	C:\FRNA\website_output\css\style.css100%  
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        41        40        41         0         0         0
+   Files :       181        28       153         0         0         4
+   Bytes :    6.25 m    3.69 m    2.55 m         0         0    38.8 k
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           322,772,083 Bytes/sec.
+   Speed :            18,469.166 MegaBytes/min.
+   Ended : Tuesday, December 9, 2025 7:56:07 PM
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Tuesday, December 9, 2025 8:38:56 PM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+ Exc Dirs : backup
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+	    Newer     		  405179	C:\FRNA\admin.py100%  
+	    Newer     		   53675	C:\FRNA\backup_log.txt100%  
+	    Newer     		   1.6 m	C:\FRNA\fallriver_news.db100%  
+	    Newer     		  102300	C:\FRNA\website_generator.py100%  
+	    Newer     		   25442	C:\FRNA\website_generator_scripts.py100%  
+
+	  *EXTRA File 		    2089	C:\FRNA\backup\admin\templates\admin\keywords.html	    Newer     		    2416	C:\FRNA\website_generator_styles.py100%  
+	    Newer     		   35290	C:\FRNA\admin\utils.py100%  
+	    Newer     		  216360	C:\FRNA\website_output\index.html100%  
+	    Newer     		   13549	C:\FRNA\cache\6f2f520c521f428c71cb0986aaad8ec7.json100%  
+	    Newer     		     835	C:\FRNA\cache\b76707cf5fc8d7f6b9de92850b2d92ec.json100%  
+	    Newer     		   19018	C:\FRNA\cache\e1a4479cf7ef888e7f83532455656922.json100%  
+	    Newer     		    6580	C:\FRNA\cache\eb214d072a3306aecc67605fe461ed00.json100%  
+	    Newer     		   24518	C:\FRNA\website_output\js\main.js100%  
+	    Newer     		  131819	C:\FRNA\website_output\category\business.html100%  
+	    Newer     		   90704	C:\FRNA\website_output\category\crime.html100%  
+	    Newer     		  103757	C:\FRNA\website_output\category\events.html100%  
+	    Newer     		   49087	C:\FRNA\website_output\category\food.html100%  
+	    Newer     		  324095	C:\FRNA\website_output\category\local-news.html100%  
+	    Newer     		   89862	C:\FRNA\website_output\category\obituaries.html100%  
+	    Newer     		   99404	C:\FRNA\website_output\category\schools.html100%  
+	    Newer     		  158510	C:\FRNA\website_output\category\sports.html100%  
+	    Newer     		    1947	C:\FRNA\website_output\css\style.css100%  
+	    Newer     		   77427	C:\FRNA\admin\static\js\admin.js100%  
+	    New File  		    6263	C:\FRNA\website_generator\utils.py100%  
+	    New File  		     870	C:\FRNA\website_generator\__init__.py100%  
+	    Newer     		   12676	C:\FRNA\ingestors\__pycache__\weather_ingestor.cpython-314.pyc100%  
+	    Newer     		    6823	C:\FRNA\admin\templates\admin\categories.html100%  
+	    Newer     		   15895	C:\FRNA\admin\templates\admin\relevance.html100%  
+	    Newer     		    5716	C:\FRNA\admin\templates\admin\stats.html100%  
+	    Newer     		  106114	C:\FRNA\__pycache__\website_generator.cpython-314.pyc100%  
+	    Newer     		   26785	C:\FRNA\utils\__pycache__\category_classifier.cpython-314.pyc100%  
+	    Newer     		   38420	C:\FRNA\admin\__pycache__\utils.cpython-314.pyc100%  
+	    New File  		   21628	C:\FRNA\website_generator\templates\category.html.j2100%  
+	    New File  		   28881	C:\FRNA\website_generator\templates\index.html.j2100%  
+	    Newer     		     966	C:\FRNA\website_generator\__pycache__\__init__.cpython-314.pyc100%  
+	    New File  		    2465	C:\FRNA\website_generator\static\css\styles.py100%  
+	    New File  		   25491	C:\FRNA\website_generator\static\js\scripts.py100%  
+	    New File  		   25244	C:\FRNA\website_generator\static\js\__pycache__\scripts.cpython-314.pyc100%  
+	    New File  		    2723	C:\FRNA\website_generator\static\css\__pycache__\styles.cpython-314.pyc100%  
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        47        46        41         0         0         0
+   Files :       192        39       153         0         0         1
+   Bytes :    6.45 m    3.85 m    2.60 m         0         0     2.0 k
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           336,507,833 Bytes/sec.
+   Speed :            19,255.133 MegaBytes/min.
+   Ended : Tuesday, December 9, 2025 8:38:56 PM
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Wednesday, December 10, 2025 4:44:52 AM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+ Exc Dirs : backup
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+	    Newer     		  409857	C:\FRNA\admin.py
