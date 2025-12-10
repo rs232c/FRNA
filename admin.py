@@ -2015,24 +2015,59 @@ def reject_article():
     row = cursor.fetchone()
     display_order = row[0] if row else article_id
     
+    # Calculate relevance tags if manually rejecting
+    reject_reason = None
+    if rejected and article_data:
+        try:
+            from utils.relevance_calculator import calculate_relevance_score_with_tags
+            relevance_score, tag_info = calculate_relevance_score_with_tags(
+                article_data, 
+                zip_code=zip_code
+            )
+            
+            # Build reason with tag information
+            reason_parts = ["Manually rejected"]
+            if tag_info.get('matched') or tag_info.get('missing'):
+                if tag_info.get('matched'):
+                    # Limit to first 5 matched tags to avoid overly long reasons
+                    matched_display = tag_info['matched'][:5]
+                    reason_parts.append(f"Matched: {', '.join(matched_display)}")
+                if tag_info.get('missing'):
+                    reason_parts.append(f"Missing: {', '.join(tag_info['missing'])}")
+            
+            reject_reason = " | ".join(reason_parts)
+            logger.info(f"Calculated tags for manual rejection of article {article_id}: {len(tag_info.get('matched', []))} matched, {len(tag_info.get('missing', []))} missing")
+        except Exception as e:
+            logger.warning(f"Could not calculate tags for manual rejection: {e}")
+            reject_reason = "Manually rejected"
+    elif rejected:
+        reject_reason = "Manually rejected"
+    
     # Check if entry exists for this zip
     cursor.execute('SELECT id FROM article_management WHERE article_id = ? AND zip_code = ?', (article_id, zip_code))
     existing = cursor.fetchone()
+    
+    # Ensure auto_reject_reason column exists
+    try:
+        cursor.execute('ALTER TABLE article_management ADD COLUMN auto_reject_reason TEXT')
+        conn.commit()
+    except:
+        pass  # Column already exists
     
     if existing:
         # Update existing entry - preserve other columns like is_top_story
         cursor.execute('''
             UPDATE article_management 
-            SET enabled = ?, display_order = ?, is_rejected = ?
+            SET enabled = ?, display_order = ?, is_rejected = ?, auto_reject_reason = ?
             WHERE article_id = ? AND zip_code = ?
-        ''', (0 if rejected else 1, display_order, 1 if rejected else 0, article_id, zip_code))
+        ''', (0 if rejected else 1, display_order, 1 if rejected else 0, reject_reason, article_id, zip_code))
         logger.info(f"Updated article_management for article {article_id} (zip {zip_code}): rejected={rejected}")
     else:
         # Insert new entry with zip_code
         cursor.execute('''
-            INSERT INTO article_management (article_id, enabled, display_order, is_rejected, zip_code)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (article_id, 0 if rejected else 1, display_order, 1 if rejected else 0, zip_code))
+            INSERT INTO article_management (article_id, enabled, display_order, is_rejected, auto_reject_reason, zip_code)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (article_id, 0 if rejected else 1, display_order, 1 if rejected else 0, reject_reason, zip_code))
         logger.info(f"Inserted new article_management for article {article_id} (zip {zip_code}): rejected={rejected}")
     
     conn.commit()

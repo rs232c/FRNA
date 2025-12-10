@@ -610,12 +610,72 @@ function filterTrashArticles(filter, searchTerm) {
         const relevanceColor = relevanceScore !== 'N/A' && relevanceScore >= 50 ? '#4caf50' : 
             (relevanceScore !== 'N/A' && relevanceScore >= 30 ? '#ff9800' : '#888');
         
-        // Build rejection reason display for auto-filtered articles
+        // Build rejection reason display for both auto-filtered and manually rejected articles
         let rejectionReasonHtml = '';
-        if (isAuto && article.auto_reject_reason) {
-            const safeReason = escapeHtml(article.auto_reject_reason);
-            rejectionReasonHtml = '<div style="font-size: 0.85rem; color: #ff9800; margin-top: 0.5rem; padding: 0.5rem; background: rgba(255, 152, 0, 0.1); border-left: 3px solid #ff9800; border-radius: 4px;">' +
-                '<strong>🤖 Auto-filter reason:</strong> ' + safeReason +
+        if (article.auto_reject_reason) {
+            const reason = article.auto_reject_reason;
+            const safeReason = escapeHtml(reason);
+            
+            // Parse tag information from reason
+            let matchedTags = [];
+            let missingTags = [];
+            let baseReason = reason;
+            
+            // Check if reason contains tag information
+            if (reason.includes('| Matched:') || reason.includes('| Missing:')) {
+                const parts = reason.split(' | ');
+                baseReason = parts[0]; // First part is the base reason
+                
+                for (let i = 1; i < parts.length; i++) {
+                    const part = parts[i];
+                    if (part.startsWith('Matched: ')) {
+                        const tags = part.substring(9).split(', ');
+                        matchedTags = tags;
+                    } else if (part.startsWith('Missing: ')) {
+                        const tags = part.substring(9).split(', ');
+                        missingTags = tags;
+                    }
+                }
+            }
+            
+            let tagDisplayHtml = '';
+            if (matchedTags.length > 0 || missingTags.length > 0) {
+                tagDisplayHtml = '<div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #404040;">';
+                
+                if (matchedTags.length > 0) {
+                    tagDisplayHtml += '<div style="margin-bottom: 0.5rem;">';
+                    tagDisplayHtml += '<strong style="color: #4caf50; font-size: 0.8rem;">✓ Matched Tags:</strong>';
+                    tagDisplayHtml += '<div style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem;">';
+                    matchedTags.forEach(tag => {
+                        const safeTag = escapeHtml(tag);
+                        tagDisplayHtml += `<span style="background: rgba(76, 175, 80, 0.2); color: #4caf50; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; border: 1px solid rgba(76, 175, 80, 0.3);">${safeTag}</span>`;
+                    });
+                    tagDisplayHtml += '</div></div>';
+                }
+                
+                if (missingTags.length > 0) {
+                    tagDisplayHtml += '<div>';
+                    tagDisplayHtml += '<strong style="color: #ff9800; font-size: 0.8rem;">✗ Missing Tags:</strong>';
+                    tagDisplayHtml += '<div style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem;">';
+                    missingTags.forEach(tag => {
+                        const safeTag = escapeHtml(tag);
+                        tagDisplayHtml += `<span style="background: rgba(255, 152, 0, 0.2); color: #ff9800; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; border: 1px solid rgba(255, 152, 0, 0.3);">${safeTag}</span>`;
+                    });
+                    tagDisplayHtml += '</div></div>';
+                }
+                
+                tagDisplayHtml += '</div>';
+            }
+            
+            // Determine header text and color based on rejection type
+            const headerText = isAuto ? '🤖 Auto-filter reason:' : '🗑️ Rejection reason:';
+            const borderColor = isAuto ? '#ff9800' : '#d32f2f';
+            const bgColor = isAuto ? 'rgba(255, 152, 0, 0.1)' : 'rgba(211, 47, 47, 0.1)';
+            const textColor = isAuto ? '#ff9800' : '#d32f2f';
+            
+            rejectionReasonHtml = '<div style="font-size: 0.85rem; color: ' + textColor + '; margin-top: 0.5rem; padding: 0.75rem; background: ' + bgColor + '; border-left: 3px solid ' + borderColor + '; border-radius: 4px;">' +
+                '<strong>' + headerText + '</strong> ' + escapeHtml(baseReason) +
+                tagDisplayHtml +
                 '</div>';
         }
         

@@ -2,7 +2,7 @@
 Relevance score calculator for Fall River articles
 """
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import sqlite3
 import logging
 from config import DATABASE_CONFIG
@@ -289,7 +289,7 @@ def calculate_relevance_score(article: Dict, config: Optional[Dict] = None, zip_
     return min(100.0, max(0.0, score))
 
 
-def calculate_relevance_score_with_tags(article: Dict, config: Optional[Dict] = None, zip_code: Optional[str] = None) -> tuple[float, Dict[str, List[str]]]:
+def calculate_relevance_score_with_tags(article: Dict, config: Optional[Dict] = None, zip_code: Optional[str] = None) -> Tuple[float, Dict[str, List[str]]]:
     """Calculate relevance score and return matched tags
     
     Args:

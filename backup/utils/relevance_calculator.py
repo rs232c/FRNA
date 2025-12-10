@@ -2,7 +2,7 @@
 Relevance score calculator for Fall River articles
 """
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import sqlite3
 import logging
 from config import DATABASE_CONFIG
@@ -287,3 +287,129 @@ def calculate_relevance_score(article: Dict, config: Optional[Dict] = None, zip_
         score = -10.0  # Negative score for completely unrelated
     
     return min(100.0, max(0.0, score))
+
+
+def calculate_relevance_score_with_tags(article: Dict, config: Optional[Dict] = None, zip_code: Optional[str] = None) -> Tuple[float, Dict[str, List[str]]]:
+    """Calculate relevance score and return matched tags
+    
+    Args:
+        article: Article dict with title, content, source, etc.
+        config: Optional pre-loaded relevance config. If None, loads from database.
+        zip_code: Optional zip code to use zip-specific relevance config.
+    
+    Returns:
+        Tuple of (score, matched_tags_dict) where matched_tags_dict contains:
+        - 'matched': List of matched keywords/tags
+        - 'missing': List of important tags that were NOT found
+    """
+    # Load config from database if not provided
+    if config is None:
+        config = load_relevance_config(zip_code=zip_code)
+    
+    content = article.get("content", article.get("summary", "")).lower()
+    title = article.get("title", "").lower()
+    combined = f"{title} {content}"
+    
+    score = 0.0
+    matched_tags = []
+    missing_important_tags = []
+    
+    # Stellar article boost (+50 points)
+    if article.get('is_stellar', 0):
+        score += 50.0
+        matched_tags.append("⭐ Stellar article")
+    
+    # High relevance keywords (15 points each, configurable)
+    high_relevance = config.get('high_relevance', [])
+    high_relevance_points = config.get('high_relevance_points', 15.0)
+    found_high_relevance = False
+    for keyword in high_relevance:
+        if keyword in combined:
+            score += float(high_relevance_points)
+            matched_tags.append(f"📍 {keyword} (+{high_relevance_points})")
+            found_high_relevance = True
+    if not found_high_relevance and high_relevance:
+        missing_important_tags.append("High relevance keywords (Fall River mentions)")
+    
+    # Medium relevance keywords
+    medium_relevance = config.get('medium_relevance', [])
+    has_fall_river_mention = any(kw in combined for kw in ['fall river', 'fallriver'])
+    found_medium = []
+    for keyword in medium_relevance:
+        if keyword in combined:
+            if has_fall_river_mention:
+                score += 1.0
+                matched_tags.append(f"🏘️ {keyword} (+1)")
+            else:
+                score -= 15.0
+                matched_tags.append(f"⚠️ {keyword} (-15, no Fall River mention)")
+            found_medium.append(keyword)
+    
+    # Local landmarks/places
+    local_places = config.get('local_places', [])
+    local_places_points = config.get('local_places_points', 3.0)
+    found_places = []
+    for place in local_places:
+        if place in combined:
+            score += float(local_places_points)
+            matched_tags.append(f"🏛️ {place} (+{local_places_points})")
+            found_places.append(place)
+    
+    # Topic-specific scoring
+    topic_keywords = config.get('topic_keywords', {})
+    found_topics = []
+    for keyword, points in topic_keywords.items():
+        if keyword in combined:
+            score += points
+            matched_tags.append(f"📰 {keyword} (+{points})")
+            found_topics.append(keyword)
+    
+    # Source credibility scoring
+    source = article.get("source", "").lower()
+    source_credibility = config.get('source_credibility', {})
+    found_source = False
+    for source_name, points in source_credibility.items():
+        if source_name in source:
+            score += points
+            matched_tags.append(f"📺 {source_name} (+{points})")
+            found_source = True
+            break
+    if not found_source:
+        missing_important_tags.append("Credible local source")
+    
+    # Recency weighting
+    published = article.get("published")
+    if published:
+        try:
+            pub_date = datetime.fromisoformat(published.replace('Z', '+00:00').split('+')[0])
+            days_old = (datetime.now() - pub_date.replace(tzinfo=None)).days
+            if days_old == 0:
+                score += 5.0
+                matched_tags.append("🕐 Published today (+5)")
+            elif days_old <= 1:
+                score += 3.0
+                matched_tags.append("🕐 Published yesterday (+3)")
+            elif days_old <= 7:
+                score += 1.0
+                matched_tags.append("🕐 Published this week (+1)")
+        except:
+            pass
+    
+    # Penalize clickbait
+    clickbait_patterns = config.get('clickbait_patterns', [])
+    for pattern in clickbait_patterns:
+        if pattern in combined:
+            score -= 5.0
+            matched_tags.append(f"❌ Clickbait pattern: '{pattern}' (-5)")
+    
+    # Penalize if no local connection
+    if score == 0:
+        score = -10.0
+        missing_important_tags.append("Any local relevance")
+    
+    final_score = min(100.0, max(0.0, score))
+    
+    return final_score, {
+        'matched': matched_tags,
+        'missing': missing_important_tags
+    }

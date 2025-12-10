@@ -1442,7 +1442,7 @@ def get_rejected_articles():
         conn.row_factory = sqlite3.Row
         
         # Get rejected articles filtered by zip_code with all needed fields
-        # Only show articles rejected for this specific zip_code (not NULL entries for backward compatibility)
+        # Show articles rejected for this specific zip_code OR auto-filtered articles with NULL zip_code (backward compatibility)
         cursor.execute('''
             SELECT a.*, 
                    a.relevance_score,
@@ -1458,11 +1458,11 @@ def get_rejected_articles():
             JOIN (
                 SELECT article_id, is_rejected, is_auto_rejected, auto_reject_reason, zip_code
                 FROM article_management
-                WHERE zip_code = ?
+                WHERE (zip_code = ? OR (zip_code IS NULL AND is_auto_rejected = 1))
                 AND ROWID IN (
                     SELECT MAX(ROWID) 
                     FROM article_management 
-                    WHERE zip_code = ?
+                    WHERE (zip_code = ? OR (zip_code IS NULL AND is_auto_rejected = 1))
                     GROUP BY article_id
                 )
             ) am ON a.id = am.article_id
@@ -1585,19 +1585,20 @@ def get_auto_filtered():
         conn.commit()
         
         # Get auto-filtered articles (both Bayesian and relevance threshold filtered)
-        # Use subquery to get only the latest management entry per article, filtered by zip_code
+        # Use subquery to get only the latest management entry per article
+        # Show articles with matching zip_code OR auto-filtered articles with NULL zip_code (backward compatibility)
         cursor.execute('''
             SELECT a.*, am.auto_reject_reason
             FROM articles a
             INNER JOIN (
                 SELECT article_id, auto_reject_reason
                 FROM article_management
-                WHERE zip_code = ?
+                WHERE (zip_code = ? OR (zip_code IS NULL AND is_auto_rejected = 1))
                 AND is_auto_rejected = 1
                 AND ROWID IN (
                     SELECT MAX(ROWID) 
                     FROM article_management 
-                    WHERE zip_code = ?
+                    WHERE (zip_code = ? OR (zip_code IS NULL AND is_auto_rejected = 1))
                     GROUP BY article_id
                 )
             ) am ON a.id = am.article_id
@@ -2014,24 +2015,59 @@ def reject_article():
     row = cursor.fetchone()
     display_order = row[0] if row else article_id
     
+    # Calculate relevance tags if manually rejecting
+    reject_reason = None
+    if rejected and article_data:
+        try:
+            from utils.relevance_calculator import calculate_relevance_score_with_tags
+            relevance_score, tag_info = calculate_relevance_score_with_tags(
+                article_data, 
+                zip_code=zip_code
+            )
+            
+            # Build reason with tag information
+            reason_parts = ["Manually rejected"]
+            if tag_info.get('matched') or tag_info.get('missing'):
+                if tag_info.get('matched'):
+                    # Limit to first 5 matched tags to avoid overly long reasons
+                    matched_display = tag_info['matched'][:5]
+                    reason_parts.append(f"Matched: {', '.join(matched_display)}")
+                if tag_info.get('missing'):
+                    reason_parts.append(f"Missing: {', '.join(tag_info['missing'])}")
+            
+            reject_reason = " | ".join(reason_parts)
+            logger.info(f"Calculated tags for manual rejection of article {article_id}: {len(tag_info.get('matched', []))} matched, {len(tag_info.get('missing', []))} missing")
+        except Exception as e:
+            logger.warning(f"Could not calculate tags for manual rejection: {e}")
+            reject_reason = "Manually rejected"
+    elif rejected:
+        reject_reason = "Manually rejected"
+    
     # Check if entry exists for this zip
     cursor.execute('SELECT id FROM article_management WHERE article_id = ? AND zip_code = ?', (article_id, zip_code))
     existing = cursor.fetchone()
+    
+    # Ensure auto_reject_reason column exists
+    try:
+        cursor.execute('ALTER TABLE article_management ADD COLUMN auto_reject_reason TEXT')
+        conn.commit()
+    except:
+        pass  # Column already exists
     
     if existing:
         # Update existing entry - preserve other columns like is_top_story
         cursor.execute('''
             UPDATE article_management 
-            SET enabled = ?, display_order = ?, is_rejected = ?
+            SET enabled = ?, display_order = ?, is_rejected = ?, auto_reject_reason = ?
             WHERE article_id = ? AND zip_code = ?
-        ''', (0 if rejected else 1, display_order, 1 if rejected else 0, article_id, zip_code))
+        ''', (0 if rejected else 1, display_order, 1 if rejected else 0, reject_reason, article_id, zip_code))
         logger.info(f"Updated article_management for article {article_id} (zip {zip_code}): rejected={rejected}")
     else:
         # Insert new entry with zip_code
         cursor.execute('''
-            INSERT INTO article_management (article_id, enabled, display_order, is_rejected, zip_code)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (article_id, 0 if rejected else 1, display_order, 1 if rejected else 0, zip_code))
+            INSERT INTO article_management (article_id, enabled, display_order, is_rejected, auto_reject_reason, zip_code)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (article_id, 0 if rejected else 1, display_order, 1 if rejected else 0, reject_reason, zip_code))
         logger.info(f"Inserted new article_management for article {article_id} (zip {zip_code}): rejected={rejected}")
     
     conn.commit()
@@ -4575,6 +4611,7 @@ def save_regenerate_settings():
     auto_regenerate = data.get('auto_regenerate', False)
     regenerate_interval = data.get('regenerate_interval', 10)
     regenerate_on_load = data.get('regenerate_on_load', False)
+    source_fetch_interval = data.get('source_fetch_interval', 10)  # Add source fetch interval
     
     conn = get_db_legacy()
     cursor = conn.cursor()
@@ -4593,6 +4630,12 @@ def save_regenerate_settings():
         INSERT OR REPLACE INTO admin_settings (key, value)
         VALUES ('regenerate_on_load', ?)
     ''', ('1' if regenerate_on_load else '0',))
+    
+    # Save source_fetch_interval
+    cursor.execute('''
+        INSERT OR REPLACE INTO admin_settings (key, value)
+        VALUES ('source_fetch_interval', ?)
+    ''', (str(source_fetch_interval),))
     
     conn.commit()
     conn.close()
@@ -5450,6 +5493,28 @@ ADMIN_TEMPLATE = """
             <div style="padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                 <h3 style="margin: 0 0 0.75rem 0; color: #fff; font-size: 1.5rem; font-weight: 600;">🗑️ Trash - All Rejected Articles</h3>
                 <p style="margin: 0; color: rgba(255,255,255,0.95); font-size: 1rem; line-height: 1.6;">View all rejected articles - both manually rejected and auto-filtered. Manually rejected articles train the Bayesian model. You can restore any article from here.</p>
+            </div>
+            <div style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <span style="color: #e0e0e0; font-weight: 600; font-size: 0.95rem;">Filter:</span>
+                    <button id="trashFilterAll" class="trash-filter-btn active" data-filter="all" style="padding: 0.5rem 1rem; background: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">All</button>
+                    <button id="trashFilterManual" class="trash-filter-btn" data-filter="manual" style="padding: 0.5rem 1rem; background: #404040; color: #e0e0e0; border: 1px solid #555; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">🗑️ Manual</button>
+                    <button id="trashFilterAuto" class="trash-filter-btn" data-filter="auto" style="padding: 0.5rem 1rem; background: #404040; color: #e0e0e0; border: 1px solid #555; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">🤖 Auto</button>
+                </div>
+                <div id="trashFilterCount" style="color: #888; font-size: 0.9rem; margin-left: auto;">
+                    <span id="trashFilterCountText">Loading...</span>
+                </div>
+            </div>
+            <div style="margin-bottom: 1.5rem; position: relative;">
+                <input type="text" id="trashSearchInput" placeholder="🔍 Search by title, source, or reason..." 
+                       style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 1rem; background: #252525; border: 1px solid #404040; border-radius: 8px; color: #e0e0e0; font-size: 0.95rem; outline: none; transition: border-color 0.2s;"
+                       onfocus="this.style.borderColor='#0078d4';" 
+                       onblur="this.style.borderColor='#404040';">
+                <button id="trashSearchClear" onclick="clearTrashSearch()" 
+                        style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #888; cursor: pointer; font-size: 1.2rem; padding: 0.25rem 0.5rem; display: none; transition: color 0.2s;"
+                        onmouseover="this.style.color='#e0e0e0';" 
+                        onmouseout="this.style.color='#888';"
+                        title="Clear search">×</button>
             </div>
             <div class="articles-list" id="trashList" style="background: transparent;">
                 <p style="padding: 2rem; text-align: center; color: #888; background: #252525; border-radius: 8px; border: 1px solid #404040;">Loading rejected articles...</p>

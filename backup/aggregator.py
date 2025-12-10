@@ -34,8 +34,26 @@ class NewsAggregator:
         self.facebook_ingestor = FacebookIngestor()
         self.database = ArticleDatabase()
         self.cache = get_cache()
-        self._source_fetch_interval = 30 * 60  # 30 minutes default
+        self._source_fetch_interval = self._load_source_fetch_interval()  # Load from admin settings
         self._setup_ingestors()
+    
+    def _load_source_fetch_interval(self) -> int:
+        """Load source fetch interval from admin settings (default 10 minutes)"""
+        try:
+            conn = sqlite3.connect(self.database.db_path)
+            cursor = conn.cursor()
+            cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('source_fetch_interval',))
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row and row[0]:
+                interval_minutes = int(row[0])
+                return interval_minutes * 60  # Convert to seconds
+        except Exception as e:
+            logger.warning(f"Could not load source_fetch_interval from admin settings: {e}")
+        
+        # Default to 10 minutes (600 seconds)
+        return 10 * 60
     
     def _load_source_overrides(self) -> Dict:
         """Load source configuration overrides from database"""
@@ -349,8 +367,13 @@ class NewsAggregator:
         
         return summary
     
-    def filter_relevant_articles(self, articles: List[Dict]) -> List[Dict]:
-        """Filter and weight articles by Fall River relevance"""
+    def filter_relevant_articles(self, articles: List[Dict], zip_code: Optional[str] = None) -> List[Dict]:
+        """Filter and weight articles by Fall River relevance
+        
+        Args:
+            articles: List of articles to filter
+            zip_code: Optional zip code for zip-specific filtering
+        """
         from datetime import datetime, timedelta
         import sqlite3
         from config import DATABASE_CONFIG
@@ -425,8 +448,15 @@ class NewsAggregator:
             title_lower = article.get("title", "").lower()
             combined_text = f"{title_lower} {content_lower}"
             
-            # Calculate relevance score
-            relevance_score = self.calculate_relevance_score(article)
+            # Calculate relevance score with tag tracking
+            try:
+                from utils.relevance_calculator import calculate_relevance_score_with_tags
+                relevance_score, tag_info = calculate_relevance_score_with_tags(article, zip_code=zip_code)
+            except:
+                # Fallback to regular calculation if tag tracking fails
+                relevance_score = self.calculate_relevance_score(article)
+                tag_info = {'matched': [], 'missing': []}
+            
             article['_relevance_score'] = relevance_score
             
             # Auto-filter articles below relevance threshold
@@ -436,6 +466,7 @@ class NewsAggregator:
                 # Save auto-filtered article to database for review
                 try:
                     import sqlite3
+                    import json
                     from config import DATABASE_CONFIG
                     conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
                     cursor = conn.cursor()
@@ -468,11 +499,23 @@ class NewsAggregator:
                     if article_id:
                         # Mark as auto-rejected due to low relevance score
                         reason = f"Relevance score {relevance_score:.1f} below threshold {relevance_threshold}"
+                        # Add tag information to reason if available
+                        if tag_info.get('matched') or tag_info.get('missing'):
+                            tag_details = []
+                            if tag_info.get('matched'):
+                                tag_details.append(f"Matched: {', '.join(tag_info['matched'][:5])}")  # Limit to first 5
+                            if tag_info.get('missing'):
+                                tag_details.append(f"Missing: {', '.join(tag_info['missing'])}")
+                            if tag_details:
+                                reason += f" | {' | '.join(tag_details)}"
+                        
+                        # Use zip_code from article or parameter, default to "02720" if both are None
+                        article_zip = article.get("zip_code") or zip_code or "02720"
                         cursor.execute('''
                             INSERT OR REPLACE INTO article_management 
-                            (article_id, enabled, is_rejected, is_auto_rejected, auto_reject_reason)
-                            VALUES (?, 0, 1, 1, ?)
-                        ''', (article_id, reason))
+                            (article_id, enabled, is_rejected, is_auto_rejected, auto_reject_reason, zip_code)
+                            VALUES (?, 0, 1, 1, ?, ?)
+                        ''', (article_id, reason, article_zip))
                     
                     conn.commit()
                     conn.close()
@@ -574,11 +617,13 @@ class NewsAggregator:
                         
                         if article_id:
                             # Mark as auto-rejected
+                            # Use zip_code from article or parameter, default to "02720" if both are None
+                            article_zip = article.get("zip_code") or zip_code or "02720"
                             cursor.execute('''
                                 INSERT OR REPLACE INTO article_management 
-                                (article_id, enabled, is_rejected, is_auto_rejected, auto_reject_reason)
-                                VALUES (?, 0, 1, 1, ?)
-                            ''', (article_id, reason_str))
+                                (article_id, enabled, is_rejected, is_auto_rejected, auto_reject_reason, zip_code)
+                                VALUES (?, 0, 1, 1, ?, ?)
+                            ''', (article_id, reason_str, article_zip))
                         
                         conn.commit()
                         conn.close()
@@ -1122,7 +1167,7 @@ class NewsAggregator:
             # For zip_code aggregation, skip relevance filtering (Google News is already location-specific)
             relevant = unique
         else:
-            relevant = self.filter_relevant_articles(unique)
+            relevant = self.filter_relevant_articles(unique, zip_code=zip_code)
             logger.info(f"Filtered to {len(relevant)} relevant articles (filtered out {len(unique) - len(relevant)})")
         
         # Enrich with metadata

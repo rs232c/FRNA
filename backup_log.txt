@@ -1014,3 +1014,229 @@ ERROR : You do not have the Manage Auditing user right.
    Speed :            18,455.246 MegaBytes/min.
    Ended : Wednesday, December 10, 2025 4:44:52 AM
 
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Wednesday, December 10, 2025 5:28:52 AM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+ Exc Dirs : backup
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+	    Newer     		  414699	C:\FRNA\admin.py100%  
+	    Newer     		   60561	C:\FRNA\aggregator.py100%  
+	    Newer     		   62122	C:\FRNA\backup_log.txt100%  
+	    New File  		    4314	C:\FRNA\diagnose_auto_filtered.py100%  
+	    Newer     		   1.7 m	C:\FRNA\fallriver_news.db
+	  *EXTRA File 		    2089	C:\FRNA\backup\admin\templates\admin\keywords.html100%  
+	    New File  		    5485	C:\FRNA\migrate_auto_filtered_zip_codes.py100%  
+	    Newer     		   17920	C:\FRNA\utils\relevance_calculator.py100%  
+	    Newer     		  204310	C:\FRNA\website_output\index.html100%  
+	    Newer     		   63012	C:\FRNA\website_output\category\business.html100%  
+	    Newer     		   82341	C:\FRNA\website_output\category\crime.html100%  
+	    Newer     		   33633	C:\FRNA\website_output\category\events.html100%  
+	    Newer     		    9108	C:\FRNA\website_output\category\food.html100%  
+	    Newer     		   98917	C:\FRNA\website_output\category\local-news.html100%  
+	    Newer     		   32206	C:\FRNA\website_output\category\obituaries.html100%  
+	    Newer     		   55129	C:\FRNA\website_output\category\schools.html100%  
+	    Newer     		   79435	C:\FRNA\website_output\category\sports.html100%  
+	    Newer     		    2281	C:\FRNA\website_output\css\style.css100%  
+	    Newer     		   90859	C:\FRNA\admin\static\js\admin.js100%  
+	    Newer     		    5638	C:\FRNA\admin\templates\admin\settings.html100%  
+	    Newer     		    3856	C:\FRNA\admin\templates\admin\trash.html100%  
+	    Newer     		   25247	C:\FRNA\website_output\js\main.js100%  
+	    Newer     		   19054	C:\FRNA\utils\__pycache__\relevance_calculator.cpython-314.pyc100%  
+	    Newer     		   68906	C:\FRNA\__pycache__\aggregator.cpython-314.pyc100%  
+	    Newer     		     834	C:\FRNA\cache\b76707cf5fc8d7f6b9de92850b2d92ec.json100%  
+	    New File  		      45	C:\FRNA\.git\COMMIT_EDITMSG100%  
+	    New File  		     130	C:\FRNA\.git\config100%  
+	    New File  		      73	C:\FRNA\.git\description100%  
+	    New File  		      23	C:\FRNA\.git\HEAD100%  
+	    New File  		   21632	C:\FRNA\.git\index100%  
+	    New File  		     478	C:\FRNA\.git\hooks\applypatch-msg.sample100%  
+	    New File  		     896	C:\FRNA\.git\hooks\commit-msg.sample100%  
+	    New File  		    4726	C:\FRNA\.git\hooks\fsmonitor-watchman.sample100%  
+	    New File  		     189	C:\FRNA\.git\hooks\post-update.sample100%  
+	    New File  		     424	C:\FRNA\.git\hooks\pre-applypatch.sample100%  
+	    New File  		    1649	C:\FRNA\.git\hooks\pre-commit.sample100%  
+	    New File  		     416	C:\FRNA\.git\hooks\pre-merge-commit.sample100%  
+	    New File  		    1374	C:\FRNA\.git\hooks\pre-push.sample100%  
+	    New File  		    4898	C:\FRNA\.git\hooks\pre-rebase.sample100%  
+	    New File  		     544	C:\FRNA\.git\hooks\pre-receive.sample100%  
+	    New File  		    1492	C:\FRNA\.git\hooks\prepare-commit-msg.sample100%  
+	    New File  		    2783	C:\FRNA\.git\hooks\push-to-checkout.sample100%  
+	    New File  		    2308	C:\FRNA\.git\hooks\sendemail-validate.sample100%  
+	    New File  		    3650	C:\FRNA\.git\hooks\update.sample100%  
+	    New File  		     240	C:\FRNA\.git\info\exclude100%  
+	    New File  		     191	C:\FRNA\.git\logs\HEAD100%  
+	    New File  		      41	C:\FRNA\.git\refs\heads\master100%  
+	    New File  		    1430	C:\FRNA\.git\objects\08\81382fe5d6f8f5152cd06a76684c184e3c875a100%  
+	    New File  		     851	C:\FRNA\.git\objects\01\52f6d74cc86d15221347655268f1ebaa76865f100%  
+	    New File  		     935	C:\FRNA\.git\objects\11\fac6a88f876bd0439e455be683158424c64e38100%  
+	    New File  		     820	C:\FRNA\.git\objects\12\ec3a897a0d94eaa36e33e7c123b39d24368896100%  
+	    New File  		     182	C:\FRNA\.git\objects\0f\3498eaf8e4ff3cc731fab0d4829b5e80a0bed2100%  
+	    New File  		    1719	C:\FRNA\.git\objects\0f\6b621d7f4a0c7cff25de8efdc02f8bbc0eb36e100%  
+	    New File  		    5282	C:\FRNA\.git\objects\09\240e49eb4d7fe9c91d9a7566f024c0b380adb8100%  
+	    New File  		    4298	C:\FRNA\.git\objects\09\b9c0910762e2039f7c3820be8001826db1d4d3100%  
+	    New File  		    1736	C:\FRNA\.git\objects\09\d0b4d8b1bed33b43c946f1a11e867b479e0837100%  
+	    New File  		    2511	C:\FRNA\.git\objects\0a\33a16d91194ad4d9cf5bfdabb592ed450d8d1b100%  
+	    New File  		    1188	C:\FRNA\.git\objects\17\7d35251207bfbfdda254cde6e279c47bc9d58c100%  
+	    New File  		      54	C:\FRNA\.git\objects\17\e77d51d192c53ab19a9a61868e62fd97b3d978100%  
+	    New File  		      48	C:\FRNA\.git\objects\0b\acaa134ccf42247410e44d2e61926c76d826ff100%  
+	    New File  		    1568	C:\FRNA\.git\objects\14\1063eb4fcaf9257c7e532e268269761a54ba03100%  
+	    New File  		    3247	C:\FRNA\.git\objects\0d\c54b74490e400f0523d573be9d7f6fa59361eb100%  
+	    New File  		      53	C:\FRNA\.git\objects\0d\d8299902fd025dec06d30f6915fbf61ad169f1100%  
+	    New File  		     286	C:\FRNA\.git\objects\19\b21117422ffbd7ea82c430ab184ff904eb81c3100%  
+	    New File  		    2123	C:\FRNA\.git\objects\19\e4ae2633f64fa86f336287479ed7e08c1edcf8100%  
+	    New File  		     733	C:\FRNA\.git\objects\1c\0d5edeba1cc399fd3d8ab1822c09a298053597100%  
+	    New File  		     151	C:\FRNA\.git\objects\1d\6951188735e2a9fcfcc1ea14f66793f9567db6100%  
+	    New File  		     130	C:\FRNA\.git\objects\1f\54abd8ab07a834386b31c491aea304d9b7b032100%  
+	    New File  		    1614	C:\FRNA\.git\objects\22\3fc3c8a6c6a85f82ba6bac0624c86861a2e56b100%  
+	    New File  		   16732	C:\FRNA\.git\objects\24\918a3c43b3fd4b5259175d6e4b8a6fa7678f8c100%  
+	    New File  		    1692	C:\FRNA\.git\objects\24\d4241d578c234afed172c9ffde240e7e631541100%  
+	    New File  		    4679	C:\FRNA\.git\objects\25\6afcb06a2838804388223c800c9b9f890c290c100%  
+	    New File  		     669	C:\FRNA\.git\objects\39\311fee3ea0ba260207afde240143bc5ffbe106100%  
+	    New File  		     156	C:\FRNA\.git\objects\39\8356ff0bd489390d29e54cc27d034499ee01a6100%  
+	    New File  		     183	C:\FRNA\.git\objects\3c\6214a0b326eb004b2a2ce6b30f9effb62dfffa100%  
+	    New File  		      72	C:\FRNA\.git\objects\3a\c61870ea914b9040a0047e01868d8ad6834212100%  
+	    New File  		      47	C:\FRNA\.git\objects\3d\8a8e953ae86f619e293ebdd10fa72700755c4f100%  
+	    New File  		    1107	C:\FRNA\.git\objects\3f\0dacfacc8afe499eb1860236e5f172cc9d4a58100%  
+	    New File  		    5202	C:\FRNA\.git\objects\41\627cf23382de6ed40f9bab09b109d328461608100%  
+	    New File  		     531	C:\FRNA\.git\objects\42\2329258e47974bdce33eca3b435509ce815d7b100%  
+	    New File  		    1301	C:\FRNA\.git\objects\48\81ce62f68dc2319fa22db8e1c82e0594ebd6e2100%  
+	    New File  		    4474	C:\FRNA\.git\objects\4a\18e172678a0869f14665713db5788ed39a65ca100%  
+	    New File  		     790	C:\FRNA\.git\objects\4a\23ad3c10d602e7fb8e50269370a3ecb12b6800100%  
+	    New File  		    1040	C:\FRNA\.git\objects\4a\2b45aa031b6d3ed5679f2035f9aac119a21144100%  
+	    New File  		    3262	C:\FRNA\.git\objects\4a\2bd48a5bc8890eab12458f7a92750a2b6d495f100%  
+	    New File  		   16737	C:\FRNA\.git\objects\4b\be1de07eed452e0a1fbb798a7b4b62cdeeac74100%  
+	    New File  		    1195	C:\FRNA\.git\objects\4c\07478e6675723de568f48defe498ef084e5485100%  
+	    New File  		    1402	C:\FRNA\.git\objects\4c\23877495208062b678ee6a50d0f2453f7a7b48100%  
+	    New File  		      53	C:\FRNA\.git\objects\4d\8fb1a8980bf92315cddaf252e00cfa0e280d95100%  
+	    New File  		      66	C:\FRNA\.git\objects\50\0fe3373c5795ff9095ac45599eb0583a1ee80e100%  
+	    New File  		    1059	C:\FRNA\.git\objects\50\69a237546904e7a72dd2322feb4bde785c06cb100%  
+	    New File  		    6103	C:\FRNA\.git\objects\50\d7d30e6d368eefcbc39d5a8fb5ee5696906a4f100%  
+	    New File  		      87	C:\FRNA\.git\objects\51\6b1838846c1002c189a171c5273f16b2a8c81f100%  
+	    New File  		    6761	C:\FRNA\.git\objects\55\49223a10973e939da7018a09443a5ca0bd74d6100%  
+	    New File  		     772	C:\FRNA\.git\objects\57\c882e56785e4b9384a1e2f5a883d555fde00f1100%  
+	    New File  		    1158	C:\FRNA\.git\objects\58\562591aa495f19607801b79770a1d5ea99b7d7100%  
+	    New File  		     150	C:\FRNA\.git\objects\58\98de13ae15f231766b95b450e10a4b786459f3100%  
+	    New File  		     262	C:\FRNA\.git\objects\59\0e9fa46e0f6d99cb074a0137025311635802a9100%  
+	    New File  		    1687	C:\FRNA\.git\objects\59\f6a9ce1334da840ec44d92fb7d3cac9cb87a5c100%  
+	    New File  		    3848	C:\FRNA\.git\objects\5b\a6dda1a3ed4b1b6a72c5345bd2822823a4014b100%  
+	    New File  		    1673	C:\FRNA\.git\objects\5e\b1a9e35c97f7bd4edabe7461e392a81c965993100%  
+	    New File  		    6982	C:\FRNA\.git\objects\63\36859f42c9f36e57f6e2798be77c526c72cfad100%  
+	    New File  		    7411	C:\FRNA\.git\objects\63\890dfc5d9e24cd2a5b15773968adade28082c2100%  
+	    New File  		     277	C:\FRNA\.git\objects\67\9c27abbdf5f0d07713842f29cd1c5067b498bd100%  
+	    New File  		    6681	C:\FRNA\.git\objects\67\9e27c40355086bedddf9b8b81cd20ef6f6618c100%  
+	    New File  		    1451	C:\FRNA\.git\objects\69\33785d99e8034c9150e35e0d951beb0b67cd30100%  
+	    New File  		    1337	C:\FRNA\.git\objects\74\60175843aaf0d981afd72afe015ee32a268f51100%  
+	    New File  		     335	C:\FRNA\.git\objects\75\039e501ed0675176c9e4f9e078eb7f9b2efe58100%  
+	    New File  		    1170	C:\FRNA\.git\objects\76\2e28337f5541b38d0417b63b4b2c0b7ca46772100%  
+	    New File  		      50	C:\FRNA\.git\objects\78\8f6797a6cb84d4e55224d8782eccb9cdbe70cb100%  
+	    New File  		    1292	C:\FRNA\.git\objects\7a\2c2b0b19d52a09fa255bcc4fb98fee4c0e3580100%  
+	    New File  		     286	C:\FRNA\.git\objects\7b\dd75729da12240422925a80b145c90849d1e6d100%  
+	    New File  		     374	C:\FRNA\.git\objects\7e\b67fbe33310ddcd4ddaaaa629866f68caefb73100%  
+	    New File  		     455	C:\FRNA\.git\objects\7e\ef862e3286986a8f9535f26aad7c3ead74574a100%  
+	    New File  		     260	C:\FRNA\.git\objects\7f\172d4b518cb7bea3b82d0f76943c4d608cc5eb100%  
+	    New File  		    2579	C:\FRNA\.git\objects\7f\e61a6d4111cf2dd73a3efc3268506767f1fc4d100%  
+	    New File  		     822	C:\FRNA\.git\objects\83\2c82e72f63ae21d9932072347326e559a07dda100%  
+	    New File  		     506	C:\FRNA\.git\objects\83\482863c0c9007cca31e55e61489d21cfd8e171100%  
+	    New File  		    8935	C:\FRNA\.git\objects\85\82ff348dc31eb3341e1459e83ab7e513afebfa100%  
+	    New File  		    1478	C:\FRNA\.git\objects\87\a4e305fd7716f5f9e8882c82a383f1b404239b100%  
+	    New File  		    1687	C:\FRNA\.git\objects\89\8471e5eab0cf04850dc942ad0c391921571a82100%  
+	    New File  		   19088	C:\FRNA\.git\objects\89\bbad316bea3b5e7037c582085e3c46a99ed79e100%  
+	    New File  		    2375	C:\FRNA\.git\objects\8e\8eb766c7db857c50cf536353d5cb89668349e6100%  
+	    New File  		    1422	C:\FRNA\.git\objects\8e\be9d9e747770e0399b723012f0fd4c4fc585cf100%  
+	    New File  		     582	C:\FRNA\.git\objects\91\abe6a909682457e622776c6b861417937c3162100%  
+	    New File  		    1334	C:\FRNA\.git\objects\92\c9a61a883df3893397e02f915c80ddfc4c19af100%  
+	    New File  		     729	C:\FRNA\.git\objects\95\3185e8745104ae82ef9fddb05c431b343a0dd2100%  
+	    New File  		   17193	C:\FRNA\.git\objects\95\423a64911d06109c228d8cc8f9c69d23beebee100%  
+	    New File  		      53	C:\FRNA\.git\objects\95\7b061270f11f84182c0b066ef10ce2520504b0100%  
+	    New File  		      44	C:\FRNA\.git\objects\97\3643e99dce86b1aebc23eb829658714ddc9cbe100%  
+	    New File  		    1070	C:\FRNA\.git\objects\99\990a4eb3b2feea7ec3597d2b102b85d7d1cda6100%  
+	    New File  		    1619	C:\FRNA\.git\objects\9c\95329fd20b9d54fa2f31360ec416dd38ecf0d4100%  
+	    New File  		     816	C:\FRNA\.git\objects\a3\9179922428480e66ff526890b66671d5a1d9d5100%  
+	    New File  		     542	C:\FRNA\.git\objects\a4\d369f4433fc953a68a210394c94a630fe7298c100%  
+	    New File  		     977	C:\FRNA\.git\objects\a5\7a1ca83e95245478ad76f7f2113422bbcb37e4100%  
+	    New File  		     383	C:\FRNA\.git\objects\a8\6d628752b7761324b5cd09f1e16494748d2739100%  
+	    New File  		   86302	C:\FRNA\.git\objects\a9\8b2b48313b8d9a5aabad0e60c97e9a8cc31ded100%  
+	    New File  		    1524	C:\FRNA\.git\objects\ab\a9efe79cb81e4d22d813b7e434616ade63539b100%  
+	    New File  		     557	C:\FRNA\.git\objects\ac\5b0878e0a559ae60ca269fa1ca253ccff8f1db100%  
+	    New File  		    1156	C:\FRNA\.git\objects\ad\cf0a44bd424a6bf4d8b56e42c24d16f0eaa161100%  
+	    New File  		    3809	C:\FRNA\.git\objects\ae\51ef0cfb78678d1e4ada11c45ef12a8d6a23eb100%  
+	    New File  		   13898	C:\FRNA\.git\objects\ae\67477fb8bbc0e6c0e5711e0749a8d17c0aa1f7100%  
+	    New File  		     153	C:\FRNA\.git\objects\b0\40f8dfbb964713f42750dffbc7bc84cbe0afda100%  
+	    New File  		     542	C:\FRNA\.git\objects\b3\21d14ca526923abcea7e5a8f5ac3a13273e59f100%  
+	    New File  		    2609	C:\FRNA\.git\objects\b6\5b372c8b9d873d72d6045be5aa6a3e29c0a136100%  
+	    New File  		    6691	C:\FRNA\.git\objects\b7\b403346343f28f23fabf5ff0c94f0798e534bc100%  
+	    New File  		     736	C:\FRNA\.git\objects\b7\df736ab23873904dffa840408dca2c3c22e4b3100%  
+	    New File  		      86	C:\FRNA\.git\objects\bb\214d556c85cce21a96090876b72878e869176e100%  
+	    New File  		    4209	C:\FRNA\.git\objects\bd\0c432bb0c6f561133c0b68038192be1a17fed1100%  
+	    New File  		      38	C:\FRNA\.git\objects\bd\bf4523d685a7b2c0a553856f2af699db0a715b100%  
+	    New File  		     120	C:\FRNA\.git\objects\bf\207b668c5a934217b8516c5299a2f82e332d54100%  
+	    New File  		   85537	C:\FRNA\.git\objects\bf\dd530858ae0c9986624437ee328de1b1317923100%  
+	    New File  		     806	C:\FRNA\.git\objects\bf\f323f6742841de3c029aef2317939676596ec7100%  
+	    New File  		     191	C:\FRNA\.git\logs\refs\heads\master100%  
+	    New File  		     664	C:\FRNA\.git\objects\c3\4fdce1d5483fc43e23a02081f24e7f19058962100%  
+	    New File  		      55	C:\FRNA\.git\objects\c3\678b9bd84394706e107b049c93d4c95f8309ef100%  
+	    New File  		     977	C:\FRNA\.git\objects\c6\16fd3aee7c48bdaac578ab5ff52ecdc9f58890100%  
+	    New File  		    3372	C:\FRNA\.git\objects\c7\6829451a32f68b3d1f2924354b8c4158d6f76c100%  
+	    New File  		    8622	C:\FRNA\.git\objects\c8\caab2a1d6b17c8e430cc16b3467ac1b814bf73100%  
+	    New File  		    2470	C:\FRNA\.git\objects\ca\1d16a162c0446205b2de90e19118f3bd99d606100%  
+	    New File  		    1989	C:\FRNA\.git\objects\cb\1266cae90f3e0afc46a8a5a79904290aa5fef6100%  
+	    New File  		    1630	C:\FRNA\.git\objects\cb\4f56f70b0a3b7d0677daee3184412b22f4099f100%  
+	    New File  		   29378	C:\FRNA\.git\objects\ce\11b22726a51886be8c669ddf768d2a0b717024100%  
+	    New File  		     408	C:\FRNA\.git\objects\d3\bcb35e5eee9342bafeeba06bb7ff7b97cec55f100%  
+	    New File  		     371	C:\FRNA\.git\objects\d4\7a143e8f874dc1285d0f965a873ceca5f74ab8100%  
+	    New File  		     157	C:\FRNA\.git\objects\d4\7da1a5f85ef492ba2fd5298ce9be66d0e82c7e100%  
+	    New File  		     746	C:\FRNA\.git\objects\d5\e7b9265478b2ce8d0fafb1517e40cda5b1fb92100%  
+	    New File  		      45	C:\FRNA\.git\objects\d5\f9ce05acb3b40c821c1a2a330def32a0f68419100%  
+	    New File  		     889	C:\FRNA\.git\objects\d7\18063690bd6d50caefa3d0876045e7ed5d272e100%  
+	    New File  		      44	C:\FRNA\.git\objects\d7\e8c43f71527f79bcbc752eaf2404457ad40570100%  
+	    New File  		    1996	C:\FRNA\.git\objects\d8\e1bba44c4ad14561864dc46c8c0593b9fa19a2100%  
+	    New File  		    1355	C:\FRNA\.git\objects\dc\1160fb8b0d122b7ca474017302f840319038f8100%  
+	    New File  		    1861	C:\FRNA\.git\objects\dc\46095662b1dd53a2863947f40d317953f62661100%  
+	    New File  		      52	C:\FRNA\.git\objects\dd\05232e891507210e9b6fb7a63922a74d1c6ebe100%  
+	    New File  		     341	C:\FRNA\.git\objects\dd\08fb8f76bd68c63bcb94b68b50d07904ffe6f0100%  
+	    New File  		     545	C:\FRNA\.git\objects\dd\7054e1726d6ccbd9e72c2be84b4b133aa1471e100%  
+	    New File  		      48	C:\FRNA\.git\objects\de\3e5a6599243d1ad7a5faf034556f91827a62c8100%  
+	    New File  		    3074	C:\FRNA\.git\objects\de\fb15f119845bd16730b79e39059133c404dd46100%  
+	    New File  		     859	C:\FRNA\.git\objects\e5\709cac3cc4d2e0eb28be6661327c8279d9bab6100%  
+	    New File  		     703	C:\FRNA\.git\objects\e6\5642a1cfbb651dab63c4703b556477d9f77eff100%  
+	    New File  		      15	C:\FRNA\.git\objects\e6\9de29bb2d1d6434b8b29ae775ad8c2e48c5391100%  
+	    New File  		    1543	C:\FRNA\.git\objects\e6\e60ad3974c01af3a489025d95cb4e7489c97db100%  
+	    New File  		    1104	C:\FRNA\.git\objects\e8\2f2767153a673b0d0c812d010f1a8c5cb94a9c100%  
+	    New File  		     468	C:\FRNA\.git\objects\e9\a4a5ac230d6d7ff22c56122f116070afcfd39f100%  
+	    New File  		    1719	C:\FRNA\.git\objects\eb\ca3a58572ef887f2c5d7eedbb11d65c7aba2f9100%  
+	    New File  		    2194	C:\FRNA\.git\objects\ef\0683b4a1c724add8b77ac1fe6dc3c08a5b2df4100%  
+	    New File  		    4182	C:\FRNA\.git\objects\f1\2f7d44df4d3c5dac25fb4b72a71f956b6c19bf100%  
+	    New File  		   17394	C:\FRNA\.git\objects\f6\7cca97a036ca6ca3e11dbe020a31642354f64b100%  
+	    New File  		    5173	C:\FRNA\.git\objects\f4\0fff121cc877046de846dcbd821df7bd9b3179100%  
+	    New File  		    1845	C:\FRNA\.git\objects\f7\08a18881a42dbfc8853b415a5d75e975f643bf100%  
+	    New File  		    1778	C:\FRNA\.git\objects\f7\755e922021d955208e28c9788e69b784981507100%  
+	    New File  		    3151	C:\FRNA\.git\objects\fa\f6bff1490e2e0dab2f18f8c3079d5de10ae6af100%  
+	    New File  		    1026	C:\FRNA\.git\objects\fb\06ac727a29fd41139436700ab32abf43ed2f8c100%  
+	    New File  		    7265	C:\FRNA\.git\objects\fc\9b292256c1377124ce4d30ef0761b05f009735100%  
+	    New File  		     223	C:\FRNA\.git\objects\fd\7d93af9769612d39fa2ad6c08635019ff71f29100%  
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :       164       163        47         0         0         0
+   Files :       367       194       173         0         0         1
+   Bytes :    6.71 m    3.65 m    3.05 m         0         0     2.0 k
+   Times :   0:00:01   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           40,377,810 Bytes/sec.
+   Speed :            2,310.437 MegaBytes/min.
+   Ended : Wednesday, December 10, 2025 5:28:52 AM
+

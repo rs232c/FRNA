@@ -960,4 +960,75 @@ ERROR : You do not have the Manage Auditing user right.
 
 ------------------------------------------------------------------------------
 
-	    Newer     		  409857	C:\FRNA\admin.py
+	    Newer     		  409857	C:\FRNA\admin.py100%  
+	    Newer     		   58027	C:\FRNA\aggregator.py100%  
+	    Newer     		   57953	C:\FRNA\backup_log.txt100%  
+	    Newer     		   11380	C:\FRNA\config.py100%  
+	    Newer     		   1.7 m	C:\FRNA\fallriver_news.db
+	  *EXTRA File 		    2089	C:\FRNA\backup\admin\templates\admin\keywords.html100%  
+	    Newer     		    1565	C:\FRNA\metrics.json100%  
+	    Newer     		     195	C:\FRNA\start_admin.bat100%  
+	    New File  		    4616	C:\FRNA\verify_zip_isolation.py100%  
+	    Newer     		  116082	C:\FRNA\website_generator.py100%  
+	    Newer     		   25521	C:\FRNA\website_generator_scripts.py100%  
+	    Newer     		    2606	C:\FRNA\website_generator_styles.py100%  
+	    Newer     		   14577	C:\FRNA\ingestors\weather_ingestor.py100%  
+	    Newer     		  204310	C:\FRNA\website_output\index.html100%  
+	    Newer     		    2635	C:\FRNA\website_output\trash.html100%  
+	    Newer     		   63012	C:\FRNA\website_output\category\business.html100%  
+	    Newer     		   82341	C:\FRNA\website_output\category\crime.html100%  
+	    Newer     		   33633	C:\FRNA\website_output\category\events.html100%  
+	    Newer     		    9108	C:\FRNA\website_output\category\food.html100%  
+	    Newer     		   98917	C:\FRNA\website_output\category\local-news.html100%  
+	    Newer     		   32206	C:\FRNA\website_output\category\obituaries.html100%  
+	    Newer     		   55129	C:\FRNA\website_output\category\schools.html100%  
+	    Newer     		   79435	C:\FRNA\website_output\category\sports.html100%  
+	    Newer     		    2281	C:\FRNA\website_output\css\style.css100%  
+	    Newer     		   25247	C:\FRNA\website_output\js\main.js100%  
+	    Newer     		   15710	C:\FRNA\ingestors\__pycache__\weather_ingestor.cpython-314.pyc100%  
+	    Newer     		    3368	C:\FRNA\admin\templates\admin\settings.html100%  
+	    Newer     		   13546	C:\FRNA\cache\6f2f520c521f428c71cb0986aaad8ec7.json100%  
+	    Newer     		     835	C:\FRNA\cache\b76707cf5fc8d7f6b9de92850b2d92ec.json100%  
+	    Newer     		   19063	C:\FRNA\cache\e1a4479cf7ef888e7f83532455656922.json100%  
+	    Newer     		    6580	C:\FRNA\cache\eb214d072a3306aecc67605fe461ed00.json100%  
+	    Newer     		   66158	C:\FRNA\__pycache__\aggregator.cpython-314.pyc100%  
+	    Newer     		    8258	C:\FRNA\__pycache__\config.cpython-314.pyc100%  
+	    Newer     		  118628	C:\FRNA\__pycache__\website_generator.cpython-314.pyc100%  
+	    Newer     		    2571	C:\FRNA\website_generator\static\css\styles.py100%  
+	    Newer     		   24239	C:\FRNA\website_generator\templates\category.html.j2100%  
+	    Newer     		   31212	C:\FRNA\website_generator\templates\index.html.j2100%  
+	    New File  		   17862	C:\FRNA\website_generator\templates\obituaries.html.j2100%  
+	    New File  		    7705	C:\FRNA\website_generator\__pycache__\utils.cpython-314.pyc100%  
+	    Newer     		    2825	C:\FRNA\website_generator\static\css\__pycache__\styles.cpython-314.pyc100%  
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        47        46        47         0         0         0
+   Files :       195        39       156         0         0         1
+   Bytes :    6.11 m    3.38 m    2.72 m         0         0     2.0 k
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           322,528,818 Bytes/sec.
+   Speed :            18,455.246 MegaBytes/min.
+   Ended : Wednesday, December 10, 2025 4:44:52 AM
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Wednesday, December 10, 2025 5:28:52 AM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+ Exc Dirs : backup
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+	    Newer     		  414699	C:\FRNA\admin.py

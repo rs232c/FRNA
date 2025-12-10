@@ -488,6 +488,252 @@ document.addEventListener('click', async (e) => {
 
 console.log('Unified button event handler attached');
 
+// Store all trash articles for filtering
+let allTrashArticles = [];
+let currentTrashFilter = 'all';
+let currentSearchTerm = '';
+
+// Filter trash articles based on selected filter and search term
+function filterTrashArticles(filter, searchTerm) {
+    currentTrashFilter = filter;
+    currentSearchTerm = searchTerm || '';
+    const trashList = document.getElementById('trashList');
+    if (!trashList) return;
+    
+    // Update filter buttons
+    document.querySelectorAll('.trash-filter-btn').forEach(btn => {
+        const btnFilter = btn.getAttribute('data-filter');
+        if (btnFilter === filter) {
+            btn.classList.add('active');
+            btn.style.background = '#0078d4';
+            btn.style.color = 'white';
+            btn.style.border = 'none';
+        } else {
+            btn.classList.remove('active');
+            btn.style.background = '#404040';
+            btn.style.color = '#e0e0e0';
+            btn.style.border = '1px solid #555';
+        }
+    });
+    
+    // Update clear button visibility
+    const clearBtn = document.getElementById('trashSearchClear');
+    if (clearBtn) {
+        clearBtn.style.display = searchTerm && searchTerm.trim() ? 'block' : 'none';
+    }
+    
+    // Filter articles by rejection type first
+    let filteredArticles = allTrashArticles;
+    if (filter === 'manual') {
+        filteredArticles = allTrashArticles.filter(article => {
+            const rejectionType = article.rejection_type || (article.is_auto_rejected ? 'auto' : 'manual');
+            return rejectionType === 'manual';
+        });
+    } else if (filter === 'auto') {
+        filteredArticles = allTrashArticles.filter(article => {
+            const rejectionType = article.rejection_type || (article.is_auto_rejected ? 'auto' : 'manual');
+            return rejectionType === 'auto';
+        });
+    }
+    
+    // Then filter by search term if provided
+    if (searchTerm && searchTerm.trim()) {
+        const searchLower = searchTerm.toLowerCase().trim();
+        filteredArticles = filteredArticles.filter(article => {
+            // Search in title
+            const title = (article.title || '').toLowerCase();
+            if (title.includes(searchLower)) return true;
+            
+            // Search in source
+            const source = (article.source || '').toLowerCase();
+            if (source.includes(searchLower)) return true;
+            
+            // Search in auto-reject reason
+            if (article.auto_reject_reason) {
+                const reason = article.auto_reject_reason.toLowerCase();
+                if (reason.includes(searchLower)) return true;
+            }
+            
+            // Search in publication date (if search looks like a date)
+            if (article.published) {
+                const published = article.published.toLowerCase();
+                if (published.includes(searchLower)) return true;
+            }
+            
+            return false;
+        });
+    }
+    
+    // Clear and re-render filtered articles
+    trashList.innerHTML = '';
+    
+    if (filteredArticles.length === 0) {
+        let emptyMsg = '';
+        if (searchTerm && searchTerm.trim()) {
+            emptyMsg = `No articles found matching "${escapeHtml(searchTerm)}"`;
+            if (filter !== 'all') {
+                const filterName = filter === 'manual' ? 'manually rejected' : 'auto-filtered';
+                emptyMsg += ` in ${filterName} articles`;
+            }
+        } else {
+            emptyMsg = filter === 'all' ? 'No articles in trash' : 
+                        filter === 'manual' ? 'No manually rejected articles' : 
+                        'No auto-filtered articles';
+        }
+        trashList.innerHTML = '<p style="padding: 2rem; text-align: center; color: #888; background: #252525; border-radius: 8px; font-size: 1.1rem; border: 1px solid #404040;">' + emptyMsg + '</p>';
+        updateTrashFilterCount(0, allTrashArticles.length, filter, searchTerm);
+        return;
+    }
+    
+    filteredArticles.forEach(function(article) {
+        const articleId = article.id;
+        const rejectionType = article.rejection_type || (article.is_auto_rejected ? 'auto' : 'manual');
+        const isManual = rejectionType === 'manual';
+        const isAuto = rejectionType === 'auto';
+        const borderColor = isManual ? '#d32f2f' : '#764ba2';
+        const badgeText = isManual ? '🗑️ Manually Rejected' : '🤖 Auto-Filtered';
+        const badgeClass = isManual ? 'badge-manual' : 'badge-auto';
+        
+        const articleCard = document.createElement('div');
+        articleCard.className = 'trash-article-card';
+        articleCard.setAttribute('data-rejection-type', rejectionType);
+        articleCard.style.cssText = 'background: #252525; padding: 0; margin-bottom: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); overflow: hidden; border-left: 5px solid ' + borderColor + '; border: 1px solid #404040;';
+        
+        const safeTitle = escapeHtml(article.title || 'No title');
+        const safeSource = escapeHtml(article.source || 'Unknown');
+        const publishedDate = article.published ? article.published.substring(0, 10) : null;
+        const safePublished = publishedDate ? escapeHtml(publishedDate) : 'N/A';
+        const safeArticleId = escapeHtml(String(articleId));
+        
+        const relevanceScore = article.relevance_score !== null && article.relevance_score !== undefined ? 
+            Math.round(article.relevance_score) : 'N/A';
+        const relevanceColor = relevanceScore !== 'N/A' && relevanceScore >= 50 ? '#4caf50' : 
+            (relevanceScore !== 'N/A' && relevanceScore >= 30 ? '#ff9800' : '#888');
+        
+        // Build rejection reason display for both auto-filtered and manually rejected articles
+        let rejectionReasonHtml = '';
+        if (article.auto_reject_reason) {
+            const reason = article.auto_reject_reason;
+            const safeReason = escapeHtml(reason);
+            
+            // Parse tag information from reason
+            let matchedTags = [];
+            let missingTags = [];
+            let baseReason = reason;
+            
+            // Check if reason contains tag information
+            if (reason.includes('| Matched:') || reason.includes('| Missing:')) {
+                const parts = reason.split(' | ');
+                baseReason = parts[0]; // First part is the base reason
+                
+                for (let i = 1; i < parts.length; i++) {
+                    const part = parts[i];
+                    if (part.startsWith('Matched: ')) {
+                        const tags = part.substring(9).split(', ');
+                        matchedTags = tags;
+                    } else if (part.startsWith('Missing: ')) {
+                        const tags = part.substring(9).split(', ');
+                        missingTags = tags;
+                    }
+                }
+            }
+            
+            let tagDisplayHtml = '';
+            if (matchedTags.length > 0 || missingTags.length > 0) {
+                tagDisplayHtml = '<div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #404040;">';
+                
+                if (matchedTags.length > 0) {
+                    tagDisplayHtml += '<div style="margin-bottom: 0.5rem;">';
+                    tagDisplayHtml += '<strong style="color: #4caf50; font-size: 0.8rem;">✓ Matched Tags:</strong>';
+                    tagDisplayHtml += '<div style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem;">';
+                    matchedTags.forEach(tag => {
+                        const safeTag = escapeHtml(tag);
+                        tagDisplayHtml += `<span style="background: rgba(76, 175, 80, 0.2); color: #4caf50; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; border: 1px solid rgba(76, 175, 80, 0.3);">${safeTag}</span>`;
+                    });
+                    tagDisplayHtml += '</div></div>';
+                }
+                
+                if (missingTags.length > 0) {
+                    tagDisplayHtml += '<div>';
+                    tagDisplayHtml += '<strong style="color: #ff9800; font-size: 0.8rem;">✗ Missing Tags:</strong>';
+                    tagDisplayHtml += '<div style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem;">';
+                    missingTags.forEach(tag => {
+                        const safeTag = escapeHtml(tag);
+                        tagDisplayHtml += `<span style="background: rgba(255, 152, 0, 0.2); color: #ff9800; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; border: 1px solid rgba(255, 152, 0, 0.3);">${safeTag}</span>`;
+                    });
+                    tagDisplayHtml += '</div></div>';
+                }
+                
+                tagDisplayHtml += '</div>';
+            }
+            
+            // Determine header text and color based on rejection type
+            const headerText = isAuto ? '🤖 Auto-filter reason:' : '🗑️ Rejection reason:';
+            const borderColor = isAuto ? '#ff9800' : '#d32f2f';
+            const bgColor = isAuto ? 'rgba(255, 152, 0, 0.1)' : 'rgba(211, 47, 47, 0.1)';
+            const textColor = isAuto ? '#ff9800' : '#d32f2f';
+            
+            rejectionReasonHtml = '<div style="font-size: 0.85rem; color: ' + textColor + '; margin-top: 0.5rem; padding: 0.75rem; background: ' + bgColor + '; border-left: 3px solid ' + borderColor + '; border-radius: 4px;">' +
+                '<strong>' + headerText + '</strong> ' + escapeHtml(baseReason) +
+                tagDisplayHtml +
+                '</div>';
+        }
+        
+        let cardHtml = '<div style="padding: 1.5rem; border-bottom: 1px solid #404040;">' +
+            '<div style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 0.5rem;">' +
+            '<div style="flex: 1;">' +
+            '<div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">' +
+            '<div class="badge-container ' + badgeClass + '">' + escapeHtml(badgeText) + '</div>' +
+            '</div>' +
+            '<div style="font-weight: 600; font-size: 1.1rem; color: #e0e0e0; margin-bottom: 0.5rem;">' + safeTitle + '</div>' +
+            '<div style="font-size: 0.85rem; color: #888;">' + safeSource + ' - ' + safePublished + '</div>' +
+            '<div style="font-size: 0.85rem; color: #888; margin-top: 0.25rem;">Relevance: <strong style="color: ' + relevanceColor + ';">' + relevanceScore + '</strong></div>' +
+            rejectionReasonHtml +
+            '</div>' +
+            '<button class="restore-trash-btn" data-id="' + escapeAttr(safeArticleId) + '" data-rejection-type="' + escapeAttr(rejectionType) + '" style="background: #4caf50; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">↩️ Restore</button>' +
+            '</div>' +
+            '</div>';
+        
+        articleCard.innerHTML = cardHtml;
+        trashList.appendChild(articleCard);
+    });
+    
+    updateTrashFilterCount(filteredArticles.length, allTrashArticles.length, filter, searchTerm);
+}
+
+// Update filter count display
+function updateTrashFilterCount(visible, total, filter, searchTerm) {
+    const countText = document.getElementById('trashFilterCountText');
+    if (!countText) return;
+    
+    if (total === 0) {
+        countText.textContent = 'No articles';
+    } else if (searchTerm && searchTerm.trim()) {
+        const searchDisplay = escapeHtml(searchTerm.trim());
+        if (filter === 'all') {
+            countText.textContent = `Showing ${visible} of ${total} articles matching "${searchDisplay}"`;
+        } else {
+            const filterName = filter === 'manual' ? 'manually rejected' : 'auto-filtered';
+            countText.textContent = `Showing ${visible} of ${total} ${filterName} articles matching "${searchDisplay}"`;
+        }
+    } else if (filter === 'all') {
+        countText.textContent = `Showing all ${total} article${total !== 1 ? 's' : ''}`;
+    } else {
+        const filterName = filter === 'manual' ? 'manually rejected' : 'auto-filtered';
+        countText.textContent = `Showing ${visible} of ${total} ${filterName} article${visible !== 1 ? 's' : ''}`;
+    }
+}
+
+// Clear search function
+function clearTrashSearch() {
+    const searchInput = document.getElementById('trashSearchInput');
+    if (searchInput) {
+        searchInput.value = '';
+        filterTrashArticles(currentTrashFilter, '');
+    }
+}
+window.clearTrashSearch = clearTrashSearch;
+
 // Load trash function
 window.loadTrash = function loadTrash() {
     console.log('loadTrash called');
@@ -529,64 +775,13 @@ window.loadTrash = function loadTrash() {
         return response.json();
     })
     .then(function(data) {
-        if (data && data.success && data.articles && data.articles.length > 0) {
-            trashList.innerHTML = '';
-            data.articles.forEach(function(article) {
-                const articleId = article.id;
-                const rejectionType = article.rejection_type || (article.is_auto_rejected ? 'auto' : 'manual');
-                const isManual = rejectionType === 'manual';
-                const isAuto = rejectionType === 'auto';
-                const borderColor = isManual ? '#d32f2f' : '#764ba2';
-                const badgeText = isManual ? '🗑️ Manually Rejected' : '🤖 Auto-Filtered';
-                const badgeClass = isManual ? 'badge-manual' : 'badge-auto';
-                
-                const articleCard = document.createElement('div');
-                articleCard.className = 'trash-article-card';
-                articleCard.style.cssText = 'background: #252525; padding: 0; margin-bottom: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); overflow: hidden; border-left: 5px solid ' + borderColor + '; border: 1px solid #404040;';
-                
-                const safeTitle = escapeHtml(article.title || 'No title');
-                const safeSource = escapeHtml(article.source || 'Unknown');
-                const publishedDate = article.published ? article.published.substring(0, 10) : null;
-                const safePublished = publishedDate ? escapeHtml(publishedDate) : 'N/A';
-                const safeArticleId = escapeHtml(String(articleId));
-                
-                const relevanceScore = article.relevance_score !== null && article.relevance_score !== undefined ? 
-                    Math.round(article.relevance_score) : 'N/A';
-                const relevanceColor = relevanceScore !== 'N/A' && relevanceScore >= 50 ? '#4caf50' : 
-                    (relevanceScore !== 'N/A' && relevanceScore >= 30 ? '#ff9800' : '#888');
-                
-                // Build rejection reason display for auto-filtered articles
-                let rejectionReasonHtml = '';
-                if (isAuto && article.auto_reject_reason) {
-                    const safeReason = escapeHtml(article.auto_reject_reason);
-                    rejectionReasonHtml = '<div style="font-size: 0.85rem; color: #ff9800; margin-top: 0.5rem; padding: 0.5rem; background: rgba(255, 152, 0, 0.1); border-left: 3px solid #ff9800; border-radius: 4px;">' +
-                        '<strong>🤖 Auto-filter reason:</strong> ' + safeReason +
-                        '</div>';
-                }
-                
-                let cardHtml = '<div style="padding: 1.5rem; border-bottom: 1px solid #404040;">' +
-                    '<div style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 0.5rem;">' +
-                    '<div style="flex: 1;">' +
-                    '<div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">' +
-                    '<div class="badge-container ' + badgeClass + '">' + escapeHtml(badgeText) + '</div>' +
-                    '</div>' +
-                    '<div style="font-weight: 600; font-size: 1.1rem; color: #e0e0e0; margin-bottom: 0.5rem;">' + safeTitle + '</div>' +
-                    '<div style="font-size: 0.85rem; color: #888;">' + safeSource + ' - ' + safePublished + '</div>' +
-                    '<div style="font-size: 0.85rem; color: #888; margin-top: 0.25rem;">Relevance: <strong style="color: ' + relevanceColor + ';">' + relevanceScore + '</strong></div>' +
-                    rejectionReasonHtml +
-                    '</div>' +
-                    '<button class="restore-trash-btn" data-id="' + escapeAttr(safeArticleId) + '" data-rejection-type="' + escapeAttr(rejectionType) + '" style="background: #4caf50; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">↩️ Restore</button>' +
-                    '</div>' +
-                    '</div>';
-                
-                articleCard.innerHTML = cardHtml;
-                trashList.appendChild(articleCard);
-            });
-        } else if (data && data.success && (!data.articles || data.articles.length === 0)) {
-            trashList.innerHTML = '<p style="padding: 2rem; text-align: center; color: #888; background: #252525; border-radius: 8px; font-size: 1.1rem; border: 1px solid #404040;">No articles in trash</p>';
-        } else {
-            trashList.innerHTML = '<p style="padding: 2rem; text-align: center; color: #d32f2f; background: #252525; border-radius: 8px; border: 1px solid #404040;">Error: Unexpected response from server</p>';
-        }
+        // Store all articles for filtering
+        allTrashArticles = (data && data.success && data.articles) ? data.articles : [];
+        
+        // Apply current filter and search
+        const searchInput = document.getElementById('trashSearchInput');
+        const searchTerm = searchInput ? searchInput.value : '';
+        filterTrashArticles(currentTrashFilter, searchTerm);
     })
     .catch(function(e) {
         console.error('Error loading trash:', e);
@@ -598,8 +793,50 @@ window.loadTrash = function loadTrash() {
                 '<button class="retry-trash-btn" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>' +
                 '</p>';
         }
+        updateTrashFilterCount(0, 0, 'all');
     });
 };
+
+// Setup filter button handlers and search input
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter button handlers
+    document.getElementById('trashFilterAll')?.addEventListener('click', function() {
+        const searchInput = document.getElementById('trashSearchInput');
+        const searchTerm = searchInput ? searchInput.value : '';
+        filterTrashArticles('all', searchTerm);
+    });
+    document.getElementById('trashFilterManual')?.addEventListener('click', function() {
+        const searchInput = document.getElementById('trashSearchInput');
+        const searchTerm = searchInput ? searchInput.value : '';
+        filterTrashArticles('manual', searchTerm);
+    });
+    document.getElementById('trashFilterAuto')?.addEventListener('click', function() {
+        const searchInput = document.getElementById('trashSearchInput');
+        const searchTerm = searchInput ? searchInput.value : '';
+        filterTrashArticles('auto', searchTerm);
+    });
+    
+    // Search input handler with debouncing
+    let searchTimeout;
+    const searchInput = document.getElementById('trashSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const searchTerm = this.value;
+            searchTimeout = setTimeout(function() {
+                filterTrashArticles(currentTrashFilter, searchTerm);
+            }, 300); // Wait 300ms after user stops typing
+        });
+        
+        // Also trigger on Enter key
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                filterTrashArticles(currentTrashFilter, this.value);
+            }
+        });
+    }
+});
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', function() {
@@ -1853,6 +2090,84 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(loadCategoryStats, 300);
     }
 });
+
+// Save regenerate settings
+function saveRegenerateSettings() {
+    // Get values from input fields (checkboxes may not exist)
+    const regenerateIntervalEl = document.getElementById('regenerateInterval');
+    const sourceFetchIntervalEl = document.getElementById('sourceFetchInterval');
+    
+    if (!regenerateIntervalEl || !sourceFetchIntervalEl) {
+        alert('Error: Settings fields not found. Please refresh the page.');
+        return;
+    }
+    
+    const regenerateInterval = parseInt(regenerateIntervalEl.value || '10');
+    const sourceFetchInterval = parseInt(sourceFetchIntervalEl.value || '10');
+    
+    // Try to get checkboxes if they exist (for backward compatibility)
+    const autoRegenerate = document.getElementById('autoRegenerate')?.checked ?? true;
+    const regenerateOnLoad = document.getElementById('regenerateOnLoad')?.checked ?? false;
+    
+    if (isNaN(regenerateInterval) || regenerateInterval < 1 || regenerateInterval > 1440) {
+        alert('Regenerate interval must be between 1 and 1440 minutes');
+        regenerateIntervalEl.focus();
+        return;
+    }
+    
+    if (isNaN(sourceFetchInterval) || sourceFetchInterval < 1 || sourceFetchInterval > 1440) {
+        alert('Source fetch interval must be between 1 and 1440 minutes');
+        sourceFetchIntervalEl.focus();
+        return;
+    }
+    
+    // Show loading state
+    const button = event?.target || document.querySelector('button[onclick*="saveRegenerateSettings"]');
+    const originalText = button?.textContent || '💾 Save All Settings';
+    if (button) {
+        button.disabled = true;
+        button.textContent = '⏳ Saving...';
+    }
+    
+    fetch('/admin/api/regenerate-settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            auto_regenerate: autoRegenerate,
+            regenerate_interval: regenerateInterval,
+            regenerate_on_load: regenerateOnLoad,
+            source_fetch_interval: sourceFetchInterval
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (button) {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+        
+        if (data.success) {
+            alert('Settings saved successfully!\n\n' +
+                  `Regenerate Interval: ${regenerateInterval} minutes\n` +
+                  `Source Fetch Interval: ${sourceFetchInterval} minutes\n\n` +
+                  'Note: Restart main.py to apply changes immediately.');
+        } else {
+            alert('Error saving settings: ' + (data.error || data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        if (button) {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+        console.error('Error:', error);
+        alert('Error saving settings: ' + error.message);
+    });
+}
+window.saveRegenerateSettings = saveRegenerateSettings;
 
 console.log('Admin script loaded');
 
