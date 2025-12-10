@@ -1,1 +1,5 @@
-{ "output": "website_output" } 
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/website_output/index.html" }
+  ]
+}
