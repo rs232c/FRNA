@@ -71,17 +71,452 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="text-xl font-semibold text-blue-400">FRNA</div>
-                <div class="flex flex-wrap gap-2">
-                    <a href="../index.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';" data-tab="all">Home</a>
-                    <a href="local-news.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Local News</a>
-                    <a href="crime.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Crime & Public Safety</a>
-                    <a href="sports.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-blue-400" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">Sports</a>
-                    <a href="events.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Entertainment & Events</a>
-                    <a href="business.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Business & Development</a>
-                    <a href="schools.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Schools</a>
-                    <a href="food.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Food & Drink</a>
-                    <a href="obituaries.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Obituaries</a>
+                
+    <!-- Desktop Navigation: Two Rows - Centered -->
+    <div class="hidden lg:flex flex-col items-center gap-3 w-full">
+        <!-- Top Row: Primary Navigation (Big, Bold) -->
+        <div class="flex flex-wrap items-center justify-center gap-2 lg:gap-3">
+            <a href="../index.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-tab="all">Local</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
+            <a href="crime.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-category-slug="crime">Police & Fire</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
+            <a href="sports.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-white font-bold bg-blue-500/20 border border-blue-500/40" data-category-slug="sports">Sports</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
+            <a href="obituaries.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-category-slug="obituaries">Obituaries</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
+            <a href="food.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-category-slug="food">Food & Drink</a>
+        </div>
+        
+        <!-- Second Row: Secondary Navigation (Smaller, Lighter) - Centered under first row -->
+        <div class="flex flex-wrap items-center justify-center gap-2 lg:gap-3">
+            <a href="media.html" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="media">Media</a> <span class="text-gray-800 mx-1.5 text-xs">•</span> 
+            <a href="scanner.html" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="scanner">Scanner</a> <span class="text-gray-800 mx-1.5 text-xs">•</span> 
+            <a href="weather.html" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="weather">Weather</a> <span class="text-gray-800 mx-1.5 text-xs">•</span> 
+            <a href="#" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="submit-tip">Submit Tip</a> <span class="text-gray-800 mx-1.5 text-xs">•</span> 
+            <a href="#" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="lost-found">Lost & Found</a> <span class="text-gray-800 mx-1.5 text-xs">•</span> 
+            <a href="events.html" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="events">Events</a>
+        </div>
+    </div>
+    
+    <!-- Custom Hamburger Menu - Side Drawer Overlay -->
+    <div id="mobileNavMenu" class="hidden fixed inset-0 z-[100] transition-opacity duration-300" style="opacity: 0;">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" onclick="closeHamburgerMenu()"></div>
+        <!-- Side Drawer -->
+        <div id="hamburgerDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-[#161616] shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-out" style="transform: translateX(100%);" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="sticky top-0 bg-gradient-to-r from-[#161616] to-[#1a1a1a] border-b border-gray-800/50 p-5 flex items-center justify-between z-10 shadow-lg">
+                <div class="flex items-center gap-3">
+                    <div class="text-2xl font-bold text-blue-400">FRNA</div>
+                    <span class="text-xs text-gray-500 uppercase tracking-wider">Menu</span>
                 </div>
+                <button id="closeMobileNav" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50" aria-label="Close menu" onclick="closeHamburgerMenu()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Menu Content -->
+            <div class="p-5 space-y-6">
+                <!-- Admin Section (Top) - Collapsible Submenu -->
+                <div class="pb-4 border-b border-gray-800/50">
+                    <button id="adminMenuToggle" class="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 hover:border-blue-500/50 transition-all group" onclick="toggleAdminSubmenu(event)">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="text-white font-semibold">Admin Panel</div>
+                                <div class="text-xs text-gray-400">Manage articles & settings</div>
+                            </div>
+                        </div>
+                        <svg id="adminMenuArrow" class="w-5 h-5 text-gray-400 group-hover:text-white transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <!-- Admin Submenu (Hidden by default) -->
+                    <div id="adminSubmenu" class="hidden mt-2 pl-4 space-y-2">
+                        <a href="#" id="adminLink" class="block px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-[#1a1a1a]/50 transition-colors text-sm">Current Zip Admin</a>
+                        <a href="/admin" class="block px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-[#1a1a1a]/50 transition-colors text-sm">Main Admin Dashboard</a>
+                    </div>
+                </div>
+                
+                <!-- Navigation Links Section -->
+                <div class="space-y-4">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Navigation</div>
+                    
+                    <!-- Home Link (No Toggle) -->
+                    <a href="../index.html" class="flex items-center px-4 py-3 rounded-lg text-gray-200 hover:text-white hover:bg-[#1a1a1a] transition-colors border border-transparent hover:border-gray-800" data-tab="all">
+                        <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        <span class="font-semibold">Home</span>
+                    </a>
+                </div>
+                
+                <!-- Category Controls Section -->
+                <div class="space-y-4">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Category Controls</div>
+                    <p class="text-xs text-gray-400 mb-4 px-2">Toggle categories on/off to customize your navigation</p>
+                    
+                    <!-- Primary Categories -->
+                    <div class="space-y-2">
+                        <div class="text-xs font-medium text-gray-500 px-2 mb-2">Primary Navigation</div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="crime">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="crime.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="crime">Police & Fire</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="crime" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="sports">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="sports.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="sports">Sports</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="sports" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="obituaries">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="obituaries.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="obituaries">Obituaries</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="obituaries" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="food">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="food.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="food">Food & Drink</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="food" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Secondary Categories -->
+                    <div class="space-y-2 pt-2">
+                        <div class="text-xs font-medium text-gray-500 px-2 mb-2">Secondary Navigation</div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="media">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="media.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="media">Media</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="media" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="scanner">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="scanner.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="scanner">Scanner</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="scanner" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="weather">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="weather.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="weather">Weather</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="weather" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="submit-tip">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="#" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="submit-tip">Submit Tip</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="submit-tip" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="lost-found">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="#" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="lost-found">Lost & Found</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="lost-found" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="events">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="events.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="events">Events</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="events" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Custom Hamburger Menu with Smooth Animations
+        function openHamburgerMenu() {
+            const menu = document.getElementById('mobileNavMenu');
+            const drawer = document.getElementById('hamburgerDrawer');
+            if (!menu || !drawer) {
+                console.error('Hamburger menu elements not found:', { menu: !!menu, drawer: !!drawer });
+                return;
+            }
+            
+            menu.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            // Trigger animation
+            requestAnimationFrame(() => {
+                menu.style.opacity = '1';
+                drawer.style.transform = 'translateX(0)';
+            });
+            
+            // Update toggle switch states
+            updateToggleSwitches();
+        }
+        
+        function closeHamburgerMenu() {
+            const menu = document.getElementById('mobileNavMenu');
+            const drawer = document.getElementById('hamburgerDrawer');
+            if (!menu || !drawer) return;
+            
+            // Animate out
+            menu.style.opacity = '0';
+            drawer.style.transform = 'translateX(100%)';
+            
+            setTimeout(() => {
+                menu.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, 300);
+        }
+        
+        function updateToggleSwitches() {
+            // Wait for CategoryPreferences to be available
+            if (!window.CategoryPreferences) {
+                setTimeout(updateToggleSwitches, 100);
+                return;
+            }
+            
+            document.querySelectorAll('.category-toggle-switch').forEach(switchEl => {
+                const categorySlug = switchEl.dataset.categorySlug;
+                if (categorySlug) {
+                    const isEnabled = window.CategoryPreferences.isCategoryEnabled(categorySlug);
+                    switchEl.checked = isEnabled;
+                }
+            });
+        }
+        
+        // Initialize menu - wait for DOM and CategoryPreferences
+        function initHamburgerMenu() {
+            const toggle = document.getElementById('mobileNavToggle');
+            const menu = document.getElementById('mobileNavMenu');
+            const closeBtn = document.getElementById('closeMobileNav');
+            
+            if (!toggle || !menu) {
+                // Retry if elements not found yet
+                setTimeout(initHamburgerMenu, 100);
+                return;
+            }
+            
+            // Hamburger button click handler
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openHamburgerMenu();
+            });
+            
+            // Close button handler
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeHamburgerMenu();
+                });
+            }
+            
+            // Close on backdrop click
+            const backdrop = menu.querySelector('.backdrop-blur-sm');
+            if (backdrop) {
+                backdrop.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeHamburgerMenu();
+                });
+            }
+            
+            // Close on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !menu.classList.contains('hidden')) {
+                    closeHamburgerMenu();
+                }
+            });
+            
+            // Handle toggle switch changes
+            menu.addEventListener('change', function(e) {
+                if (e.target.classList.contains('category-toggle-switch')) {
+                    const categorySlug = e.target.dataset.categorySlug;
+                    const isEnabled = e.target.checked;
+                    
+                    if (categorySlug) {
+                        // Wait for CategoryPreferences if not ready
+                        if (!window.CategoryPreferences) {
+                            setTimeout(() => {
+                                if (window.CategoryPreferences) {
+                                    window.CategoryPreferences.toggleCategory(categorySlug, isEnabled);
+                                    if (window.NavigationFilter) {
+                                        window.NavigationFilter.applyFilters();
+                                    }
+                                }
+                            }, 100);
+                        } else {
+                            window.CategoryPreferences.toggleCategory(categorySlug, isEnabled);
+                            if (window.NavigationFilter) {
+                                window.NavigationFilter.applyFilters();
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Close menu when clicking navigation links (but not toggle switches)
+            menu.querySelectorAll('a.nav-category-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (!e.target.closest('label') && !e.target.closest('.category-toggle-switch')) {
+                        setTimeout(() => closeHamburgerMenu(), 200);
+                    }
+                });
+            });
+            
+            // Update switches when preferences change
+            window.addEventListener('categoryPreferencesChanged', updateToggleSwitches);
+            
+            // Initial update after CategoryPreferences loads
+            function waitForCategoryPreferences() {
+                if (window.CategoryPreferences) {
+                    updateToggleSwitches();
+                } else {
+                    setTimeout(waitForCategoryPreferences, 100);
+                }
+            }
+            waitForCategoryPreferences();
+        }
+        
+        // Start initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initHamburgerMenu);
+        } else {
+            initHamburgerMenu();
+        }
+        
+        // Make functions globally available for onclick handlers
+        window.openHamburgerMenu = openHamburgerMenu;
+        window.closeHamburgerMenu = closeHamburgerMenu;
+        
+        // Update mobile toggle icons based on preferences
+        function updateMobileToggleIcons() {
+            if (!window.CategoryPreferences) {
+                setTimeout(updateMobileToggleIcons, 100);
+                return;
+            }
+            
+            document.querySelectorAll('.category-toggle-btn').forEach(btn => {
+                const slug = btn.dataset.categorySlug;
+                if (slug) {
+                    const isEnabled = window.CategoryPreferences.isCategoryEnabled(slug);
+                    const icon = btn.querySelector('.category-toggle-icon');
+                    if (icon) {
+                        icon.textContent = isEnabled ? '✓' : '✕';
+                        icon.className = isEnabled 
+                            ? 'category-toggle-icon text-lg text-green-400' 
+                            : 'category-toggle-icon text-lg text-red-400';
+                    }
+                }
+            });
+        }
+        
+        // Make function globally available
+        window.updateMobileToggleIcons = updateMobileToggleIcons;
+        
+        // Handle toggle button clicks
+        document.addEventListener('click', function(e) {
+            const toggleBtn = e.target.closest('.category-toggle-btn');
+            if (toggleBtn && window.CategoryPreferences) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const slug = toggleBtn.dataset.categorySlug;
+                if (slug) {
+                    const currentState = window.CategoryPreferences.isCategoryEnabled(slug);
+                    const newState = !currentState;
+                    window.CategoryPreferences.toggleCategory(slug, newState);
+                    
+                    // Update icons
+                    updateMobileToggleIcons();
+                    
+                    // Update navigation visibility
+                    if (window.NavigationFilter) {
+                        window.NavigationFilter.applyFilters();
+                    }
+                }
+            }
+        });
+        
+        // Toggle admin submenu
+        function toggleAdminSubmenu(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const submenu = document.getElementById('adminSubmenu');
+            const arrow = document.getElementById('adminMenuArrow');
+            if (submenu && arrow) {
+                const isHidden = submenu.classList.contains('hidden');
+                if (isHidden) {
+                    submenu.classList.remove('hidden');
+                    arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    submenu.classList.add('hidden');
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            }
+        }
+        window.toggleAdminSubmenu = toggleAdminSubmenu;
+        
+        // Update admin link with current zip code and initialize icons
+        document.addEventListener('DOMContentLoaded', function() {
+            const adminLink = document.getElementById('adminLink');
+            if (adminLink) {
+                // Get current zip from URL or localStorage
+                const pathMatch = window.location.pathname.match(/^\/(\d{5})/);
+                const zipFromPath = pathMatch ? pathMatch[1] : null;
+                const zipFromStorage = localStorage.getItem('currentZip');
+                const currentZip = zipFromPath || zipFromStorage || '02720';
+                
+                adminLink.href = `/admin/${currentZip}`;
+                adminLink.textContent = `Zip ${currentZip} Admin`;
+            }
+            
+            // Initial icon update - wait for CategoryPreferences to be ready
+            function initIcons() {
+                if (window.CategoryPreferences && window.updateMobileToggleIcons) {
+                    window.updateMobileToggleIcons();
+                } else {
+                    setTimeout(initIcons, 100);
+                }
+            }
+            initIcons();
+        });
+    </script>
+
             </div>
         </div>
     </nav>
@@ -149,7 +584,7 @@
                         </div>
                         
                         <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / 3); width: calc(100% / 3);">
-                            <a href="https://fallriverreporter.com/southcoast-health-recognized-by-the-u-s-news-world-report-2025-maternity-care-access-hospitals/?utm_source=rss&utm_medium=rss&utm_campaign=southcoast-health-recognized-by-the-u-s-news-world-report-2025-maternity-care-access-hospitals" target="_blank" rel="noopener" class="group block relative w-full h-full">
+                            <a href="https://fallriverreporter.com/accomplished-and-gifted-soccer-player-former-fall-river-market-owner-passes-away-services-announced/?utm_source=rss&utm_medium=rss&utm_campaign=accomplished-and-gifted-soccer-player-former-fall-river-market-owner-passes-away-services-announced" target="_blank" rel="noopener" class="group block relative w-full h-full">
                                 
                                 <div class="relative h-full overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300">
                                     <!-- Subtle pattern overlay -->
@@ -165,12 +600,12 @@
                                     <!-- Content overlay at bottom -->
                                     <div class="absolute bottom-0 left-0 right-0 p-8 lg:p-10 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
                                         <h2 class="text-3xl lg:text-4xl font-bold text-white mb-3 line-clamp-3 group-hover:text-blue-300 transition-colors leading-[1.15]">
-                                            Southcoast Health recognized by the U.S. News & World Report 2025 Maternity Care Access Hospitals
+                                            Accomplished and gifted soccer player, former Fall River market owner, passes away, services announced
                                         </h2>
                                         <div class="flex items-center gap-3 text-sm text-gray-200">
                                             <span class="font-medium">Fall River Reporter</span>
                                             <span>•</span>
-                                            <span>December 09, 2025</span>
+                                            <span>December 11, 2025</span>
                                             
                                             <span>•</span>
                                             <span>2 min read</span>
@@ -183,9 +618,9 @@
                         </div>
                         
                         <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / 3); width: calc(100% / 3);">
-                            <a href="https://fallriverreporter.com/outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash/?utm_source=rss&utm_medium=rss&utm_campaign=outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash" target="_blank" rel="noopener" class="group block relative w-full h-full">
+                            <a href="https://www.heraldnews.com/story/sports/high-school/field-hockey/2025/12/10/cast-your-vote-for-the-herald-news-field-hockey-player-of-the-year/87696025007/" target="_blank" rel="noopener" class="group block relative w-full h-full">
                                 
-                                <div class="relative h-full overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300">
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400">
                                     <!-- Subtle pattern overlay -->
                                     <div class="absolute inset-0 opacity-5" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                                     <!-- City skyline silhouette -->
@@ -199,12 +634,12 @@
                                     <!-- Content overlay at bottom -->
                                     <div class="absolute bottom-0 left-0 right-0 p-8 lg:p-10 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
                                         <h2 class="text-3xl lg:text-4xl font-bold text-white mb-3 line-clamp-3 group-hover:text-blue-300 transition-colors leading-[1.15]">
-                                            Outpouring of community support for “amazing family” who lost 3-year-old daughter in pedestrian crash
+                                            Which athlete should be Herald News Field Hockey Player of the Year?
                                         </h2>
                                         <div class="flex items-center gap-3 text-sm text-gray-200">
-                                            <span class="font-medium">Fall River Reporter</span>
+                                            <span class="font-medium">Herald News</span>
                                             <span>•</span>
-                                            <span>December 09, 2025</span>
+                                            <span>Recently</span>
                                             
                                             <span>•</span>
                                             <span>1 min read</span>
@@ -255,7 +690,7 @@
                     <div class="space-y-4">
                         
                             
-                            <a href="https://fallriverreporter.com/southcoast-health-recognized-by-the-u-s-news-world-report-2025-maternity-care-access-hospitals/?utm_source=rss&utm_medium=rss&utm_campaign=southcoast-health-recognized-by-the-u-s-news-world-report-2025-maternity-care-access-hospitals" target="_blank" rel="noopener" class="block group">
+                            <a href="https://fallriverreporter.com/accomplished-and-gifted-soccer-player-former-fall-river-market-owner-passes-away-services-announced/?utm_source=rss&utm_medium=rss&utm_campaign=accomplished-and-gifted-soccer-player-former-fall-river-market-owner-passes-away-services-announced" target="_blank" rel="noopener" class="block group">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
                                     
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
@@ -266,14 +701,14 @@
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-1 mb-1">
                                             <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Southcoast Health recognized by the U.S. News & World Report 2025 Maternity Care Access Hospitals</h4>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Accomplished and gifted soccer player, former Fall River market owner, passes away, services announced</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">Fall River Reporter • December 09, 2025</div>
+                                        <div class="text-xs text-gray-500">Fall River Reporter • December 11, 2025</div>
                                     </div>
                                 </div>
                             </a>
                             
-                            <a href="https://fallriverreporter.com/outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash/?utm_source=rss&utm_medium=rss&utm_campaign=outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash" target="_blank" rel="noopener" class="block group">
+                            <a href="https://fallriverreporter.com/office-of-the-child-advocate-sights-dcf-oversights-after-massachusetts-man-charged-in-death-of-4-year-old-daughter/?utm_source=rss&utm_medium=rss&utm_campaign=office-of-the-child-advocate-sights-dcf-oversights-after-massachusetts-man-charged-in-death-of-4-year-old-daughter" target="_blank" rel="noopener" class="block group">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
                                     
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
@@ -284,45 +719,63 @@
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-1 mb-1">
                                             <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Outpouring of community support for “amazing family” who lost 3-year-old daughter in pedestrian crash</h4>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Office of the Child Advocate sights DCF oversights after Massachusetts man charged in death of 4-year-old daughter</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">Fall River Reporter • December 09, 2025</div>
+                                        <div class="text-xs text-gray-500">Fall River Reporter • December 10, 2025</div>
                                     </div>
                                 </div>
                             </a>
                             
-                            <a href="https://www.heraldnews.com/story/sports/high-school/football/2025/12/02/select-the-fall-river-area-high-school-football-player-of-the-week/87569492007/" target="_blank" rel="noopener" class="block group">
+                            <a href="https://newbedfordlight.org/cannabis-lounges-could-soon-be-legal-will-the-south-coast-opt-in/" target="_blank" rel="noopener" class="block group">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
                                     
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center relative overflow-hidden">
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center relative overflow-hidden">
                                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">HN</div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">NB</div>
                                     </div>
                                     
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-1 mb-1">
                                             <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">10 football players up for Herald News Player of the Week Nov. 26-27</h4>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Cannabis lounges could soon be legal. Will the South Coast opt in?</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">Herald News • December 07, 2025</div>
+                                        <div class="text-xs text-gray-500">New Bedford Light • December 08, 2025</div>
                                     </div>
                                 </div>
                             </a>
                             
-                            <a href="https://www.heraldnews.com/story/sports/high-school/football/2025/12/05/cast-your-vote-for-the-herald-news-football-player-of-the-year/87610119007/" target="_blank" rel="noopener" class="block group">
+                            <a href="https://www.anchornews.org/2025/12/05/face-fall-dinner-a-slam-dunk-celebration-of-scholarship-support/" target="_blank" rel="noopener" class="block group">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
                                     
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center relative overflow-hidden">
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center relative overflow-hidden">
                                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">HN</div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">AN</div>
                                     </div>
                                     
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-1 mb-1">
                                             <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Which athletes should be Herald News Football Player of the Year?</h4>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">FACE Fall Dinner a Slam-Dunk celebration of scholarship support</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">Herald News • December 07, 2025</div>
+                                        <div class="text-xs text-gray-500">Anchor News (Diocese) • December 05, 2025</div>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="https://www.anchornews.org/2025/12/05/bishop-da-cunha-presents-marian-award-to-58/" target="_blank" rel="noopener" class="block group">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                    
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center relative overflow-hidden">
+                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">AN</div>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="text-sm">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Bishop da Cunha presents Marian Award to 58</h4>
+                                        </div>
+                                        <div class="text-xs text-gray-500">Anchor News (Diocese) • December 05, 2025</div>
                                     </div>
                                 </div>
                             </a>
@@ -337,6 +790,438 @@
         <!-- Perfect Masonry Grid Below Hero (3-4 columns) -->
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="articlesGrid">
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="events" data-neighborhoods="downtown">
+                <a href="https://www.heraldnews.com/story/entertainment/movies/2025/12/10/zendaya-robert-pattinson-the-drama-fake-engagement-post/87698345007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Save the Date released for Boston-filmed movie 'The Drama.' What to know
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    Recently • 2 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/office-of-the-child-advocate-sights-dcf-oversights-after-massachusetts-man-charged-in-death-of-4-year-old-daughter/?utm_source=rss&utm_medium=rss&utm_campaign=office-of-the-child-advocate-sights-dcf-oversights-after-massachusetts-man-charged-in-death-of-4-year-old-daughter" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Office of the Child Advocate sights DCF oversights after Massachusetts man charged in death of 4-year-old daughter
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 10, 2025 • 6 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="sports" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/sports/college/2025/12/10/salisbury-lineman-cooper-long-receives-scholarship-for-wake-forest-football-national-signing-day/87678049007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                He fell in love with football at Durfee, soon he'll play in the ACC
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    Recently • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="events" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/entertainment/music/2025/12/10/classical-favorites-at-fall-river-symphonys-holiday-pops-concert/87672928007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Fall River Symphony Orchestra Holiday Pops Concert set for Dec. 14
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    Recently • 2 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="events" data-neighborhoods="">
+                <a href="https://www.tauntongazette.com/story/news/local/2025/12/10/outdoor-ice-skating-returns-december-12-patriot-place-foxboro-ma/87684697007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            TG
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Outdoor ice skating rink opens Dec. 12 at Patriot Place. What to know
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    Recently • 2 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="sports" data-neighborhoods="the hill">
+                <a href="https://www.tauntongazette.com/story/sports/college/2025/12/10/salisbury-lineman-cooper-long-receives-scholarship-for-wake-forest-football-national-signing-day/87678049007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            TG
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                He fell in love with football at Durfee, soon he'll play in the ACC
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    Recently • 5 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/southcoast-health-recognized-by-the-u-s-news-world-report-2025-maternity-care-access-hospitals/?utm_source=rss&utm_medium=rss&utm_campaign=southcoast-health-recognized-by-the-u-s-news-world-report-2025-maternity-care-access-hospitals" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Southcoast Health recognized by the U.S. News & World Report 2025 Maternity Care Access Hospitals
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 2 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="sports" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/sports/youth/2025/12/09/beatriz-otoni-captured-mvp-honors-at-youth-tournament-at-salou-spain/87675617007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Fall River native soccer player wins MVP honors at international event
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    Recently • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="sports" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/entertainment/local-celebrity/2025/12/09/dorchester-ayo-edebiri-another-golden-globe-award-2026/87682868007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Boston actress Ayo Edebiri nominated for another Golden Globe
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    Recently • 2 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="events" data-neighborhoods="south end">
+                <a href="https://www.heraldnews.com/story/lifestyle/things-to-do/2025/12/09/10-festive-day-trips-to-take-around-massachusetts-this-holiday-season/87666715007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Here are 10 of the best holiday day trips to do without leaving MA
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    Recently • 7 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="events" data-neighborhoods="south end">
+                <a href="https://www.tauntongazette.com/story/lifestyle/things-to-do/2025/12/09/10-festive-day-trips-to-take-around-massachusetts-this-holiday-season/87666715007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            TG
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Here are 10 of the best holiday day trips to do without leaving MA
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    Recently • 7 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash/?utm_source=rss&utm_medium=rss&utm_campaign=outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Outpouring of community support for “amazing family” who lost 3-year-old daughter in pedestrian crash
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
             
             <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="events" data-neighborhoods="">
                 <a href="https://fun107.com/troy-brown-fall-river-holiday-parade/" target="_blank" rel="noopener" class="block">
@@ -361,6 +1246,114 @@
                         <div class="absolute bottom-0 left-0 right-0 p-3">
                             <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
                                 Troy Brown Joins The MGM Show
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    Recently • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://newbedfordlight.org/cannabis-lounges-could-soon-be-legal-will-the-south-coast-opt-in/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-700 to-gray-900" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(107, 114, 128, 0.3);">
+                            NB
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Cannabis lounges could soon be legal. Will the South Coast opt in?
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 08, 2025 • 5 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="sports" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/sports/high-school/soccer/2025/12/08/cast-your-vote-for-the-herald-news-boys-soccer-player-of-the-year/87630224007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Which athlete should be Herald News Boys Soccer Player of the Year?
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    Recently • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="sports" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/sports/high-school/soccer/2025/12/08/cast-your-vote-for-the-herald-news-high-school-girls-soccer-player-of-the-year/87636127007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Which athlete should be Herald News Girls Soccer Player of the Year?
                             </h2>
                             <div class="flex items-center justify-between">
                                 <!-- Time + read time -->
@@ -402,6 +1395,42 @@
                                 <!-- Time + read time -->
                                 <div class="text-xs text-gray-300">
                                     Recently • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="events" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/news/local/about-us-history-mission-staff-contact-information-ownership/86822676007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Our mission at The Herald News
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 07, 2025 • 3 min read
                                 </div>
                             </div>
                         </div>
@@ -482,6 +1511,150 @@
                 </a>
             </article>
             
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://www.anchornews.org/2025/12/05/called-to-be-a-priestly-people/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-700 to-gray-900" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(107, 114, 128, 0.3);">
+                            AN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Called to Be a Priestly People
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 05, 2025 • 9 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="sports" data-neighborhoods="">
+                <a href="https://www.anchornews.org/2025/12/05/face-fall-dinner-a-slam-dunk-celebration-of-scholarship-support/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-700 to-gray-900" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(107, 114, 128, 0.3);">
+                            AN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                FACE Fall Dinner a Slam-Dunk celebration of scholarship support
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 05, 2025 • 3 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="sports" data-neighborhoods="">
+                <a href="https://www.anchornews.org/2025/12/05/bishop-da-cunha-presents-marian-award-to-58/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-700 to-gray-900" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(107, 114, 128, 0.3);">
+                            AN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Bishop da Cunha presents Marian Award to 58
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 05, 2025 • 3 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="highlands">
+                <a href="https://www.anchornews.org/2025/12/05/show-support-for-priests-through-gifts-to-the-serving-the-shepherds-fund/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-700 to-gray-900" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(107, 114, 128, 0.3);">
+                            AN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Show support for priests through gifts to the Serving the Shepherds Fund
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 05, 2025 • 2 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
         </div>
         
     </main>
@@ -514,5 +1687,11 @@
             images.forEach(img => imageObserver.observe(img));
         });
     </script>
+    
+    <!-- Generation Timestamp Badge (Bottom-Right) -->
+    <div class="fixed bottom-4 right-4 z-50 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-mono shadow-lg" style="background: rgba(16, 16, 16, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05);">
+        <div>Generated: 2025-12-11 12:13:55 AM</div>
+        <div>DB Updated: 2025-12-10 11:55:16 PM</div>
+    </div>
 </body>
 </html>

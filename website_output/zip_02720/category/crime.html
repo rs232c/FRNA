@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crime & Public Safety - Fall River, MA News</title>
-    <meta name="description" content="Crime & Public Safety news and updates from Fall River, MA">
+    <title>Police & Fire - Fall River, MA News</title>
+    <meta name="description" content="Police & Fire news and updates from Fall River, MA">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -71,17 +71,452 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="text-xl font-semibold text-blue-400">FRNA</div>
-                <div class="flex flex-wrap gap-2">
-                    <a href="../index.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';" data-tab="all">Home</a>
-                    <a href="local-news.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Local News</a>
-                    <a href="crime.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-blue-400" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">Crime & Public Safety</a>
-                    <a href="sports.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Sports</a>
-                    <a href="events.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Entertainment & Events</a>
-                    <a href="business.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Business & Development</a>
-                    <a href="schools.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Schools</a>
-                    <a href="food.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Food & Drink</a>
-                    <a href="obituaries.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Obituaries</a>
+                
+    <!-- Desktop Navigation: Two Rows - Centered -->
+    <div class="hidden lg:flex flex-col items-center gap-3 w-full">
+        <!-- Top Row: Primary Navigation (Big, Bold) -->
+        <div class="flex flex-wrap items-center justify-center gap-2 lg:gap-3">
+            <a href="../index.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-tab="all">Local</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
+            <a href="crime.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-white font-bold bg-blue-500/20 border border-blue-500/40" data-category-slug="crime">Police & Fire</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
+            <a href="sports.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-category-slug="sports">Sports</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
+            <a href="obituaries.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-category-slug="obituaries">Obituaries</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
+            <a href="food.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-category-slug="food">Food & Drink</a>
+        </div>
+        
+        <!-- Second Row: Secondary Navigation (Smaller, Lighter) - Centered under first row -->
+        <div class="flex flex-wrap items-center justify-center gap-2 lg:gap-3">
+            <a href="media.html" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="media">Media</a> <span class="text-gray-800 mx-1.5 text-xs">•</span> 
+            <a href="scanner.html" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="scanner">Scanner</a> <span class="text-gray-800 mx-1.5 text-xs">•</span> 
+            <a href="weather.html" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="weather">Weather</a> <span class="text-gray-800 mx-1.5 text-xs">•</span> 
+            <a href="#" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="submit-tip">Submit Tip</a> <span class="text-gray-800 mx-1.5 text-xs">•</span> 
+            <a href="#" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="lost-found">Lost & Found</a> <span class="text-gray-800 mx-1.5 text-xs">•</span> 
+            <a href="events.html" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20" data-category-slug="events">Events</a>
+        </div>
+    </div>
+    
+    <!-- Custom Hamburger Menu - Side Drawer Overlay -->
+    <div id="mobileNavMenu" class="hidden fixed inset-0 z-[100] transition-opacity duration-300" style="opacity: 0;">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" onclick="closeHamburgerMenu()"></div>
+        <!-- Side Drawer -->
+        <div id="hamburgerDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-[#161616] shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-out" style="transform: translateX(100%);" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="sticky top-0 bg-gradient-to-r from-[#161616] to-[#1a1a1a] border-b border-gray-800/50 p-5 flex items-center justify-between z-10 shadow-lg">
+                <div class="flex items-center gap-3">
+                    <div class="text-2xl font-bold text-blue-400">FRNA</div>
+                    <span class="text-xs text-gray-500 uppercase tracking-wider">Menu</span>
                 </div>
+                <button id="closeMobileNav" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50" aria-label="Close menu" onclick="closeHamburgerMenu()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Menu Content -->
+            <div class="p-5 space-y-6">
+                <!-- Admin Section (Top) - Collapsible Submenu -->
+                <div class="pb-4 border-b border-gray-800/50">
+                    <button id="adminMenuToggle" class="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 hover:border-blue-500/50 transition-all group" onclick="toggleAdminSubmenu(event)">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="text-white font-semibold">Admin Panel</div>
+                                <div class="text-xs text-gray-400">Manage articles & settings</div>
+                            </div>
+                        </div>
+                        <svg id="adminMenuArrow" class="w-5 h-5 text-gray-400 group-hover:text-white transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <!-- Admin Submenu (Hidden by default) -->
+                    <div id="adminSubmenu" class="hidden mt-2 pl-4 space-y-2">
+                        <a href="#" id="adminLink" class="block px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-[#1a1a1a]/50 transition-colors text-sm">Current Zip Admin</a>
+                        <a href="/admin" class="block px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-[#1a1a1a]/50 transition-colors text-sm">Main Admin Dashboard</a>
+                    </div>
+                </div>
+                
+                <!-- Navigation Links Section -->
+                <div class="space-y-4">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Navigation</div>
+                    
+                    <!-- Home Link (No Toggle) -->
+                    <a href="../index.html" class="flex items-center px-4 py-3 rounded-lg text-gray-200 hover:text-white hover:bg-[#1a1a1a] transition-colors border border-transparent hover:border-gray-800" data-tab="all">
+                        <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        <span class="font-semibold">Home</span>
+                    </a>
+                </div>
+                
+                <!-- Category Controls Section -->
+                <div class="space-y-4">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Category Controls</div>
+                    <p class="text-xs text-gray-400 mb-4 px-2">Toggle categories on/off to customize your navigation</p>
+                    
+                    <!-- Primary Categories -->
+                    <div class="space-y-2">
+                        <div class="text-xs font-medium text-gray-500 px-2 mb-2">Primary Navigation</div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="crime">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="crime.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="crime">Police & Fire</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="crime" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="sports">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="sports.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="sports">Sports</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="sports" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="obituaries">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="obituaries.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="obituaries">Obituaries</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="obituaries" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="food">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="food.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="food">Food & Drink</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="food" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Secondary Categories -->
+                    <div class="space-y-2 pt-2">
+                        <div class="text-xs font-medium text-gray-500 px-2 mb-2">Secondary Navigation</div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="media">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="media.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="media">Media</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="media" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="scanner">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="scanner.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="scanner">Scanner</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="scanner" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="weather">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="weather.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="weather">Weather</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="weather" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="submit-tip">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="#" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="submit-tip">Submit Tip</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="submit-tip" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="lost-found">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="#" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="lost-found">Lost & Found</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="lost-found" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="events">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="events.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="events">Events</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="events" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Custom Hamburger Menu with Smooth Animations
+        function openHamburgerMenu() {
+            const menu = document.getElementById('mobileNavMenu');
+            const drawer = document.getElementById('hamburgerDrawer');
+            if (!menu || !drawer) {
+                console.error('Hamburger menu elements not found:', { menu: !!menu, drawer: !!drawer });
+                return;
+            }
+            
+            menu.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            // Trigger animation
+            requestAnimationFrame(() => {
+                menu.style.opacity = '1';
+                drawer.style.transform = 'translateX(0)';
+            });
+            
+            // Update toggle switch states
+            updateToggleSwitches();
+        }
+        
+        function closeHamburgerMenu() {
+            const menu = document.getElementById('mobileNavMenu');
+            const drawer = document.getElementById('hamburgerDrawer');
+            if (!menu || !drawer) return;
+            
+            // Animate out
+            menu.style.opacity = '0';
+            drawer.style.transform = 'translateX(100%)';
+            
+            setTimeout(() => {
+                menu.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, 300);
+        }
+        
+        function updateToggleSwitches() {
+            // Wait for CategoryPreferences to be available
+            if (!window.CategoryPreferences) {
+                setTimeout(updateToggleSwitches, 100);
+                return;
+            }
+            
+            document.querySelectorAll('.category-toggle-switch').forEach(switchEl => {
+                const categorySlug = switchEl.dataset.categorySlug;
+                if (categorySlug) {
+                    const isEnabled = window.CategoryPreferences.isCategoryEnabled(categorySlug);
+                    switchEl.checked = isEnabled;
+                }
+            });
+        }
+        
+        // Initialize menu - wait for DOM and CategoryPreferences
+        function initHamburgerMenu() {
+            const toggle = document.getElementById('mobileNavToggle');
+            const menu = document.getElementById('mobileNavMenu');
+            const closeBtn = document.getElementById('closeMobileNav');
+            
+            if (!toggle || !menu) {
+                // Retry if elements not found yet
+                setTimeout(initHamburgerMenu, 100);
+                return;
+            }
+            
+            // Hamburger button click handler
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openHamburgerMenu();
+            });
+            
+            // Close button handler
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeHamburgerMenu();
+                });
+            }
+            
+            // Close on backdrop click
+            const backdrop = menu.querySelector('.backdrop-blur-sm');
+            if (backdrop) {
+                backdrop.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeHamburgerMenu();
+                });
+            }
+            
+            // Close on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !menu.classList.contains('hidden')) {
+                    closeHamburgerMenu();
+                }
+            });
+            
+            // Handle toggle switch changes
+            menu.addEventListener('change', function(e) {
+                if (e.target.classList.contains('category-toggle-switch')) {
+                    const categorySlug = e.target.dataset.categorySlug;
+                    const isEnabled = e.target.checked;
+                    
+                    if (categorySlug) {
+                        // Wait for CategoryPreferences if not ready
+                        if (!window.CategoryPreferences) {
+                            setTimeout(() => {
+                                if (window.CategoryPreferences) {
+                                    window.CategoryPreferences.toggleCategory(categorySlug, isEnabled);
+                                    if (window.NavigationFilter) {
+                                        window.NavigationFilter.applyFilters();
+                                    }
+                                }
+                            }, 100);
+                        } else {
+                            window.CategoryPreferences.toggleCategory(categorySlug, isEnabled);
+                            if (window.NavigationFilter) {
+                                window.NavigationFilter.applyFilters();
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Close menu when clicking navigation links (but not toggle switches)
+            menu.querySelectorAll('a.nav-category-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (!e.target.closest('label') && !e.target.closest('.category-toggle-switch')) {
+                        setTimeout(() => closeHamburgerMenu(), 200);
+                    }
+                });
+            });
+            
+            // Update switches when preferences change
+            window.addEventListener('categoryPreferencesChanged', updateToggleSwitches);
+            
+            // Initial update after CategoryPreferences loads
+            function waitForCategoryPreferences() {
+                if (window.CategoryPreferences) {
+                    updateToggleSwitches();
+                } else {
+                    setTimeout(waitForCategoryPreferences, 100);
+                }
+            }
+            waitForCategoryPreferences();
+        }
+        
+        // Start initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initHamburgerMenu);
+        } else {
+            initHamburgerMenu();
+        }
+        
+        // Make functions globally available for onclick handlers
+        window.openHamburgerMenu = openHamburgerMenu;
+        window.closeHamburgerMenu = closeHamburgerMenu;
+        
+        // Update mobile toggle icons based on preferences
+        function updateMobileToggleIcons() {
+            if (!window.CategoryPreferences) {
+                setTimeout(updateMobileToggleIcons, 100);
+                return;
+            }
+            
+            document.querySelectorAll('.category-toggle-btn').forEach(btn => {
+                const slug = btn.dataset.categorySlug;
+                if (slug) {
+                    const isEnabled = window.CategoryPreferences.isCategoryEnabled(slug);
+                    const icon = btn.querySelector('.category-toggle-icon');
+                    if (icon) {
+                        icon.textContent = isEnabled ? '✓' : '✕';
+                        icon.className = isEnabled 
+                            ? 'category-toggle-icon text-lg text-green-400' 
+                            : 'category-toggle-icon text-lg text-red-400';
+                    }
+                }
+            });
+        }
+        
+        // Make function globally available
+        window.updateMobileToggleIcons = updateMobileToggleIcons;
+        
+        // Handle toggle button clicks
+        document.addEventListener('click', function(e) {
+            const toggleBtn = e.target.closest('.category-toggle-btn');
+            if (toggleBtn && window.CategoryPreferences) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const slug = toggleBtn.dataset.categorySlug;
+                if (slug) {
+                    const currentState = window.CategoryPreferences.isCategoryEnabled(slug);
+                    const newState = !currentState;
+                    window.CategoryPreferences.toggleCategory(slug, newState);
+                    
+                    // Update icons
+                    updateMobileToggleIcons();
+                    
+                    // Update navigation visibility
+                    if (window.NavigationFilter) {
+                        window.NavigationFilter.applyFilters();
+                    }
+                }
+            }
+        });
+        
+        // Toggle admin submenu
+        function toggleAdminSubmenu(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const submenu = document.getElementById('adminSubmenu');
+            const arrow = document.getElementById('adminMenuArrow');
+            if (submenu && arrow) {
+                const isHidden = submenu.classList.contains('hidden');
+                if (isHidden) {
+                    submenu.classList.remove('hidden');
+                    arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    submenu.classList.add('hidden');
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            }
+        }
+        window.toggleAdminSubmenu = toggleAdminSubmenu;
+        
+        // Update admin link with current zip code and initialize icons
+        document.addEventListener('DOMContentLoaded', function() {
+            const adminLink = document.getElementById('adminLink');
+            if (adminLink) {
+                // Get current zip from URL or localStorage
+                const pathMatch = window.location.pathname.match(/^\/(\d{5})/);
+                const zipFromPath = pathMatch ? pathMatch[1] : null;
+                const zipFromStorage = localStorage.getItem('currentZip');
+                const currentZip = zipFromPath || zipFromStorage || '02720';
+                
+                adminLink.href = `/admin/${currentZip}`;
+                adminLink.textContent = `Zip ${currentZip} Admin`;
+            }
+            
+            // Initial icon update - wait for CategoryPreferences to be ready
+            function initIcons() {
+                if (window.CategoryPreferences && window.updateMobileToggleIcons) {
+                    window.updateMobileToggleIcons();
+                } else {
+                    setTimeout(initIcons, 100);
+                }
+            }
+            initIcons();
+        });
+    </script>
+
             </div>
         </div>
     </nav>
@@ -103,7 +538,7 @@
         </a>
         
         <!-- Category Header -->
-        <h1 class="text-4xl font-bold mb-10 text-gray-100">Crime & Public Safety</h1>
+        <h1 class="text-4xl font-bold mb-10 text-gray-100">Police & Fire</h1>
         
         <!-- Hero + Trending Row (65/35 split) -->
         
@@ -115,9 +550,9 @@
                     <div class="top-stories-track relative h-full" style="display: flex; width: calc(100% * 3); transition: transform 0.5s ease-in-out;">
                         
                         <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / 3); width: calc(100% / 3);">
-                            <a href="https://fallriverreporter.com/fall-river-police-department-city-council-officials-community-members-implementing-initiatives-to-combat-illegal-dumping/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-police-department-city-council-officials-community-members-implementing-initiatives-to-combat-illegal-dumping" target="_blank" rel="noopener" class="group block relative w-full h-full">
+                            <a href="https://news.google.com/rss/articles/CBMiiAFBVV95cUxPX1ZQM3BLeW9QYUU4UEhLell1eDFoZF9tNm82bXdlNW1PUXhTT0lFNkZjc1RyaGltdXRoT3hOMkpMVkRKY2htRXYwTm1kTmM0YnJaVXcxMUNPRmc2eDNpT0tJZ29qUHJZWGZOSVpKdGxwRnhZUjlvWVBROTl4aVc5QTctak1HUFJX?oc=5" target="_blank" rel="noopener" class="group block relative w-full h-full">
                                 
-                                <div class="relative h-full overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300">
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300">
                                     <!-- Subtle pattern overlay -->
                                     <div class="absolute inset-0 opacity-5" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                                     <!-- City skyline silhouette -->
@@ -131,12 +566,12 @@
                                     <!-- Content overlay at bottom -->
                                     <div class="absolute bottom-0 left-0 right-0 p-8 lg:p-10 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
                                         <h2 class="text-3xl lg:text-4xl font-bold text-white mb-3 line-clamp-3 group-hover:text-blue-300 transition-colors leading-[1.15]">
-                                            Fall River Police Department, City Council, officials, community members, implementing initiatives to combat illegal dumping
+                                            Fall River man charged after allegedly dumping in reservoir - abc6.com
                                         </h2>
                                         <div class="flex items-center gap-3 text-sm text-gray-200">
-                                            <span class="font-medium">Fall River Reporter</span>
+                                            <span class="font-medium">Google News (Fall River, MA)</span>
                                             <span>•</span>
-                                            <span>December 09, 2025</span>
+                                            <span>December 11, 2025</span>
                                             
                                             <span>•</span>
                                             <span>1 min read</span>
@@ -183,9 +618,9 @@
                         </div>
                         
                         <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / 3); width: calc(100% / 3);">
-                            <a href="https://www.heraldnews.com/story/news/2025/12/10/2021-fall-river-housing-lawsuit-to-go-before-judge-as-mediator/87691133007/" target="_blank" rel="noopener" class="group block relative w-full h-full">
+                            <a href="https://fallriverreporter.com/massachusetts-teen-sentence-to-prison-for-producing-sharing-child-sexual-abuse-material/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-teen-sentence-to-prison-for-producing-sharing-child-sexual-abuse-material" target="_blank" rel="noopener" class="group block relative w-full h-full">
                                 
-                                <div class="relative h-full overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400">
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300">
                                     <!-- Subtle pattern overlay -->
                                     <div class="absolute inset-0 opacity-5" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                                     <!-- City skyline silhouette -->
@@ -199,15 +634,15 @@
                                     <!-- Content overlay at bottom -->
                                     <div class="absolute bottom-0 left-0 right-0 p-8 lg:p-10 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
                                         <h2 class="text-3xl lg:text-4xl font-bold text-white mb-3 line-clamp-3 group-hover:text-blue-300 transition-colors leading-[1.15]">
-                                            Judge to mediate Watuppa Heights housing lawsuit. What happens next.
+                                            Massachusetts teen sentence to prison for producing, sharing, child sexual abuse material
                                         </h2>
                                         <div class="flex items-center gap-3 text-sm text-gray-200">
-                                            <span class="font-medium">Herald News</span>
+                                            <span class="font-medium">Fall River Reporter</span>
                                             <span>•</span>
-                                            <span>Recently</span>
+                                            <span>December 11, 2025</span>
                                             
                                             <span>•</span>
-                                            <span>4 min read</span>
+                                            <span>2 min read</span>
                                             
                                         </div>
                                     </div>
@@ -255,6 +690,60 @@
                     <div class="space-y-4">
                         
                             
+                            <a href="https://fallriverreporter.com/trial-date-set-for-41-year-old-new-york-man-facing-charges-in-somerset-crash-that-killed-3/?utm_source=rss&utm_medium=rss&utm_campaign=trial-date-set-for-41-year-old-new-york-man-facing-charges-in-somerset-crash-that-killed-3" target="_blank" rel="noopener" class="block group">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                    
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
+                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="text-sm">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Trial date set for 41-year-old New York man facing charges in Somerset crash that killed 3</h4>
+                                        </div>
+                                        <div class="text-xs text-gray-500">Fall River Reporter • December 10, 2025</div>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="https://fallriverreporter.com/fall-river-police-charge-52-year-old-city-man-accused-of-illegal-dumping/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-police-charge-52-year-old-city-man-accused-of-illegal-dumping" target="_blank" rel="noopener" class="block group">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                    
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
+                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="text-sm">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Fall River Police charge 52-year-old city man accused of illegal dumping</h4>
+                                        </div>
+                                        <div class="text-xs text-gray-500">Fall River Reporter • December 10, 2025</div>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="https://fallriverreporter.com/fiery-crash-on-cape-cod-claims-life-of-21-year-old-man-sends-several-officers-to-the-hospital/?utm_source=rss&utm_medium=rss&utm_campaign=fiery-crash-on-cape-cod-claims-life-of-21-year-old-man-sends-several-officers-to-the-hospital" target="_blank" rel="noopener" class="block group">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                    
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
+                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="text-sm">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Fiery crash on Cape Cod claims life of 21-year-old man, sends several officers to the hospital</h4>
+                                        </div>
+                                        <div class="text-xs text-gray-500">Fall River Reporter • December 09, 2025</div>
+                                    </div>
+                                </div>
+                            </a>
+                            
                             <a href="https://fallriverreporter.com/fall-river-police-department-city-council-officials-community-members-implementing-initiatives-to-combat-illegal-dumping/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-police-department-city-council-officials-community-members-implementing-initiatives-to-combat-illegal-dumping" target="_blank" rel="noopener" class="block group">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
                                     
@@ -273,25 +762,7 @@
                                 </div>
                             </a>
                             
-                            <a href="https://news.google.com/rss/articles/CBMilAFBVV95cUxNblpkTEFqbEcyaW9ReWtwY3NVMHJsQkFodWlWMXhCREVQN2RGNFJEX3dJNHNMdnlMeXV3bGFMcmFoN1BnZERwWkl2UkJnRV81NkN1RmpwUzhuTzE5Vjl4N1Y1SW1nSnJfcnEyQkZjNlBEQzdjTUVuNzhQemJOeU1BVWJ6Vng0RDVMZXUyNzZmcWNuOHpV?oc=5" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
-                                    
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-300 flex items-center justify-center relative overflow-hidden">
-                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">GN</div>
-                                    </div>
-                                    
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-1 mb-1">
-                                            <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Man arrested on firearms charges in Fall River - Newport Dispatch</h4>
-                                        </div>
-                                        <div class="text-xs text-gray-500">Google News (Fall River, MA) • December 09, 2025</div>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <a href="https://fallriverreporter.com/fsi-gabriel-house-file-cross-claims-against-each-other-over-recalled-sprinkler-heads/?utm_source=rss&utm_medium=rss&utm_campaign=fsi-gabriel-house-file-cross-claims-against-each-other-over-recalled-sprinkler-heads" target="_blank" rel="noopener" class="block group">
+                            <a href="https://fallriverreporter.com/massachusetts-teen-sentence-to-prison-for-producing-sharing-child-sexual-abuse-material/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-teen-sentence-to-prison-for-producing-sharing-child-sexual-abuse-material" target="_blank" rel="noopener" class="block group">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
                                     
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
@@ -302,99 +773,9 @@
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-1 mb-1">
                                             <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">FSI, Gabriel House, file cross claims against each other over recalled sprinkler heads</h4>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Massachusetts teen sentence to prison for producing, sharing, child sexual abuse material</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">Fall River Reporter • December 09, 2025</div>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <a href="https://news.google.com/rss/articles/CBMiqAFBVV95cUxPWkU1d2RzemVuUFl3OXMwYTRKZnZsMkU3WG5SQVZ3bHRvVlZJR3BlN1hDaEt5R1BEWDhMMm1iakgxMVF5SnNXSlBwc3VucWdGYWtGSGJRd3hSMUlzNExyZTRHTmVSNk5wYmFaaFE5X3pNY2JlMWdsSS1uMmtoQ3dKcDAxOVMxX0Rtby1PSUxRbzFYektDZDg3Z0VMZ24xZ0ZmR1BtTEpJaEPSAagBQVVfeXFMT1pFNXdkc3plblBZdzlzMGE0SmZ2bDJFN1huUkFWd2x0b1ZWSUdwZTdYQ2hLeUdQRFg4TDJtYmpIMTFReUpzV0pQcHN1bnFnRmFrRkhiUXd4UjFJczRMcmU0R05lUjZOcGJhWmhROV96TWNiZTFnbEktbjJraEN3SnAwMTlTMV9EbW8tT0lMUW8xWHpLQ2Q4N2dFTGduMWdGZkdQbUxKSWhD?oc=5" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
-                                    
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-300 flex items-center justify-center relative overflow-hidden">
-                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">GN</div>
-                                    </div>
-                                    
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-1 mb-1">
-                                            <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Massachusetts State Police announce third area Sobriety Checkpoint of 2025 - Fall River Reporter</h4>
-                                        </div>
-                                        <div class="text-xs text-gray-500">Google News (Fall River, MA) • December 08, 2025</div>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <a href="https://fallriverreporter.com/outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash/?utm_source=rss&utm_medium=rss&utm_campaign=outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
-                                    
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
-                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
-                                    </div>
-                                    
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-1 mb-1">
-                                            <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Outpouring of community support for “amazing family” who lost 3-year-old daughter in pedestrian crash</h4>
-                                        </div>
-                                        <div class="text-xs text-gray-500">Fall River Reporter • December 09, 2025</div>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <a href="https://www.wpri.com/news/local-news/se-mass/man-accused-of-firing-gun-from-fall-river-apartment-window/" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
-                                    
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-sky-500 to-sky-300 flex items-center justify-center relative overflow-hidden">
-                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">WP</div>
-                                    </div>
-                                    
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-1 mb-1">
-                                            <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Man accused of firing gun from Fall River apartment window</h4>
-                                        </div>
-                                        <div class="text-xs text-gray-500">WPRI 12 Fall River • December 08, 2025</div>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <a href="https://fallriverreporter.com/massachusetts-next-affordability-crisis-property-taxes-explode-lawmakers-scramble/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-next-affordability-crisis-property-taxes-explode-lawmakers-scramble" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
-                                    
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
-                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
-                                    </div>
-                                    
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-1 mb-1">
-                                            <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Massachusetts’ Next Affordability Crisis: Property Taxes Explode, Lawmakers Scramble</h4>
-                                        </div>
-                                        <div class="text-xs text-gray-500">Fall River Reporter • December 08, 2025</div>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <a href="https://fallriverreporter.com/fall-river-man-held-on-bail-facing-several-charges-after-police-make-arrest-in-city-shooting/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-man-held-on-bail-facing-several-charges-after-police-make-arrest-in-city-shooting" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
-                                    
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
-                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
-                                    </div>
-                                    
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-1 mb-1">
-                                            <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Fall River man held on bail, facing several charges, after police make arrest in city shooting</h4>
-                                        </div>
-                                        <div class="text-xs text-gray-500">Fall River Reporter • December 08, 2025</div>
+                                        <div class="text-xs text-gray-500">Fall River Reporter • December 11, 2025</div>
                                     </div>
                                 </div>
                             </a>
@@ -410,8 +791,188 @@
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="articlesGrid">
             
-            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="south end">
-                <a href="https://www.heraldnews.com/story/news/2025/12/10/real-brazil-restaurant-and-market-moving-from-taunton-to-fall-river/87687263007/" target="_blank" rel="noopener" class="block">
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/if-it-feels-like-more-people-are-committing-suicide-sadly-you-are-right/?utm_source=rss&utm_medium=rss&utm_campaign=if-it-feels-like-more-people-are-committing-suicide-sadly-you-are-right" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                If it feels like more people are committing suicide, sadly, you are right
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 11, 2025 • 2 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/trial-date-set-for-41-year-old-new-york-man-facing-charges-in-somerset-crash-that-killed-3/?utm_source=rss&utm_medium=rss&utm_campaign=trial-date-set-for-41-year-old-new-york-man-facing-charges-in-somerset-crash-that-killed-3" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Trial date set for 41-year-old New York man facing charges in Somerset crash that killed 3
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 10, 2025 • 2 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/fall-river-police-charge-52-year-old-city-man-accused-of-illegal-dumping/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-police-charge-52-year-old-city-man-accused-of-illegal-dumping" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Fall River Police charge 52-year-old city man accused of illegal dumping
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 10, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://news.google.com/rss/articles/CBMi5gFBVV95cUxNaUZvS3BidUtkVWpfNlU0S2FqQWcySGI0MGtoWHZrcjJxVWZ3V1hzNElTZmJvbGxwZHFHajl3YTI3Zmk5VWY2R05CcEd4LWNaVEtCNFlTNEU1TVg5dkd5TDZtX0RpMEFub2RnOEc0QmRZby1tbWQ0NUptQU5Ma2xpRG9ORWw2Uk5LZUNuV2lGbGExbm5ERnBjUFN4TlptZFJGX1VFVzdQZVhRQWZvclptZUJaLWloTXNadUFIVnVZYWJRQ3cwUjN5SFRSNHV4TlVkWXU5ekoxcXQ5SjFneTJ3NEFwRUtmZ9IB5gFBVV95cUxNaUZvS3BidUtkVWpfNlU0S2FqQWcySGI0MGtoWHZrcjJxVWZ3V1hzNElTZmJvbGxwZHFHajl3YTI3Zmk5VWY2R05CcEd4LWNaVEtCNFlTNEU1TVg5dkd5TDZtX0RpMEFub2RnOEc0QmRZby1tbWQ0NUptQU5Ma2xpRG9ORWw2Uk5LZUNuV2lGbGExbm5ERnBjUFN4TlptZFJGX1VFVzdQZVhRQWZvclptZUJaLWloTXNadUFIVnVZYWJRQ3cwUjN5SFRSNHV4TlVkWXU5ekoxcXQ5SjFneTJ3NEFwRUtmZw?oc=5" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            GN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Office of the Child Advocate sights DCF oversights after Massachusetts man charged in death of 4-year-old daughter - Fall River Reporter
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 10, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/office-of-the-child-advocate-sights-dcf-oversights-after-massachusetts-man-charged-in-death-of-4-year-old-daughter/?utm_source=rss&utm_medium=rss&utm_campaign=office-of-the-child-advocate-sights-dcf-oversights-after-massachusetts-man-charged-in-death-of-4-year-old-daughter" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Office of the Child Advocate sights DCF oversights after Massachusetts man charged in death of 4-year-old daughter
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 10, 2025 • 6 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/news/2025/12/10/2021-fall-river-housing-lawsuit-to-go-before-judge-as-mediator/87691133007/" target="_blank" rel="noopener" class="block">
                     
                     <!-- Placeholder with square ratio and gradient background -->
                     <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
@@ -432,7 +993,7 @@
                         <!-- Title overlay bottom-left -->
                         <div class="absolute bottom-0 left-0 right-0 p-3">
                             <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
-                                Brazilian barbecue restaurant coming to Fall River in early 2026
+                                Judge to mediate Watuppa Heights housing lawsuit. What happens next.
                             </h2>
                             <div class="flex items-center justify-between">
                                 <!-- Time + read time -->
@@ -446,15 +1007,123 @@
                 </a>
             </article>
             
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/fiery-crash-on-cape-cod-claims-life-of-21-year-old-man-sends-several-officers-to-the-hospital/?utm_source=rss&utm_medium=rss&utm_campaign=fiery-crash-on-cape-cod-claims-life-of-21-year-old-man-sends-several-officers-to-the-hospital" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Fiery crash on Cape Cod claims life of 21-year-old man, sends several officers to the hospital
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
             <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
-                <a href="https://www.heraldnews.com/story/news/education/2025/12/10/flood-damage-at-fall-rivers-durfee-abated-restoration-underway/87679638007/" target="_blank" rel="noopener" class="block">
+                <a href="https://fallriverreporter.com/fall-river-police-department-city-council-officials-community-members-implementing-initiatives-to-combat-illegal-dumping/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-police-department-city-council-officials-community-members-implementing-initiatives-to-combat-illegal-dumping" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Fall River Police Department, City Council, officials, community members, implementing initiatives to combat illegal dumping
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/27-year-old-taunton-man-to-be-arraigned-on-felony-charge-of-animal-cruelty-concerning-condition-of-9-month-old-puppy/?utm_source=rss&utm_medium=rss&utm_campaign=27-year-old-taunton-man-to-be-arraigned-on-felony-charge-of-animal-cruelty-concerning-condition-of-9-month-old-puppy" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                27-year-old Taunton man to be arraigned on felony charge of Animal Cruelty concerning condition of 9-month-old puppy
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 2 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+            
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/news/courts/2025/12/09/drug-court-celebrates-10-years-of-success-in-fall-river/87633964007/" target="_blank" rel="noopener" class="block">
                     
                     <!-- Placeholder with square ratio and gradient background -->
                     <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
                         <!-- Subtle pattern overlay for texture -->
                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                         <!-- Source initials in top-right corner -->
-                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
                             HN
                         </div>
                         <!-- Image placeholder icon centered -->
@@ -468,12 +1137,12 @@
                         <!-- Title overlay bottom-left -->
                         <div class="absolute bottom-0 left-0 right-0 p-3">
                             <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
-                                Cleanup of Durfee High flooding incident will finish in next 2 weeks
+                                Fall River drug court celebrates 10 years of 'impactful work'
                             </h2>
                             <div class="flex items-center justify-between">
                                 <!-- Time + read time -->
                                 <div class="text-xs text-gray-300">
-                                    Recently • 3 min read
+                                    Recently • 1 min read
                                 </div>
                             </div>
                         </div>
@@ -490,7 +1159,7 @@
                         <!-- Subtle pattern overlay for texture -->
                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                         <!-- Source initials in top-right corner -->
-                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
                             HN
                         </div>
                         <!-- Image placeholder icon centered -->
@@ -526,7 +1195,7 @@
                         <!-- Subtle pattern overlay for texture -->
                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                         <!-- Source initials in top-right corner -->
-                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
                             HN
                         </div>
                         <!-- Image placeholder icon centered -->
@@ -562,7 +1231,7 @@
                         <!-- Subtle pattern overlay for texture -->
                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                         <!-- Source initials in top-right corner -->
-                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
                             FR
                         </div>
                         <!-- Image placeholder icon centered -->
@@ -598,7 +1267,7 @@
                         <!-- Subtle pattern overlay for texture -->
                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                         <!-- Source initials in top-right corner -->
-                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
                             FR
                         </div>
                         <!-- Image placeholder icon centered -->
@@ -634,7 +1303,7 @@
                         <!-- Subtle pattern overlay for texture -->
                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                         <!-- Source initials in top-right corner -->
-                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);">
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
                             WP
                         </div>
                         <!-- Image placeholder icon centered -->
@@ -670,7 +1339,7 @@
                         <!-- Subtle pattern overlay for texture -->
                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                         <!-- Source initials in top-right corner -->
-                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
                             FR
                         </div>
                         <!-- Image placeholder icon centered -->
@@ -778,7 +1447,7 @@
                         <!-- Subtle pattern overlay for texture -->
                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                         <!-- Source initials in top-right corner -->
-                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
                             GN
                         </div>
                         <!-- Image placeholder icon centered -->
@@ -850,7 +1519,7 @@
                         <!-- Subtle pattern overlay for texture -->
                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                         <!-- Source initials in top-right corner -->
-                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px ;">
                             GN
                         </div>
                         <!-- Image placeholder icon centered -->
@@ -1270,5 +1939,11 @@
             images.forEach(img => imageObserver.observe(img));
         });
     </script>
+    
+    <!-- Generation Timestamp Badge (Bottom-Right) -->
+    <div class="fixed bottom-4 right-4 z-50 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-mono shadow-lg" style="background: rgba(16, 16, 16, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05);">
+        <div>Generated: 2025-12-11 12:13:55 AM</div>
+        <div>DB Updated: 2025-12-10 11:55:16 PM</div>
+    </div>
 </body>
 </html>
