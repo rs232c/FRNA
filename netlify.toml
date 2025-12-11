@@ -1,7 +1,12 @@
 [build]
   publish = "website_output"
   # Empty command - this is a static site, no build needed
+  # Netlify will skip dependency installation if no command is specified
   command = ""
+
+# Explicitly tell Netlify this is a static site
+[build.processing]
+  skip_processing = true
 
 [[redirects]]
   from = "/"
