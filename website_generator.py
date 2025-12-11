@@ -13,7 +13,7 @@ from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 from pathlib import Path
 import logging
-from config import WEBSITE_CONFIG, LOCALE, DATABASE_CONFIG, CATEGORY_SLUGS, CATEGORY_MAPPING, WEATHER_CONFIG
+from config import WEBSITE_CONFIG, LOCALE, DATABASE_CONFIG, CATEGORY_SLUGS, CATEGORY_MAPPING, WEATHER_CONFIG, SCANNER_CONFIG
 from ingestors.weather_ingestor import WeatherIngestor
 # Import from new modular structure
 try:
@@ -214,6 +214,10 @@ class WebsiteGenerator:
                 logger.info(f"  Generating category page {i}/{len(category_order)}: {category_slug}...")
                 self._generate_category_page(category_slug, enabled_articles, weather, admin_settings, zip_code, city_state)
         logger.info("✓ All category pages generated")
+        
+        logger.info("Step 5.5/6: Generating scanner page...")
+        self._generate_scanner_page(weather, admin_settings, zip_code, city_state)
+        logger.info("✓ Scanner page generated")
         
         logger.info("Step 6/6: Generating CSS and JS files...")
         self._generate_css()
@@ -3171,6 +3175,210 @@ class WebsiteGenerator:
             f.write(html)
         
         logger.info(f"Generated category page: {output_file} ({len(formatted_articles)} articles)")
+    
+    def _generate_scanner_page(self, weather: Dict, settings: Dict, zip_code: Optional[str] = None, city_state: Optional[str] = None):
+        """Generate scanner page with embedded Broadcastify feed
+        
+        Args:
+            weather: Weather data
+            settings: Admin settings
+            zip_code: Optional zip code for zip-specific generation
+            city_state: Optional city_state for city-based generation
+        """
+        # Phase 6: Resolve city name for dynamic title
+        locale_name = LOCALE  # Default to "Fall River, MA"
+        if city_state:
+            # Use provided city_state directly
+            locale_name = city_state
+        elif zip_code:
+            # Resolve zip code to city/state if city_state not provided
+            from zip_resolver import resolve_zip
+            zip_data = resolve_zip(zip_code)
+            if zip_data:
+                city = zip_data.get("city", "")
+                state = zip_data.get("state_abbrev", "")
+                locale_name = f"{city}, {state}" if city and state else f"Zip {zip_code}"
+            else:
+                locale_name = f"Zip {zip_code}"
+        
+        # Determine paths
+        output_path = os.path.join(self.output_dir, "category")
+        if zip_code:
+            # We're in zip_XXXX directory, category is subdirectory
+            home_path = "../"
+            css_path = "../css/"
+        else:
+            # We're in root directory, category is subdirectory
+            home_path = "../"
+            css_path = "../css/"
+        
+        os.makedirs(output_path, exist_ok=True)
+        
+        # Generate navigation (from category subdirectory, scanner is active)
+        nav_tabs = self._get_nav_tabs("category-scanner", zip_code, is_category_page=True)
+        
+        # Update title
+        title = f"{locale_name} News" if zip_code else self.title
+        
+        # Get Broadcastify feed ID from config
+        feed_id = SCANNER_CONFIG.get("feed_id", "33717")
+        
+        # Build scanner page HTML
+        scanner_html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Police & Fire Scanner — {locale_name}</title>
+    <meta name="description" content="Live police and fire scanner audio and call transcript for {locale_name}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {{
+            darkMode: 'class',
+            theme: {{
+                extend: {{
+                    colors: {{
+                        'edge-bg': '#0d0d0d',
+                        'edge-surface': '#161616',
+                        'edge-elevated': '#1f1f1f',
+                    }}
+                }}
+            }}
+        }}
+    </script>
+    <link rel="stylesheet" href="{css_path}style.css">
+    <style>
+        .lazy-image {{ opacity: 0; transition: opacity 0.3s; }}
+        .lazy-image.loaded {{ opacity: 1; }}
+        /* Dark mode filter for Broadcastify iframes */
+        .broadcastify-iframe {{
+            filter: brightness(0.8) contrast(1.15) saturate(0.9);
+            background: #0f0f0f;
+            transition: filter 0.3s ease;
+        }}
+        /* Darken the iframe container with dark background */
+        .broadcastify-container {{
+            background: #0f0f0f;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }}
+        /* Optional: Add a subtle dark overlay effect */
+        .broadcastify-container::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(15, 15, 15, 0.3), transparent);
+            pointer-events: none;
+            z-index: 1;
+            border-radius: 12px;
+        }}
+    </style>
+</head>
+<body class="bg-[#0f0f0f] text-gray-100 min-h-screen">
+    <!-- Top Bar -->
+    <div class="bg-[#0f0f0f]/50 backdrop-blur-sm border-b border-gray-900/30 py-2">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="w-full sm:w-auto flex-1">
+                    <div class="relative flex items-center bg-[#161616]/50 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-800/20">
+                        <span class="text-gray-400 mr-2">🔍</span>
+                        <input type="text" placeholder="Search articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full sm:w-64" id="searchInput">
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="/admin" id="hamburgerMenuLink" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors inline-flex items-center justify-center w-10 h-10" title="Admin Panel">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </a>
+                    <script>
+                        // Update hamburger menu link based on session
+                        (function() {{
+                            fetch('/api/session-check')
+                                .then(response => response.json())
+                                .then(data => {{
+                                    const link = document.getElementById('hamburgerMenuLink');
+                                    if (data.logged_in && data.zip_code) {{
+                                        link.href = `/admin/${{data.zip_code}}`;
+                                    }} else {{
+                                        link.href = '/admin';
+                                    }}
+                                }})
+                                .catch(err => {{
+                                    console.error('Error checking session:', err);
+                                }});
+                        }})();
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-xl font-semibold text-blue-400">FRNA</div>
+                {nav_tabs}
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl lg:text-4xl font-bold text-center mb-2" style="color: #0078d4;">🔴 LIVE {locale_name} Police & Fire Scanner</h1>
+            <p class="text-center text-gray-400 mb-8">Real-time audio + call log — powered by Broadcastify</p>
+            
+            <!-- Audio Player Box -->
+            <div class="bg-[#1a1a1a] rounded-2xl p-5 mb-8 shadow-2xl" style="box-shadow: 0 8px 32px rgba(0,0,0,0.6);">
+                <div class="broadcastify-container">
+                    <iframe src="https://www.broadcastify.com/listen/embed/feed/{feed_id}" 
+                            height="180" 
+                            allowfullscreen
+                            class="w-full border-none rounded-xl broadcastify-iframe">
+                    </iframe>
+                </div>
+                <div class="text-center mt-3">
+                    <span class="text-green-400 font-bold">● LIVE</span>
+                    <span class="text-gray-500 ml-2">— ~30-second delay</span>
+                </div>
+            </div>
+            
+            <!-- Transcript Box -->
+            <div class="bg-[#1a1a1a] rounded-2xl p-5 shadow-2xl" style="box-shadow: 0 8px 32px rgba(0,0,0,0.6);">
+                <h2 class="text-xl font-semibold text-white mb-4 mt-0">Live Call Transcript</h2>
+                <div class="broadcastify-container">
+                    <iframe src="https://www.broadcastify.com/listen/feed/{feed_id}/transcript" 
+                            height="500"
+                            class="w-full border-none rounded-xl broadcastify-iframe">
+                    </iframe>
+                </div>
+            </div>
+            
+            <!-- Footer Note -->
+            <p class="text-center text-gray-600 text-sm mt-8">
+                Source: <a href="https://www.broadcastify.com/listen/feed/{feed_id}" target="_blank" class="text-green-400 hover:text-green-300">Broadcastify Feed #{feed_id}</a> • 
+                {locale_name} Police + Fire Departments • 
+                <a href="{home_path}index.html" class="text-blue-400 hover:text-blue-300">← Back to FRNA</a>
+            </p>
+        </div>
+    </main>
+    
+    <!-- Load main.js for search functionality -->
+    <script src="{home_path}js/main.js"></script>
+</body>
+</html>'''
+        
+        output_file = os.path.join(output_path, "scanner.html")
+        with open(output_file, "w", encoding="utf-8", errors='replace') as f:
+            f.write(scanner_html)
+        
+        logger.info(f"Generated scanner page: {output_file}")
     
     def _format_article_for_display(self, article: Dict, show_images: bool = True) -> Dict:
         """Format article for display in templates"""

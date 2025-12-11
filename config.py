@@ -319,6 +319,14 @@ DATABASE_CONFIG = {
     "path": "fallriver_news.db"
 }
 
+# Scanner Configuration (Broadcastify)
+SCANNER_CONFIG = {
+    "feed_id": os.getenv("BROADCASTIFY_FEED_ID", "856"),  # Fall River Police & Fire feed ID
+    # Feed covers: FRPD Ch1, Ch2, Ch3, FRFD Ch1, Ch2, FR EMS, Tiverton PD & FD, Westport PD & FD, Bristol County Wide, Marine Ch. 16
+    # Feed URL: https://www.broadcastify.com/listen/feed/856
+    # To update: Set BROADCASTIFY_FEED_ID environment variable or change the default above
+}
+
 # Weather API Configuration
 WEATHER_CONFIG = {
     "openweathermap_api_key": os.getenv("OPENWEATHERMAP_API_KEY", ""),
