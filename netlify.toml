@@ -2,8 +2,15 @@
 [build]
   publish = "website_output"
   # Empty command tells Netlify this is a pre-built static site
+  # No build step needed - files are already generated
   command = ""
 
+# Environment variables to prevent Python detection
+[build.environment]
+  # Tell Netlify not to install Python
+  NETLIFY_USE_NODE_VERSION = ""
+  PYTHON_VERSION = ""
+  
 # Tell Netlify to skip all processing (no Python, Node, etc.)
 [build.processing]
   skip_processing = true

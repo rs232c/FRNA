@@ -39,3 +39,8 @@ cache/
 *.json
 !package.json
 
+# Prevent Netlify from detecting Python
+runtime.txt
+requirements.txt
+.python-version
+
