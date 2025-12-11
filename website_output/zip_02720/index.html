@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fall River, MA News</title>
+    <meta name="description" content="Latest news from Fall River, MA">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'edge-bg': '#0d0d0d',
+                        'edge-surface': '#161616',
+                        'edge-elevated': '#1f1f1f',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Custom styles for things Tailwind can't handle */
+        .lazy-image { opacity: 0; transition: opacity 0.3s; }
+        .lazy-image.loaded { opacity: 1; }
+    </style>
+</head>
+<body class="bg-[#0a0a0a] text-gray-100 min-h-screen">
+    <!-- Top Bar -->
+    <div class="bg-[#0a0a0a]/50 backdrop-blur-sm border-b border-gray-900/30 py-2">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="w-full sm:w-auto flex-1">
+                    <div class="relative flex items-center bg-[#161616]/50 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-800/20 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20">
+                        <span class="text-gray-400 mr-2">🔍</span>
+                        <input type="text" placeholder="Search articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full sm:w-64" id="searchInput">
+                        <button class="text-gray-400 hover:text-blue-400 transition-colors ml-2" onclick="toggleSearchFilters()" title="Advanced Filters">⚙️</button>
+                    </div>
+                    <div class="hidden mt-3 p-4 rounded-lg shadow-xl" id="searchFilters" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Category:</label>
+                                <select id="filterCategory" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                    <option value="">All Categories</option>
+                                    <option value="news">📰 News</option>
+                                    <option value="entertainment">🎬 Entertainment</option>
+                                    <option value="sports">⚽ Sports</option>
+                                    <option value="local">📍 Local</option>
+                                    <option value="media">🎥 Media</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Neighborhood:</label>
+                                <select id="filterNeighborhood" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                    <option value="">All Neighborhoods</option>
+                                    <option value="north end">North End</option>
+                                    <option value="south end">South End</option>
+                                    <option value="highlands">Highlands</option>
+                                    <option value="flint village">Flint Village</option>
+                                    <option value="maplewood">Maplewood</option>
+                                    <option value="downtown">Downtown</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Source:</label>
+                                <select id="filterSource" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                    <option value="">All Sources</option>
+                                    
+                                    <option value="FRCMedia (Fall River Community Media)">FRCMedia (Fall River Community Media)</option>
+                                    
+                                    <option value="Fall River Reporter">Fall River Reporter</option>
+                                    
+                                    <option value="Fun107">Fun107</option>
+                                    
+                                    <option value="Google News (Fall River, MA)">Google News (Fall River, MA)</option>
+                                    
+                                    <option value="Herald News">Herald News</option>
+                                    
+                                    <option value="Taunton Gazette">Taunton Gazette</option>
+                                    
+                                    <option value="WPRI 12 Fall River">WPRI 12 Fall River</option>
+                                    
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Date Range:</label>
+                                <select id="filterDateRange" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                    <option value="">All Time</option>
+                                    <option value="today">Today</option>
+                                    <option value="week">Last 7 Days</option>
+                                    <option value="month">Last 30 Days</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button class="w-full text-gray-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(26, 26, 26, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)';" onclick="clearFilters()">Clear Filters</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="/admin" id="hamburgerMenuLink" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors inline-flex items-center justify-center w-10 h-10" title="Admin Panel">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </a>
+                    <script>
+                        // Update hamburger menu link based on session
+                        (function() {
+                            fetch('/api/session-check')
+                                .then(response => response.json())
+                                .then(data => {
+                                    const link = document.getElementById('hamburgerMenuLink');
+                                    if (data.logged_in && data.zip_code) {
+                                        link.href = `/admin/${data.zip_code}`;
+                                    } else {
+                                        link.href = '/admin';
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error('Error checking session:', err);
+                                });
+                        })();
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="bg-[#0a0a0a]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-xl font-semibold text-blue-400">FRNA</div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="index.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-blue-400" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);" data-tab="all">Home</a>
+                    <a href="category/local-news.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Local News</a>
+                    <a href="category/crime.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Crime & Public Safety</a>
+                    <a href="category/sports.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Sports</a>
+                    <a href="category/events.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Entertainment & Events</a>
+                    <a href="category/business.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Business & Development</a>
+                    <a href="category/schools.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Schools</a>
+                    <a href="category/food.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Food & Drink</a>
+                    <a href="category/obituaries.html" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:text-gray-100" onmouseover="this.style.background='rgba(16, 16, 16, 0.2)';" onmouseout="this.style.background='transparent';">Obituaries</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+        <!-- Fixed Location Badge (Top-Left) -->
+        <div class="fixed top-4 left-4 z-50 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg" style="background: rgba(147, 51, 234, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);">
+            Fall River · 02720
+        </div>
+        
+        <!-- Fixed Weather Pill (Top-Right) -->
+        <a href="https://www.wunderground.com/weather/us/ma/fall-river" target="_blank" rel="noopener" id="weatherPill" class="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" style="background: rgba(37, 99, 235, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(37, 99, 235, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)';" onmouseout="this.style.background='rgba(37, 99, 235, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)';">
+            <span id="weatherIcon" class="text-xl">🌤️</span>
+            <div class="text-white">
+                <div id="weatherTemp" class="font-bold text-sm leading-tight">--°F</div>
+                <div id="weatherCondition" class="text-blue-100 text-xs">Loading...</div>
+            </div>
+        </a>
+        
+        <!-- Hero + Trending Row (65/35 split) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10 items-start">
+            <!-- Massive Hero Carousel (65% - 8 columns) -->
+            <div class="lg:col-span-8">
+                
+                <div class="relative rounded-xl overflow-hidden shadow-2xl h-[400px] lg:h-[600px] hero-carousel-container" style="overflow: hidden;">
+                    <!-- Carousel Container -->
+                    <div class="top-stories-track h-full" style="display: flex; transition: transform 0.5s ease-in-out;">
+                        
+                        <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / 3); width: calc(100% / 3);">
+                            <a href="https://fallriverreporter.com/city-has-turned-sections-of-two-fall-river-streets-into-a-one-way-heres-why/?utm_source=rss&utm_medium=rss&utm_campaign=city-has-turned-sections-of-two-fall-river-streets-into-a-one-way-heres-why" target="_blank" rel="noopener" class="group block relative w-full h-full">
+                                
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300">
+                                    <!-- Subtle pattern overlay -->
+                                    <div class="absolute inset-0 opacity-5" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                                    <!-- City skyline silhouette -->
+                                    <div class="absolute bottom-0 left-0 right-0 h-32 opacity-3">
+                                        <svg viewBox="0 0 400 100" class="w-full h-full" preserveAspectRatio="none">
+                                            <path d="M0,100 L0,85 L15,82 L30,78 L45,75 L60,72 L75,70 L90,68 L105,66 L120,64 L135,62 L150,60 L165,58 L180,56 L195,54 L210,52 L225,50 L240,52 L255,54 L270,56 L285,58 L300,60 L315,62 L330,64 L345,66 L360,68 L375,70 L385,72 L400,75 L400,100 Z" fill="white"/>
+                                        </svg>
+                                    </div>
+                                    <!-- Video play icon if video -->
+                                    
+                                    <!-- Content overlay at bottom -->
+                                    <div class="absolute bottom-0 left-0 right-0 p-6 lg:p-8 pb-12 lg:pb-16 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
+                                        <h2 class="text-2xl lg:text-3xl font-bold text-white mb-3 line-clamp-5 group-hover:text-blue-300 transition-colors leading-tight">
+                                            City has turned sections of two Fall River streets into a one-way. here’s why
+                                        </h2>
+                                        <div class="flex items-center gap-3 text-sm text-gray-200">
+                                            <span class="font-medium">Fall River Reporter</span>
+                                            <span>•</span>
+                                            <span>December 08, 2025</span>
+                                            
+                                            <span>•</span>
+                                            <span>1 min read</span>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </a>
+                        </div>
+                        
+                        <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / 3); width: calc(100% / 3);">
+                            <a href="https://news.google.com/rss/articles/CBMilAJBVV95cUxPeTczTTltLXVWOTh5MHMxWno0ZUpHcHItSE5vdmxXVmt6Z012c05TOEZNc0JPQmdNSHJ2U2NmRWN3SVRzWUR1cFdPRzhhOVFKTVZGNk04d0VGOXpfS3kzWjVIVEFDdnVQbW9MZHJZOXIxM3ZqMWR0Y0VJUTYyMk81QUdNSGNvRGxteDQzendQeGxVamI3T084SDFqX1FTWG5pd21DalltaXZSV3pDM3BvZGdhR2tzb1J6N21ucmFocW9Ib2VsbzJnSmtVRWtwSUZZeE5MYjNVYjdZQS1BcGRfQ1NZdUpYaW0td3U0aHlLMHRGWEFtRVlqSThZeTlOeV94YnktT2hsYjNIMWd0bGJTRkpfZjfSAZQCQVVfeXFMT3k3M005bS11Vjk4eTBzMVp6NGVKR3ByLUhOb3ZsV1ZremdNdnNOUzhGTXNCT0JnTUhydlNjZkVjd0lUc1lEdXBXT0c4YTlRSk1WRjZNOHdFRjl6X0t5M1o1SFRBQ3Z1UG1vTGRyWTlyMTN2ajFkdGNFSVE2MjJPNUFHTUhjb0RsbXg0M3p3UHhsVWpiN09POEgxal9RU1huaXdtQ2pZbWl2Uld6QzNwb2RnYUdrc29SejdtbnJhaHFvSG9lbG8yZ0prVUVrcElGWXhOTGIzVWI3WUEtQXBkX0NTWXVKWGltLXd1NGh5SzB0RlhBbUVZakk4WXk5TnlfeGJ5LU9obGIzSDFndGxiU0ZKX2Y3?oc=5" target="_blank" rel="noopener" class="group block relative w-full h-full">
+                                
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300">
+                                    <!-- Subtle pattern overlay -->
+                                    <div class="absolute inset-0 opacity-5" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                                    <!-- City skyline silhouette -->
+                                    <div class="absolute bottom-0 left-0 right-0 h-32 opacity-3">
+                                        <svg viewBox="0 0 400 100" class="w-full h-full" preserveAspectRatio="none">
+                                            <path d="M0,100 L0,85 L15,82 L30,78 L45,75 L60,72 L75,70 L90,68 L105,66 L120,64 L135,62 L150,60 L165,58 L180,56 L195,54 L210,52 L225,50 L240,52 L255,54 L270,56 L285,58 L300,60 L315,62 L330,64 L345,66 L360,68 L375,70 L385,72 L400,75 L400,100 Z" fill="white"/>
+                                        </svg>
+                                    </div>
+                                    <!-- Video play icon if video -->
+                                    
+                                    <!-- Content overlay at bottom -->
+                                    <div class="absolute bottom-0 left-0 right-0 p-6 lg:p-8 pb-12 lg:pb-16 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
+                                        <h2 class="text-2xl lg:text-3xl font-bold text-white mb-3 line-clamp-5 group-hover:text-blue-300 transition-colors leading-tight">
+                                            Fall River School Committee member resigns as Westport principal; faculty member accused of excessive physical force on disabled student no longer at school - Fall River Reporter
+                                        </h2>
+                                        <div class="flex items-center gap-3 text-sm text-gray-200">
+                                            <span class="font-medium">Google News (Fall River, MA)</span>
+                                            <span>•</span>
+                                            <span>December 06, 2025</span>
+                                            
+                                            <span>•</span>
+                                            <span>1 min read</span>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </a>
+                        </div>
+                        
+                        <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / 3); width: calc(100% / 3);">
+                            <a href="https://www.heraldnews.com/story/business/real-estate/2025/12/02/fall-river-massachusetts-daycare-plans-little-hands-scholars-highlands-neighborhood-struck-down/87475698007/" target="_blank" rel="noopener" class="group block relative w-full h-full">
+                                
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400">
+                                    <!-- Subtle pattern overlay -->
+                                    <div class="absolute inset-0 opacity-5" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                                    <!-- City skyline silhouette -->
+                                    <div class="absolute bottom-0 left-0 right-0 h-32 opacity-3">
+                                        <svg viewBox="0 0 400 100" class="w-full h-full" preserveAspectRatio="none">
+                                            <path d="M0,100 L0,85 L15,82 L30,78 L45,75 L60,72 L75,70 L90,68 L105,66 L120,64 L135,62 L150,60 L165,58 L180,56 L195,54 L210,52 L225,50 L240,52 L255,54 L270,56 L285,58 L300,60 L315,62 L330,64 L345,66 L360,68 L375,70 L385,72 L400,75 L400,100 Z" fill="white"/>
+                                        </svg>
+                                    </div>
+                                    <!-- Video play icon if video -->
+                                    
+                                    <!-- Content overlay at bottom -->
+                                    <div class="absolute bottom-0 left-0 right-0 p-6 lg:p-8 pb-12 lg:pb-16 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
+                                        <h2 class="text-2xl lg:text-3xl font-bold text-white mb-3 line-clamp-5 group-hover:text-blue-300 transition-colors leading-tight">
+                                            Fall River zoning laws halt plans for daycare in Highlands neighborhood
+                                        </h2>
+                                        <div class="flex items-center gap-3 text-sm text-gray-200">
+                                            <span class="font-medium">Herald News</span>
+                                            <span>•</span>
+                                            <span>December 07, 2025</span>
+                                            
+                                            <span>•</span>
+                                            <span>5 min read</span>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </a>
+                        </div>
+                        
+                    </div>
+                    
+                    <!-- Navigation Arrows -->
+                    
+                    <button data-slider="prev" class="absolute left-4 top-1/2 transform -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-3 transition-all duration-300 hover:scale-110" aria-label="Previous article">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+                    <button data-slider="next" class="absolute right-4 top-1/2 transform -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-3 transition-all duration-300 hover:scale-110" aria-label="Next article">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    
+                    
+                    <!-- Navigation Dots -->
+                    
+                    <div class="slider-dots absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-30">
+                        
+                        <button data-slider-dot="0" class="dot w-3 h-3 rounded-full bg-white hover:bg-white/60 transition-colors cursor-pointer"></button>
+                        
+                        <button data-slider-dot="1" class="dot w-3 h-3 rounded-full bg-white/40 hover:bg-white/60 transition-colors cursor-pointer"></button>
+                        
+                        <button data-slider-dot="2" class="dot w-3 h-3 rounded-full bg-white/40 hover:bg-white/60 transition-colors cursor-pointer"></button>
+                        
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <!-- Narrow Trending Sidebar (35% - 4 columns) -->
+            <aside class="lg:col-span-4">
+                <div class="rounded-xl p-6" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="text-2xl">🔥</span>
+                        <h3 class="text-lg font-bold text-gray-100">Trending in Fall River</h3>
+                    </div>
+                    <div class="space-y-4">
+                        
+                            
+                            <a href="https://frmedia.org/city-exploring-the-purchase-of-bishop-connolly-site/" target="_blank" rel="noopener" class="block group">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                    
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center relative overflow-hidden">
+                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="text-sm">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">City Exploring the Purchase of Bishop Connolly Site</h4>
+                                        </div>
+                                        <div class="text-xs text-gray-500">FRCMedia (Fall River Community Media) • December 10, 2025</div>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="https://news.google.com/rss/articles/CBMihAFBVV95cUxOWUdpa0RBTkdQbW1JeXplcHU1UXdveUFqMTBvY1ZsNXdTMDlsMTl5SXNUMzJ2aXVLVThNUjlDWFo1dU8wVlRMV1U3d3hROUwtY0xwa2RfQU85UHpMVzN2eWVrWkkyTjhxRFRla01YblVDenlFclhWeWdWZXlUNzgzZi1ydTc?oc=5" target="_blank" rel="noopener" class="block group">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                    
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-300 flex items-center justify-center relative overflow-hidden">
+                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">GN</div>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="text-sm">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Joseph R. "Jose Maria" Carreiro Obituary (2025) - Fall River, MA - Silva-Faria Funeral Home - Fall River Chapel - Legacy | Obituary</h4>
+                                        </div>
+                                        <div class="text-xs text-gray-500">Google News (Fall River, MA) • December 09, 2025</div>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="https://fallriverreporter.com/fall-river-police-department-city-council-officials-community-members-implementing-initiatives-to-combat-illegal-dumping/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-police-department-city-council-officials-community-members-implementing-initiatives-to-combat-illegal-dumping" target="_blank" rel="noopener" class="block group">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                    
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
+                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="text-sm">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Fall River Police Department, City Council, officials, community members, implementing initiatives to combat illegal dumping</h4>
+                                        </div>
+                                        <div class="text-xs text-gray-500">Fall River Reporter • December 09, 2025</div>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="https://news.google.com/rss/articles/CBMizwFBVV95cUxNU1ZfbnNLMUJqMEozdE4xVmJRb3hIZWhpbGhSeUR5UFRkeHh4QUFmLXEzZEFLWDN6aUdEdjUtNEh5Y3dJX19ZNWhxMmMzNkpobjRwOXFrYWVrWGMtQmdFQTJwT18wSzZvU2dSZGlYdW9fUkc5WGNPek1xMXZtNzlpcXJTdXlxWEJ2YVYzNnU0YWtiWU5oa1EzZ09KUEh0eGFUOVNCNjZuMXFvV1lOWFZZSW1kODdKdGtQRmFsX0ZlaG9TMkRtdFFGdVhhUmxRbEXSAdcBQVVfeXFMTVRCeUJmY3N4dU1RWmRDTW5QY1RLWElwTThTeGY1UWExNWk1VU5XWlBtOUhILW9CWk0xVDBub09sX3hTWFJ0YWFRdFBSeUJzSHowV0Z3VHNLdFU5RE5iZlczazBPR1VDRmxJNTVXUVlIckFGRm5oRU1YN0FmSHBVTGZoSjdnRk0xdXU4WHMycmFJV1I4Z0FnX3Z3SlZUNmlyOWFFYlJjQ3B2REktLXcxdGl2RXBpay1FdFhDRjNrbzAxb3BxWHBYdmpDWlhhOGlYX3pPYm1iZ0E?oc=5" target="_blank" rel="noopener" class="block group">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                    
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-300 flex items-center justify-center relative overflow-hidden">
+                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">GN</div>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="text-sm">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Fall River assisted-living facility owner and inspector sue each other over faulty sprinklers in deadly fire - Boston.com</h4>
+                                        </div>
+                                        <div class="text-xs text-gray-500">Google News (Fall River, MA) • December 09, 2025</div>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="https://news.google.com/rss/articles/CBMihgFBVV95cUxNOWhiaWthU1lPZENJbVFaRERhaElhRWF1Y2FoM01NQ1A4N1d0MEdfNVlUOURWUW55Ny1xLU5UV01NNHZKN1JJSUhHczQ0SWNGczg1Mk0tdUhLS19fVEZoSlhCY24wdk5nekNUeTFsS25GcjRlNWVQQkZfUm5ibE1hVHV3WEVrdw?oc=5" target="_blank" rel="noopener" class="block group">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                    
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-300 flex items-center justify-center relative overflow-hidden">
+                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">GN</div>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="text-sm">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Antonio F. Lourenco Obituary (2025) - Fall River, MA - Silva-Faria Funeral Home - Fall River Chapel - Legacy | Obituary</h4>
+                                        </div>
+                                        <div class="text-xs text-gray-500">Google News (Fall River, MA) • December 09, 2025</div>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                        
+                    </div>
+                </div>
+            </aside>
+        </div>
+        
+        <!-- Perfect Masonry Grid Below Hero (3-4 columns) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="articlesGrid">
+            
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://news.google.com/rss/articles/CBMiiAFBVV95cUxPX1ZQM3BLeW9QYUU4UEhLell1eDFoZF9tNm82bXdlNW1PUXhTT0lFNkZjc1RyaGltdXRoT3hOMkpMVkRKY2htRXYwTm1kTmM0YnJaVXcxMUNPRmc2eDNpT0tJZ29qUHJZWGZOSVpKdGxwRnhZUjlvWVBROTl4aVc5QTctak1HUFJX?oc=5" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            GN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Fall River man charged after allegedly dumping in reservoir - abc6.com
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 11, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="business" data-neighborhoods="">
+                <a href="https://frmedia.org/city-exploring-the-purchase-of-bishop-connolly-site/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-600 to-purple-700" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                City Exploring the Purchase of Bishop Connolly Site
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 10, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/news/2025/12/10/2021-fall-river-housing-lawsuit-to-go-before-judge-as-mediator/87691133007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Judge to mediate Watuppa Heights housing lawsuit. What happens next.
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 10, 2025 • 4 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="south end">
+                <a href="https://www.heraldnews.com/story/news/2025/12/10/real-brazil-restaurant-and-market-moving-from-taunton-to-fall-river/87687263007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Brazilian barbecue restaurant coming to Fall River in early 2026
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 10, 2025 • 4 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/news/education/2025/12/10/flood-damage-at-fall-rivers-durfee-abated-restoration-underway/87679638007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Cleanup of Durfee High flooding incident will finish in next 2 weeks
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 10, 2025 • 3 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="obituaries" data-neighborhoods="the hill">
+                <a href="https://www.tauntongazette.com/story/sports/college/2025/12/10/salisbury-lineman-cooper-long-receives-scholarship-for-wake-forest-football-national-signing-day/87678049007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(20, 184, 166, 0.3);">
+                            TG
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                He fell in love with football at Durfee, soon he'll play in the ACC
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 10, 2025 • 5 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/fall-river-police-department-city-council-officials-community-members-implementing-initiatives-to-combat-illegal-dumping/?utm_source=rss&utm_medium=rss&utm_campaign=fall-river-police-department-city-council-officials-community-members-implementing-initiatives-to-combat-illegal-dumping" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Fall River Police Department, City Council, officials, community members, implementing initiatives to combat illegal dumping
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="obituaries" data-neighborhoods="">
+                <a href="https://news.google.com/rss/articles/CBMihAFBVV95cUxOWUdpa0RBTkdQbW1JeXplcHU1UXdveUFqMTBvY1ZsNXdTMDlsMTl5SXNUMzJ2aXVLVThNUjlDWFo1dU8wVlRMV1U3d3hROUwtY0xwa2RfQU85UHpMVzN2eWVrWkkyTjhxRFRla01YblVDenlFclhWeWdWZXlUNzgzZi1ydTc?oc=5" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            GN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Joseph R. "Jose Maria" Carreiro Obituary (2025) - Fall River, MA - Silva-Faria Funeral Home - Fall River Chapel - Legacy | Obituary
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/southcoast-health-recognized-by-the-u-s-news-world-report-2025-maternity-care-access-hospitals/?utm_source=rss&utm_medium=rss&utm_campaign=southcoast-health-recognized-by-the-u-s-news-world-report-2025-maternity-care-access-hospitals" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Southcoast Health recognized by the U.S. News & World Report 2025 Maternity Care Access Hospitals
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 2 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="entertainment" data-neighborhoods="">
+                <a href="https://news.google.com/rss/articles/CBMizwFBVV95cUxNU1ZfbnNLMUJqMEozdE4xVmJRb3hIZWhpbGhSeUR5UFRkeHh4QUFmLXEzZEFLWDN6aUdEdjUtNEh5Y3dJX19ZNWhxMmMzNkpobjRwOXFrYWVrWGMtQmdFQTJwT18wSzZvU2dSZGlYdW9fUkc5WGNPek1xMXZtNzlpcXJTdXlxWEJ2YVYzNnU0YWtiWU5oa1EzZ09KUEh0eGFUOVNCNjZuMXFvV1lOWFZZSW1kODdKdGtQRmFsX0ZlaG9TMkRtdFFGdVhhUmxRbEXSAdcBQVVfeXFMTVRCeUJmY3N4dU1RWmRDTW5QY1RLWElwTThTeGY1UWExNWk1VU5XWlBtOUhILW9CWk0xVDBub09sX3hTWFJ0YWFRdFBSeUJzSHowV0Z3VHNLdFU5RE5iZlczazBPR1VDRmxJNTVXUVlIckFGRm5oRU1YN0FmSHBVTGZoSjdnRk0xdXU4WHMycmFJV1I4Z0FnX3Z3SlZUNmlyOWFFYlJjQ3B2REktLXcxdGl2RXBpay1FdFhDRjNrbzAxb3BxWHBYdmpDWlhhOGlYX3pPYm1iZ0E?oc=5" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            GN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Fall River assisted-living facility owner and inspector sue each other over faulty sprinklers in deadly fire - Boston.com
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="obituaries" data-neighborhoods="">
+                <a href="https://news.google.com/rss/articles/CBMihgFBVV95cUxNOWhiaWthU1lPZENJbVFaRERhaElhRWF1Y2FoM01NQ1A4N1d0MEdfNVlUOURWUW55Ny1xLU5UV01NNHZKN1JJSUhHczQ0SWNGczg1Mk0tdUhLS19fVEZoSlhCY24wdk5nekNUeTFsS25GcjRlNWVQQkZfUm5ibE1hVHV3WEVrdw?oc=5" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            GN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Antonio F. Lourenco Obituary (2025) - Fall River, MA - Silva-Faria Funeral Home - Fall River Chapel - Legacy | Obituary
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/news/2025/12/09/gabriel-house-fire-sprinklers-known-to-be-defective-inspector-says/87677234007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Fire inspectors, Gabriel House owner sue each other over sprinklers
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 8 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="events" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/news/local/ojornal/2025/12/09/giant-animated-azorean-nativity-scene-in-massachusetts-delights-young-and-old-alike/87677552007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Portugalia's famous Nativity on display in Fall River. How it's made
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 4 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="schools" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/news/2025/12/08/dartmouth-ma-fill-the-bus-toy-drive-holiday-donations-christmas-2025-target-store/87570639007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Dartmouth's holiday giving efforts to include high schoolers this year
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 4 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://news.google.com/rss/articles/CBMilAFBVV95cUxNblpkTEFqbEcyaW9ReWtwY3NVMHJsQkFodWlWMXhCREVQN2RGNFJEX3dJNHNMdnlMeXV3bGFMcmFoN1BnZERwWkl2UkJnRV81NkN1RmpwUzhuTzE5Vjl4N1Y1SW1nSnJfcnEyQkZjNlBEQzdjTUVuNzhQemJOeU1BVWJ6Vng0RDVMZXUyNzZmcWNuOHpV?oc=5" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            GN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Man arrested on firearms charges in Fall River - Newport Dispatch
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="events" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/fsi-gabriel-house-file-cross-claims-against-each-other-over-recalled-sprinkler-heads/?utm_source=rss&utm_medium=rss&utm_campaign=fsi-gabriel-house-file-cross-claims-against-each-other-over-recalled-sprinkler-heads" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                FSI, Gabriel House, file cross claims against each other over recalled sprinkler heads
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 3 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash/?utm_source=rss&utm_medium=rss&utm_campaign=outpouring-of-community-support-for-amazing-family-who-lost-3-year-old-daughter-in-pedestrian-crash" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Outpouring of community support for “amazing family” who lost 3-year-old daughter in pedestrian crash
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 09, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://www.wpri.com/news/local-news/se-mass/man-accused-of-firing-gun-from-fall-river-apartment-window/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-sky-500 to-sky-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);">
+                            WP
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Man accused of firing gun from Fall River apartment window
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 08, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="sports" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/news/2025/12/08/first-step-inn-emergency-shelter-open-due-to-cold-how-to-get-help/87674881007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                First Step Inn emergency overnight shelter open as temperatures drop
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 08, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://fallriverreporter.com/massachusetts-next-affordability-crisis-property-taxes-explode-lawmakers-scramble/?utm_source=rss&utm_medium=rss&utm_campaign=massachusetts-next-affordability-crisis-property-taxes-explode-lawmakers-scramble" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-700 to-purple-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                            FR
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Massachusetts’ Next Affordability Crisis: Property Taxes Explode, Lawmakers Scramble
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 08, 2025 • 3 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="local-news" data-neighborhoods="">
+                <a href="https://news.google.com/rss/articles/CBMipwFBVV95cUxNR0luSk52VmNsek9oYWNEcEdPNUt4S05RNWNiVGRuRmNVSTVGT05WOFdISEF5SFc4dVJPUThvRjB4djAtY0xGcklCZzdGM0JWc1dUTG5yRnp0ZU1LMkZhQnRBcFVkSF9uTnQ1c1ZvZDdmZU9NV2JkN2JFWHg2UnREcFUxQWVPd2tqNUcyZWJ2aDV3cllhZm5hQ25BZm5Eb2hwa2RtMldaMNIBpwFBVV95cUxNR0luSk52VmNsek9oYWNEcEdPNUt4S05RNWNiVGRuRmNVSTVGT05WOFdISEF5SFc4dVJPUThvRjB4djAtY0xGcklCZzdGM0JWc1dUTG5yRnp0ZU1LMkZhQnRBcFVkSF9uTnQ1c1ZvZDdmZU9NV2JkN2JFWHg2UnREcFUxQWVPd2tqNUcyZWJ2aDV3cllhZm5hQ25BZm5Eb2hwa2RtMldaMA?oc=5" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            GN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Massachusetts State Police respond to crash on Route 140 that injured man - Fall River Reporter
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 08, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://news.google.com/rss/articles/CBMiqAFBVV95cUxPWkU1d2RzemVuUFl3OXMwYTRKZnZsMkU3WG5SQVZ3bHRvVlZJR3BlN1hDaEt5R1BEWDhMMm1iakgxMVF5SnNXSlBwc3VucWdGYWtGSGJRd3hSMUlzNExyZTRHTmVSNk5wYmFaaFE5X3pNY2JlMWdsSS1uMmtoQ3dKcDAxOVMxX0Rtby1PSUxRbzFYektDZDg3Z0VMZ24xZ0ZmR1BtTEpJaEPSAagBQVVfeXFMT1pFNXdkc3plblBZdzlzMGE0SmZ2bDJFN1huUkFWd2x0b1ZWSUdwZTdYQ2hLeUdQRFg4TDJtYmpIMTFReUpzV0pQcHN1bnFnRmFrRkhiUXd4UjFJczRMcmU0R05lUjZOcGJhWmhROV96TWNiZTFnbEktbjJraEN3SnAwMTlTMV9EbW8tT0lMUW8xWHpLQ2Q4N2dFTGduMWdGZkdQbUxKSWhD?oc=5" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            GN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Massachusetts State Police announce third area Sobriety Checkpoint of 2025 - Fall River Reporter
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 08, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="schools" data-neighborhoods="">
+                <a href="https://www.wpri.com/news/local-news/se-mass/two-fall-river-streets-are-now-one-ways/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-sky-500 to-sky-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);">
+                            WP
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Two Fall River streets are now one-ways
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 08, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="crime" data-neighborhoods="">
+                <a href="https://news.google.com/rss/articles/CBMiuwFBVV95cUxObnJldGxTZldla2pORFhoWWFPTTVtZGVqR0NIeWU2SUNZOGtVMTBsbWdLQ2txSms1d3JBajZsUVAwUHgyUFI2UkUtanBfMmdIcjVpa2hwVF9UUVlkS2owOXhGcHBiSm5NVERTOHpLbHp3eDdBWlRheFpzWktZM1dBa2R5Zjlqb3FGanVsMlhjbExFTWF1VnF0ZHRIUmw4ZXJpaVpHckxGS1l5NUhRenN6amNqd1lNd3J4T2pN0gG7AUFVX3lxTE5ucmV0bFNmV2Vrak5EWGhZYU9NNW1kZWpHQ0h5ZTZJQ1k4a1UxMGxtZ0tDa3FKazV3ckFqNmxRUDBQeDJQUjZSRS1qcF8yZ0hyNWlraHBUX1RRWWRLajA5eEZwcGJKbk1URFM4ektsend4N0FaVGF4WnNaS1kzV0FrZHlmOWpvcUZqdWwyWGNsTEVNYXVWcXRkdEhSbDhlcmlpWkdyTEZLWXk1SFF6c3pqY2p3WU13cnhPak0?oc=5" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            GN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Massachusetts State Police, local police, hoping for new leads in cold case homicide - Fall River Reporter
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 08, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="schools" data-neighborhoods="">
+                <a href="https://www.heraldnews.com/story/news/traffic/2025/12/08/maple-and-june-streets-now-one-way-near-westall-school/87668345007/" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-400" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);">
+                            HN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Maple Street and June Street in Fall River one-way for Westall safety
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 08, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="schools" data-neighborhoods="">
+                <a href="https://news.google.com/rss/articles/CBMi_wFBVV95cUxQeEF5UklPaHlQRS01aGZoOTBvd2lGbzFJREJiT3ZlYmE1Q19pZFpxV3hSOF9PR01KQkltN0RoTFU5bXFBcmFVM3BZTU12VTlXek1pcl9LUzhyTTdmRXB0NGdLRUppOHNIMzU0T0EzeVFqaldnSjNGSTZ0YjAtMTNmbUw3bFk1SFVNWjdLbUdrNWc4ZGNoc2ZHcDBRaVlTek9xWXRtS0RVcGlDWS1rQnZoT3ZPWG44QV94UEJEUnJMWWU0NmJSTGJCRDdYcFluNlByX2tfR3hyY3Z4Wjc1ZGlBdzJEc1ZDSGhpYVpmWnFzRk4zamlwalJiajlyUFREOVE?oc=5" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            GN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Fall River's 113-year-old Davol School finds a buyer. What's planned. - Fall River Herald News
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 08, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="schools" data-neighborhoods="">
+                <a href="https://news.google.com/rss/articles/CBMitwFBVV95cUxQS1ZmTVJ2Nm9fTG5QTXIyakc0cHNEV3Zqb01jOGpWbGUyc2RLaUFEdzA4MWEwNHhxeFJxNUhIalZsN21rbGpXb3J4eE5UY0xYY0NPNTdnUTc4UWExc1ltSlJXYzRieWZ5RUdaYlU0UjBnNFdlNVczRUo4dnBiVTA1UEZlMmJDVXlTYS01dElnMnRZbDZfZHRvQkFQNVZUOGxBaXVTSGJFVDB6S3FMZmxlM3RreUpYWlXSAbcBQVVfeXFMUEtWZk1SdjZvX0xuUE1yMmpHNHBzRFd2am9NYzhqVmxlMnNkS2lBRHcwODFhMDR4cXhScTVISGpWbDdta2xqV29yeHhOVGNMWGNDTzU3Z1E3OFFhMXNZbUpSV2M0YnlmeUVHWmJVNFIwZzRXZTVXM0VKOHZwYlUwNVBGZTJiQ1V5U2EtNXRJZzJ0WWw2X2R0b0JBUDVWVDhsQWl1U0hiRVQwektxTGZsZTN0a3lKWFpV?oc=5" target="_blank" rel="noopener" class="block">
+                    
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-300" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            GN
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                Fall River School Committee member resigns as principal of Westport Elementary School - Fall River Reporter
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    December 05, 2025 • 1 min read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </a>
+            </article>
+                
+            
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-[#0a0a0a] border-t border-gray-900/30 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div>
+                    <h4 class="text-lg font-bold text-gray-100 mb-3">Stay Informed</h4>
+                    <p class="text-gray-400 text-sm mb-4">Get daily news updates delivered to your inbox.</p>
+                    <form class="flex flex-col sm:flex-row gap-2" id="newsletterForm" onsubmit="handleNewsletterSignup(event)">
+                        <input type="email" placeholder="Enter your email" class="flex-1 text-gray-100 rounded-lg px-4 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 outline-none" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);" id="newsletterEmail" required>
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-semibold transition-colors">Subscribe</button>
+                    </form>
+                    <div class="text-sm mt-2 min-h-[1.2rem]" id="newsletterMessage"></div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold text-gray-100 mb-3">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="index.html" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Home</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-6 border-t border-gray-900/30 text-center">
+                <p class="text-gray-500 text-sm">&copy; 2025 Fall River, MA News Aggregator. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Mobile Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-md border-t border-gray-900/30 px-4 py-2 flex justify-around items-center z-50 lg:hidden">
+        <a href="index.html" class="flex flex-col items-center gap-1 text-gray-400 hover:text-blue-400 transition-colors py-2 px-4 rounded-lg min-h-[44px] min-w-[44px]">
+            <span class="text-xl">🏠</span>
+            <span class="text-xs">Home</span>
+        </a>
+        <a href="https://www.wunderground.com/weather/us/ma/fall-river" target="_blank" rel="noopener" class="flex flex-col items-center gap-1 text-gray-400 hover:text-blue-400 transition-colors py-2 px-4 rounded-lg min-h-[44px] min-w-[44px]">
+            <span class="text-xl">☀️</span>
+            <span class="text-xs">Weather</span>
+        </a>
+    </nav>
+    
+    <!-- Back to Top Button -->
+    <button class="fixed bottom-20 right-6 bg-blue-500 hover:bg-blue-600 text-white w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 hidden lg:block z-40" id="backToTop" onclick="scrollToTop()" title="Back to top">↑</button>
+    
+    <script>
+        // Set weather API key for frontend before weather.js loads
+        window.WEATHER_API_KEY = 'a712d56f3aaf62271434a06aa0c33cab';
+    </script>
+    <script src="js/weather.js?v=0623PM"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // Lazy image loading
+        document.addEventListener('DOMContentLoaded', function() {
+            const images = document.querySelectorAll('img[data-src]');
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.classList.add('loaded');
+                        observer.unobserve(img);
+                    }
+                });
+            });
+            images.forEach(img => imageObserver.observe(img));
+        });
+    </script>
+</body>
+</html>

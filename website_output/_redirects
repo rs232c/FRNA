@@ -1,0 +1,16 @@
+# Root redirect to default zip
+/ /02720 302!
+
+# Zip code routes - redirect to zip_* folders
+/02720 /zip_02720/index.html 200
+/02721 /zip_02721/index.html 200
+/02842 /zip_02842/index.html 200
+
+# Category routes (clean URLs without .html)
+/02720/category/* /zip_02720/category/:splat.html 200
+/02721/category/* /zip_02721/category/:splat.html 200
+/02842/category/* /zip_02842/category/:splat.html 200
+
+# Fallback
+/* /index.html 404
+
