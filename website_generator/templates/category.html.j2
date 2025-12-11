@@ -314,7 +314,7 @@
                 <p class="text-gray-400 text-lg mb-2">No articles found in this category yet.</p>
                 <p class="text-gray-500 text-sm mb-6">We're constantly updating our content. Check back soon for the latest {{ category_name.lower() }} news!</p>
                 <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                    <a href="{{ home_path }}index.html" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">← Back to Home</a>
+                    <a href="{{ home_path }}index.html" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">← Back to Local</a>
                     <a href="{{ home_path }}index.html" class="px-6 py-3 bg-[#1a1a1a] hover:bg-[#222] text-gray-300 rounded-lg transition-colors font-medium border border-gray-800/30">View All News</a>
                 </div>
             </div>
@@ -350,5 +350,11 @@
             images.forEach(img => imageObserver.observe(img));
         });
     </script>
+    
+    <!-- Generation Timestamp Badge (Bottom-Right) -->
+    <div class="fixed bottom-4 right-4 z-50 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-mono shadow-lg" style="background: rgba(16, 16, 16, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05);">
+        <div>Generated: {{ generation_timestamp }}</div>
+        {% if last_db_update %}<div>DB Updated: {{ last_db_update }}</div>{% endif %}
+    </div>
 </body>
 </html>

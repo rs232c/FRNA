@@ -462,9 +462,9 @@ def calculate_relevance_score_with_tags(article: Dict, config: Optional[Dict] = 
             'missing': ['Hard filter: Article missing required zip-specific keywords']
         }
     
-    # Load config from database if not provided (Phase 5: city_state takes priority)
+    # Load config from database if not provided
     if config is None:
-        config = load_relevance_config(zip_code=zip_code, city_state=city_state)
+        config = load_relevance_config(zip_code=zip_code)
     
     content = article.get("content", article.get("summary", "")).lower()
     title = article.get("title", "").lower()

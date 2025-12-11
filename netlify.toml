@@ -1,0 +1,42 @@
+[build]
+  publish = "website_output"
+  command = "echo 'Static site - no build needed'"
+
+[[redirects]]
+  from = "/"
+  to = "/02720"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/02720"
+  to = "/zip_02720/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/02721"
+  to = "/zip_02721/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/02842"
+  to = "/zip_02842/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/02720/category/*"
+  to = "/zip_02720/category/:splat.html"
+  status = 200
+
+[[redirects]]
+  from = "/02721/category/*"
+  to = "/zip_02721/category/:splat.html"
+  status = 200
+
+[[redirects]]
+  from = "/02842/category/*"
+  to = "/zip_02842/category/:splat.html"
+  status = 200
+
+[build.environment]
+  PYTHON_VERSION = "3.11"

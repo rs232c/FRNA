@@ -279,7 +279,7 @@
                                             <span class="text-sm">🔥</span>
                                             <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">{{ article.title }}</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">{{ article.source_display }} • {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}</div>
+                                        <div class="text-xs text-gray-500">{{ article.source_display }} • {{ article._trending_date if article._trending_date else (article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently') }}</div>
                                     </div>
                                 </div>
                             </a>
@@ -378,7 +378,7 @@
                 <div>
                     <h4 class="text-lg font-bold text-gray-100 mb-3">Quick Links</h4>
                     <ul class="space-y-2">
-                        <li><a href="index.html" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Home</a></li>
+                        <li><a href="index.html" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Local</a></li>
                     </ul>
                 </div>
             </div>
@@ -391,8 +391,8 @@
     <!-- Mobile Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-md border-t border-gray-900/30 px-4 py-2 flex justify-around items-center z-50 lg:hidden">
         <a href="index.html" class="flex flex-col items-center gap-1 text-gray-400 hover:text-blue-400 transition-colors py-2 px-4 rounded-lg min-h-[44px] min-w-[44px]">
-            <span class="text-xl">🏠</span>
-            <span class="text-xs">Home</span>
+            <span class="text-xl">📍</span>
+            <span class="text-xs">Local</span>
         </a>
         <a href="{{ weather_station_url }}" target="_blank" rel="noopener" class="flex flex-col items-center gap-1 text-gray-400 hover:text-blue-400 transition-colors py-2 px-4 rounded-lg min-h-[44px] min-w-[44px]">
             <span class="text-xl">{{ weather_icon }}</span>
@@ -426,5 +426,11 @@
             images.forEach(img => imageObserver.observe(img));
         });
     </script>
+    
+    <!-- Generation Timestamp Badge (Bottom-Right) -->
+    <div class="fixed bottom-4 right-4 z-50 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-mono shadow-lg" style="background: rgba(16, 16, 16, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05);">
+        <div>Generated: {{ generation_timestamp }}</div>
+        {% if last_db_update %}<div>DB Updated: {{ last_db_update }}</div>{% endif %}
+    </div>
 </body>
 </html>
