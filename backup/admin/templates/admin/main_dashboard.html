@@ -24,16 +24,21 @@
             <h2>Global Actions</h2>
             <button onclick="regenerateAll()">Regenerate All Websites</button>
             <button onclick="regenerateSelected()">Regenerate Selected Zip</button>
-            
-            <!-- Phase 9: Zip Pin Editability Toggle -->
-            <div style="margin-top: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
-                <h3 style="margin-bottom: 0.5rem;">Zip Pin Settings</h3>
-                <label style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" id="zipPinEditable" onchange="toggleZipPinEditable()" style="width: 20px; height: 20px;">
-                    <span>Enable Zip Pin Editing (users can change zip code from frontend)</span>
+        </div>
+        
+        <!-- Phase 9: Zip Pin Editability Toggle -->
+        <div class="actions" style="margin-top: 2rem; border: 2px solid #0078d4;">
+            <h2 style="color: #0078d4; margin-bottom: 1rem;">Zip Pin Settings</h2>
+            <div style="padding: 1rem; background: #e3f2fd; border-radius: 4px;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="zipPinEditable" onchange="toggleZipPinEditable()" style="width: 24px; height: 24px; cursor: pointer;">
+                    <span style="font-size: 1.1em; font-weight: bold;">Enable Zip Pin Editing</span>
                 </label>
-                <p style="margin-top: 0.5rem; font-size: 0.9em; color: #666;">
-                    When enabled, the purple zip pin on the frontend becomes clickable, allowing users to change their zip code.
+                <p style="margin-top: 0.75rem; font-size: 1em; color: #333; line-height: 1.5;">
+                    When enabled, the purple zip pin badge on the frontend becomes clickable, allowing users to change their zip code and view news for different areas.
+                </p>
+                <p style="margin-top: 0.5rem; font-size: 0.9em; color: #666; font-style: italic;">
+                    Current status: <span id="zipPinStatus" style="font-weight: bold;">Loading...</span>
                 </p>
             </div>
         </div>
@@ -79,16 +84,30 @@
                 .then(r => r.json())
                 .then(data => {
                     if (data.success !== false) {
-                        document.getElementById('zipPinEditable').checked = data.editable || false;
+                        const checkbox = document.getElementById('zipPinEditable');
+                        const status = document.getElementById('zipPinStatus');
+                        if (checkbox) {
+                            checkbox.checked = data.editable || false;
+                        }
+                        if (status) {
+                            status.textContent = data.editable ? 'ENABLED' : 'DISABLED';
+                            status.style.color = data.editable ? '#4caf50' : '#d32f2f';
+                        }
                     }
                 })
                 .catch(err => {
                     console.error('Error loading zip pin setting:', err);
+                    const status = document.getElementById('zipPinStatus');
+                    if (status) {
+                        status.textContent = 'Error loading';
+                        status.style.color = '#d32f2f';
+                    }
                 });
         }
         
         function toggleZipPinEditable() {
             const checkbox = document.getElementById('zipPinEditable');
+            const status = document.getElementById('zipPinStatus');
             const enabled = checkbox.checked;
             
             fetch('/admin/api/toggle-zip-pin-editable', {
@@ -98,16 +117,28 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
+                    if (status) {
+                        status.textContent = data.editable ? 'ENABLED' : 'DISABLED';
+                        status.style.color = data.editable ? '#4caf50' : '#d32f2f';
+                    }
                     alert(data.message || `Zip pin editing ${data.editable ? 'enabled' : 'disabled'}`);
                 } else {
                     alert('Error: ' + (data.error || 'Failed to update setting'));
                     checkbox.checked = !enabled; // Revert checkbox
+                    if (status) {
+                        status.textContent = enabled ? 'DISABLED' : 'ENABLED';
+                        status.style.color = enabled ? '#d32f2f' : '#4caf50';
+                    }
                 }
             })
             .catch(err => {
                 console.error('Error toggling zip pin setting:', err);
                 alert('Error updating setting');
                 checkbox.checked = !enabled; // Revert checkbox
+                if (status) {
+                    status.textContent = enabled ? 'DISABLED' : 'ENABLED';
+                    status.style.color = enabled ? '#d32f2f' : '#4caf50';
+                }
             });
         }
         

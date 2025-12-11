@@ -243,14 +243,16 @@ ARTICLE_CATEGORIES = {
 # Category Slugs - URL-friendly identifiers for category pages
 CATEGORY_SLUGS = {
     "local-news": "Local News",
-    "crime": "Crime & Public Safety",
+    "crime": "Police & Fire",  # Updated for navigation
     "sports": "Sports",
     "events": "Entertainment & Events",
     "weather": "Weather",
     "business": "Business & Development",
     "schools": "Schools",
     "food": "Food & Drink",
-    "obituaries": "Obituaries"
+    "obituaries": "Obituaries",
+    "media": "Media",  # For navigation
+    "scanner": "Scanner",  # For navigation
 }
 
 # Category Mapping - Maps old article categories to new category slugs

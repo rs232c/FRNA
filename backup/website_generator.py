@@ -944,7 +944,10 @@ class WebsiteGenerator:
             f.write(html)
     
     def _get_nav_tabs(self, active_page: str = "home", zip_code: Optional[str] = None, is_category_page: bool = False) -> str:
-        """Generate consistent navigation tabs across all pages
+        """Generate two-row navigation structure for top local news site
+        
+        Top row (big, bold): Home • Local • Police & Fire • Sports • Obituaries • Food & Drink
+        Second row (smaller, lighter): Media • Scanner • Weather • Submit Tip • Lost & Found • Events
         
         Args:
             active_page: Current page identifier
@@ -952,38 +955,291 @@ class WebsiteGenerator:
             is_category_page: If True, paths are relative from category/ subdirectory
         """
         # Use relative paths for navigation
-        # If we're on a category page, we need to go up one level
         if is_category_page:
             home_href = "../index.html"
-            category_prefix = ""  # Same directory
+            category_prefix = ""
         else:
             home_href = "index.html"
             category_prefix = "category/"
         
-        tabs = [
+        # Top row: Primary navigation (big, bold)
+        top_row_tabs = [
             ("Home", home_href, "all", "home"),
+            ("Local", f"{category_prefix}local-news.html" if category_prefix else "local-news.html", None, "category-local-news"),
+            ("Police & Fire", f"{category_prefix}crime.html" if category_prefix else "crime.html", None, "category-crime"),
+            ("Sports", f"{category_prefix}sports.html" if category_prefix else "sports.html", None, "category-sports"),
+            ("Obituaries", f"{category_prefix}obituaries.html" if category_prefix else "obituaries.html", None, "category-obituaries"),
+            ("Food & Drink", f"{category_prefix}food.html" if category_prefix else "food.html", None, "category-food"),
         ]
         
-        # Add category tabs
-        category_order = ["local-news", "crime", "sports", "events", "business", "schools", "food", "obituaries"]
-        for slug in category_order:
-            if slug in CATEGORY_SLUGS:
-                name = CATEGORY_SLUGS[slug]
-                page_key = f"category-{slug}"
-                href = f"{category_prefix}{slug}.html" if category_prefix else f"{slug}.html"
-                tabs.append((name, href, None, page_key))
+        # Second row: Secondary navigation (slightly smaller, lighter)
+        second_row_tabs = [
+            ("Media", f"{category_prefix}media.html" if category_prefix else "media.html", None, "category-media"),
+            ("Scanner", f"{category_prefix}scanner.html" if category_prefix else "scanner.html", None, "category-scanner"),
+            ("Weather", f"{category_prefix}weather.html" if category_prefix else "weather.html", None, "category-weather"),
+            ("Submit Tip", "#", None, "submit-tip"),  # Placeholder - implement later
+            ("Lost & Found", "#", None, "lost-found"),  # Placeholder - implement later
+            ("Events", f"{category_prefix}events.html" if category_prefix else "events.html", None, "category-events"),
+        ]
         
-        nav_html = '<div class="flex flex-wrap gap-2">\n'
-        for label, href, data_tab, page_key in tabs:
-            if active_page == page_key:
-                active_class = 'text-blue-400'
-                active_style = ' style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);"'
+        # Build navigation HTML with two-row structure
+        nav_html = '''
+    <!-- Desktop Navigation: Two Rows - Centered -->
+    <div class="hidden lg:flex flex-col items-center gap-3 w-full">
+        <!-- Top Row: Primary Navigation (Big, Bold) -->
+        <div class="flex flex-wrap items-center justify-center gap-2 lg:gap-3">
+'''
+        
+        # Top row links
+        for i, (label, href, data_tab, page_key) in enumerate(top_row_tabs):
+            # Check if this is the active page
+            is_active = (active_page == page_key) or (page_key == "home" and (active_page == "home" or active_page == "all"))
+            if is_active:
+                active_class = 'text-white font-bold bg-blue-500/20 border border-blue-500/40'
+                active_style = ''
             else:
-                active_class = 'text-gray-300 hover:text-gray-100'
-                active_style = ' onmouseover="this.style.background=\'rgba(16, 16, 16, 0.2)\';" onmouseout="this.style.background=\'transparent\';"'
+                active_class = 'text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30'
+                active_style = ''
+            
+            # Add category slug data attribute for category links (not Home)
+            category_slug = None
+            if page_key and page_key.startswith('category-'):
+                category_slug = page_key.replace('category-', '')
+            elif page_key in ['submit-tip', 'lost-found']:
+                category_slug = page_key
+            
             data_attr = f' data-tab="{data_tab}"' if data_tab else ''
-            nav_html += f'                    <a href="{href}" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {active_class}"{active_style}{data_attr}>{label}</a>\n'
-        nav_html += '                </div>'
+            category_attr = f' data-category-slug="{category_slug}"' if category_slug else ''
+            separator = ' <span class="text-gray-700 mx-2 text-sm">•</span> ' if i < len(top_row_tabs) - 1 else ''
+            nav_html += f'            <a href="{href}" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 {active_class}"{active_style}{data_attr}{category_attr}>{label}</a>{separator}\n'
+        
+        nav_html += '''        </div>
+        
+        <!-- Second Row: Secondary Navigation (Smaller, Lighter) - Centered under first row -->
+        <div class="flex flex-wrap items-center justify-center gap-2 lg:gap-3">
+'''
+        
+        # Second row links
+        for i, (label, href, data_tab, page_key) in enumerate(second_row_tabs):
+            is_active = active_page == page_key
+            if is_active:
+                active_class = 'text-blue-300 font-semibold bg-blue-500/15 border border-blue-500/30'
+                active_style = ''
+            else:
+                active_class = 'text-gray-500 hover:text-gray-300 font-medium border border-transparent hover:border-gray-800 hover:bg-gray-900/20'
+                active_style = ''
+            
+            # Add category slug data attribute for category links
+            category_slug = None
+            if page_key and page_key.startswith('category-'):
+                category_slug = page_key.replace('category-', '')
+            elif page_key in ['submit-tip', 'lost-found']:
+                category_slug = page_key
+            
+            data_attr = f' data-tab="{data_tab}"' if data_tab else ''
+            category_attr = f' data-category-slug="{category_slug}"' if category_slug else ''
+            separator = ' <span class="text-gray-800 mx-1.5 text-xs">•</span> ' if i < len(second_row_tabs) - 1 else ''
+            nav_html += f'            <a href="{href}" class="nav-category-link px-3 py-1.5 rounded-md text-sm lg:text-base transition-all duration-200 {active_class}"{active_style}{data_attr}{category_attr}>{label}</a>{separator}\n'
+        
+        nav_html += '''        </div>
+    </div>
+    
+    <!-- Mobile Navigation: Hamburger Menu -->
+    <div class="lg:hidden w-full flex flex-col items-center gap-3">
+        <div class="text-xl font-bold text-blue-400 mb-1">FRNA</div>
+        <button id="mobileNavToggle" class="flex items-center gap-2 text-gray-200 hover:text-white px-4 py-2 rounded-lg hover:bg-[#161616]/50 transition-colors border border-gray-800" aria-label="Toggle navigation menu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+            <span class="font-semibold">Menu</span>
+        </button>
+        
+        <div id="mobileNavMenu" class="hidden mt-4 space-y-3 bg-[#161616]/90 backdrop-blur-md rounded-lg p-4 border border-gray-800/30">
+            <!-- Mobile: Primary Row -->
+            <div class="space-y-2 pb-3 border-b border-gray-800/30">
+                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Primary</div>
+'''
+        
+        # Mobile top row - with inline toggles
+        for label, href, data_tab, page_key in top_row_tabs:
+            # Check if this is the active page
+            is_active = (active_page == page_key) or (page_key == "home" and (active_page == "home" or active_page == "all"))
+            if is_active:
+                active_class = 'text-blue-400 bg-blue-500/10 border-blue-500/30'
+            else:
+                active_class = 'text-gray-200 hover:text-white hover:bg-[#1a1a1a]'
+            
+            # Add category slug data attribute for category links (not Home)
+            category_slug = None
+            if page_key and page_key.startswith('category-'):
+                category_slug = page_key.replace('category-', '')
+            elif page_key in ['submit-tip', 'lost-found']:
+                category_slug = page_key
+            
+            data_attr = f' data-tab="{data_tab}"' if data_tab else ''
+            category_attr = f' data-category-slug="{category_slug}"' if category_slug else ''
+            
+            # For Home, no toggle - just the link
+            if page_key == "home":
+                nav_html += f'                <a href="{href}" class="block px-4 py-2.5 rounded-lg text-base font-bold transition-colors border {active_class}"{data_attr}>{label}</a>\n'
+            else:
+                # For categories, add inline toggle (X or checkbox)
+                nav_html += f'                <div class="flex items-center justify-between px-4 py-2.5 rounded-lg border {active_class}">\n'
+                nav_html += f'                    <a href="{href}" class="nav-category-link flex-1 {active_class.replace("border ", "")}"{data_attr}{category_attr}>{label}</a>\n'
+                nav_html += f'                    <button class="category-toggle-btn ml-3 p-1 rounded hover:bg-gray-800/50 transition-colors" data-category-slug="{category_slug}" title="Toggle category">\n'
+                nav_html += f'                        <span class="category-toggle-icon text-lg">✓</span>\n'
+                nav_html += f'                    </button>\n'
+                nav_html += f'                </div>\n'
+        
+        nav_html += '''            </div>
+            
+            <!-- Mobile: Secondary Row -->
+            <div class="space-y-2">
+                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">More</div>
+'''
+        
+        # Mobile second row - with inline toggles
+        for label, href, data_tab, page_key in second_row_tabs:
+            is_active = active_page == page_key
+            if is_active:
+                active_class = 'text-blue-300 bg-blue-500/10 border-blue-500/20'
+            else:
+                active_class = 'text-gray-300 hover:text-gray-100 hover:bg-[#1a1a1a]'
+            
+            # Add category slug data attribute for category links
+            category_slug = None
+            if page_key and page_key.startswith('category-'):
+                category_slug = page_key.replace('category-', '')
+            elif page_key in ['submit-tip', 'lost-found']:
+                category_slug = page_key
+            
+            data_attr = f' data-tab="{data_tab}"' if data_tab else ''
+            category_attr = f' data-category-slug="{category_slug}"' if category_slug else ''
+            
+            # For placeholder items (#), no toggle - just the link
+            if href == "#":
+                nav_html += f'                <a href="{href}" class="nav-category-link block px-4 py-2 rounded-lg text-sm font-medium transition-colors border {active_class}"{data_attr}{category_attr}>{label}</a>\n'
+            else:
+                # For categories, add inline toggle (X or checkbox)
+                nav_html += f'                <div class="flex items-center justify-between px-4 py-2 rounded-lg border {active_class}">\n'
+                nav_html += f'                    <a href="{href}" class="nav-category-link flex-1 {active_class.replace("border ", "")}"{data_attr}{category_attr}>{label}</a>\n'
+                nav_html += f'                    <button class="category-toggle-btn ml-3 p-1 rounded hover:bg-gray-800/50 transition-colors" data-category-slug="{category_slug}" title="Toggle category">\n'
+                nav_html += f'                        <span class="category-toggle-icon text-lg">✓</span>\n'
+                nav_html += f'                    </button>\n'
+                nav_html += f'                </div>\n'
+        
+        # Add Admin button at the end
+        nav_html += '''            </div>
+            
+            <!-- Admin Button -->
+            <div class="pt-3 border-t border-gray-800/30">
+                <a href="#" id="adminLink" class="block px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-[#1a1a1a] border border-gray-800 transition-colors text-center">
+                    <span class="mr-2">⚙️</span>Admin
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Mobile menu toggle
+        (function() {
+            const toggle = document.getElementById('mobileNavToggle');
+            const menu = document.getElementById('mobileNavMenu');
+            if (toggle && menu) {
+                toggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    menu.classList.toggle('hidden');
+                    const isOpen = !menu.classList.contains('hidden');
+                    toggle.setAttribute('aria-expanded', isOpen);
+                });
+                
+                // Close menu when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+                        menu.classList.add('hidden');
+                        toggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                
+                // Close menu when clicking a link
+                menu.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        // Don't close if clicking on a toggle button
+                        if (!e.target.closest('.category-toggle-btn')) {
+                            menu.classList.add('hidden');
+                            toggle.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                });
+                
+                // Update toggle icons when menu opens
+                toggle.addEventListener('click', function() {
+                    setTimeout(() => {
+                        if (!menu.classList.contains('hidden') && window.CategoryPreferences) {
+                            updateMobileToggleIcons();
+                        }
+                    }, 10);
+                });
+            }
+        })();
+        
+        // Update mobile toggle icons based on preferences
+        function updateMobileToggleIcons() {
+            if (!window.CategoryPreferences) return;
+            
+            document.querySelectorAll('.category-toggle-btn').forEach(btn => {
+                const slug = btn.dataset.categorySlug;
+                if (slug) {
+                    const isEnabled = window.CategoryPreferences.isCategoryEnabled(slug);
+                    const icon = btn.querySelector('.category-toggle-icon');
+                    if (icon) {
+                        icon.textContent = isEnabled ? '✓' : '✕';
+                        icon.className = isEnabled 
+                            ? 'category-toggle-icon text-lg text-green-400' 
+                            : 'category-toggle-icon text-lg text-red-400';
+                    }
+                }
+            });
+        }
+        
+        // Handle toggle button clicks
+        document.addEventListener('click', function(e) {
+            const toggleBtn = e.target.closest('.category-toggle-btn');
+            if (toggleBtn && window.CategoryPreferences) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const slug = toggleBtn.dataset.categorySlug;
+                if (slug) {
+                    const currentState = window.CategoryPreferences.isCategoryEnabled(slug);
+                    const newState = !currentState;
+                    window.CategoryPreferences.toggleCategory(slug, newState);
+                    updateMobileToggleIcons();
+                }
+            }
+        });
+        
+        // Update admin link with current zip code
+        document.addEventListener('DOMContentLoaded', function() {
+            const adminLink = document.getElementById('adminLink');
+            if (adminLink) {
+                // Get current zip from URL or localStorage
+                const pathMatch = window.location.pathname.match(/^\/(\d{5})/);
+                const zipFromPath = pathMatch ? pathMatch[1] : null;
+                const zipFromStorage = localStorage.getItem('currentZip');
+                const currentZip = zipFromPath || zipFromStorage || '02720';
+                
+                adminLink.href = `/admin/${currentZip}`;
+            }
+            
+            // Initial icon update
+            if (window.CategoryPreferences) {
+                updateMobileToggleIcons();
+            }
+        });
+    </script>
+'''
+        
         return nav_html
     
     def _get_index_template(self, zip_code: Optional[str] = None) -> Template:
@@ -1035,6 +1291,13 @@ class WebsiteGenerator:
                         <input type="text" placeholder="Search articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full sm:w-64" id="searchInput">
                         <button class="text-gray-400 hover:text-blue-400 transition-colors ml-2" onclick="toggleSearchFilters()" title="Advanced Filters">⚙️</button>
                     </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="categorySettingsBtn" class="text-gray-400 hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-[#161616]/50" title="Category Settings">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        </svg>
+                    </button>
                     <div class="hidden mt-3 p-4 bg-[#161616] rounded-lg border border-gray-800/30 shadow-xl" id="searchFilters">
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                             <div>
@@ -1092,10 +1355,11 @@ class WebsiteGenerator:
     </div>
     
     <!-- Navigation -->
-    <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
+    <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-4 lg:py-5 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="text-xl font-semibold text-blue-400">FRNA</div>
+            <div class="flex flex-col items-center gap-4">
+                <!-- Logo -->
+                <div class="text-2xl font-bold text-blue-400 mb-1">FRNA</div>
                 {{ nav_tabs }}
             </div>
         </div>
@@ -1104,9 +1368,15 @@ class WebsiteGenerator:
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
         <!-- Fixed Location Badge (Top-Left) -->
+        {% if zip_pin_editable %}
+        <div class="fixed top-4 left-4 z-50 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg cursor-pointer hover:bg-purple-700 transition-colors" onclick="showZipChangeModal()" title="Click to change zip code">
+            {{ location_badge_text }}
+        </div>
+        {% else %}
         <div class="fixed top-4 left-4 z-50 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
             {{ location_badge_text }}
         </div>
+        {% endif %}
         
         <!-- Fixed Weather Pill (Top-Right) -->
         <a href="{{ weather_station_url }}" target="_blank" rel="noopener" class="fixed top-4 right-4 z-50 flex items-center gap-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
@@ -1389,6 +1659,9 @@ class WebsiteGenerator:
     <button class="fixed bottom-20 right-6 bg-blue-500 hover:bg-blue-600 text-white w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 hidden lg:block z-40" id="backToTop" onclick="scrollToTop()" title="Back to top">↑</button>
     
     <script src="{{ home_path }}js/weather.js"></script>
+    <script src="js/category-preferences.js"></script>
+    <script src="js/category-settings-ui.js"></script>
+    <script src="js/navigation-filter.js"></script>
     <script src="js/main.js"></script>
     <script>
         // Lazy image loading
@@ -1408,6 +1681,25 @@ class WebsiteGenerator:
         });
     </script>
     {% if zip_pin_editable %}
+    <!-- Zip Change Modal -->
+    <div id="zipChangeModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div class="bg-[#1a1a1a] border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-white">Change Zip Code</h3>
+                <button onclick="hideZipChangeModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <p class="text-gray-300 mb-4">Enter a new 5-digit zip code to view news for that area:</p>
+            <div class="flex gap-2">
+                <input type="text" id="newZipInput" placeholder="02720" maxlength="5" pattern="\\d{5}" class="flex-1 bg-[#0f0f0f] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" onkeypress="if(event.key==='Enter') changeZipCode()">
+                <button onclick="changeZipCode()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">Change</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         // Phase 9: Zip Pin Change Functionality
         function showZipChangeModal() {
@@ -1887,15 +2179,23 @@ class WebsiteGenerator:
                         <input type="text" placeholder="Search articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full sm:w-64" id="searchInput">
                     </div>
                 </div>
+                <div class="flex items-center gap-2">
+                    <button id="categorySettingsBtn" class="text-gray-400 hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-[#161616]/50" title="Category Settings">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
     
     <!-- Navigation -->
-    <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
+    <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-4 lg:py-5 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="text-xl font-semibold text-blue-400">FRNA</div>
+            <div class="flex flex-col items-center gap-4">
+                <!-- Logo -->
+                <div class="text-2xl font-bold text-blue-400 mb-1">FRNA</div>
                 {{ nav_tabs }}
             </div>
         </div>
@@ -1904,9 +2204,15 @@ class WebsiteGenerator:
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
         <!-- Fixed Location Badge (Top-Left) -->
+        {% if zip_pin_editable %}
+        <div class="fixed top-4 left-4 z-50 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg cursor-pointer hover:bg-purple-700 transition-colors" onclick="showZipChangeModal()" title="Click to change zip code">
+            {{ location_badge_text }}
+        </div>
+        {% else %}
         <div class="fixed top-4 left-4 z-50 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
             {{ location_badge_text }}
         </div>
+        {% endif %}
         
         <!-- Fixed Weather Pill (Top-Right) -->
         <a href="{{ weather_station_url }}" target="_blank" rel="noopener" id="weatherPill" class="fixed top-4 right-4 z-50 flex items-center gap-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
@@ -2108,6 +2414,9 @@ class WebsiteGenerator:
         </div>
     </footer>
     
+    <script src="{{ home_path }}js/category-preferences.js"></script>
+    <script src="{{ home_path }}js/category-settings-ui.js"></script>
+    <script src="{{ home_path }}js/navigation-filter.js"></script>
     <script src="{{ home_path }}js/main.js"></script>
     <script>
         // Lazy load images with data-src
@@ -2129,6 +2438,71 @@ class WebsiteGenerator:
             images.forEach(img => imageObserver.observe(img));
         });
     </script>
+    {% if zip_pin_editable %}
+    <!-- Zip Change Modal -->
+    <div id="zipChangeModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div class="bg-[#1a1a1a] border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-white">Change Zip Code</h3>
+                <button onclick="hideZipChangeModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <p class="text-gray-300 mb-4">Enter a new 5-digit zip code to view news for that area:</p>
+            <div class="flex gap-2">
+                <input type="text" id="newZipInput" placeholder="02720" maxlength="5" pattern="\\d{5}" class="flex-1 bg-[#0f0f0f] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" onkeypress="if(event.key==='Enter') changeZipCode()">
+                <button onclick="changeZipCode()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">Change</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Phase 9: Zip Pin Change Functionality
+        function showZipChangeModal() {
+            document.getElementById('zipChangeModal').classList.remove('hidden');
+            document.getElementById('newZipInput').focus();
+        }
+        
+        function hideZipChangeModal() {
+            document.getElementById('zipChangeModal').classList.add('hidden');
+            document.getElementById('newZipInput').value = '';
+        }
+        
+        function changeZipCode() {
+            const newZip = document.getElementById('newZipInput').value.trim();
+            if (!/^\\d{5}$/.test(newZip)) {
+                alert('Please enter a valid 5-digit zip code');
+                return;
+            }
+            
+            // Use zip-router.js if available, otherwise redirect
+            if (window.ZipRouter && window.ZipRouter.setZip) {
+                window.ZipRouter.setZip(newZip);
+            } else {
+                // Fallback: redirect to zip-specific page
+                window.location.href = `/?z=${newZip}`;
+            }
+            
+            hideZipChangeModal();
+        }
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideZipChangeModal();
+            }
+        });
+        
+        // Close modal on background click
+        document.getElementById('zipChangeModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideZipChangeModal();
+            }
+        });
+    </script>
+    {% endif %}
 </body>
 </html>"""
         return Template(template_str)
@@ -2302,6 +2676,23 @@ class WebsiteGenerator:
             else:
                 location_badge_text = f"Fall River · {zip_code}"
         
+        # Phase 9: Zip pin editability flag (from admin_settings)
+        zip_pin_editable = False
+        try:
+            # Prefer settings dict if present
+            if 'zip_pin_editable' in settings:
+                zip_pin_editable = str(settings.get('zip_pin_editable')) == '1'
+            else:
+                conn = self._get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('zip_pin_editable',))
+                row = cursor.fetchone()
+                conn.close()
+                zip_pin_editable = row[0] == '1' if row else False
+        except Exception as e:
+            logger.warning(f"Could not determine zip pin editability: {e}")
+            zip_pin_editable = False
+        
         # Generate navigation (from category subdirectory)
         nav_tabs = self._get_nav_tabs(f"category-{category_slug}", zip_code, is_category_page=True)
         
@@ -2361,6 +2752,7 @@ class WebsiteGenerator:
         template_vars = {
             "title": title,
             "category_name": category_name,
+            "category_slug": category_slug,  # Add category slug for client-side checks
             "locale": locale_name,
             "articles": grid_articles,
             "hero_articles": hero_articles,  # Hero articles for carousel (up to 3)
@@ -2376,7 +2768,8 @@ class WebsiteGenerator:
             "location_badge_text": location_badge_text,
             "zip_code": zip_code or "02720",
             "weather_station_url": weather_station_url,
-            "weather_icon": weather_icon  # Dynamic weather icon
+            "weather_icon": weather_icon,  # Dynamic weather icon
+            "zip_pin_editable": zip_pin_editable  # Phase 9: Zip pin editability
         }
         
         # Add funeral homes for obituaries template
