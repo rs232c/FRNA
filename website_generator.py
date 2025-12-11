@@ -3276,6 +3276,15 @@ class WebsiteGenerator:
             z-index: 1;
             border-radius: 12px;
         }}
+        /* Center content in transcript iframe */
+        .transcript-container {{
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }}
+        .transcript-container iframe {{
+            max-width: 100%;
+        }}
     </style>
 </head>
 <body class="bg-[#0f0f0f] text-gray-100 min-h-screen">
@@ -3337,8 +3346,10 @@ class WebsiteGenerator:
             <!-- Audio Player Box -->
             <div class="bg-[#1a1a1a] rounded-2xl p-5 mb-8 shadow-2xl" style="box-shadow: 0 8px 32px rgba(0,0,0,0.6);">
                 <div class="broadcastify-container">
-                    <iframe src="https://www.broadcastify.com/listen/embed/feed/{feed_id}" 
+                    <iframe id="broadcastifyPlayer" 
+                            src="https://www.broadcastify.com/webPlayer/{feed_id}" 
                             height="180" 
+                            allow="autoplay; encrypted-media"
                             allowfullscreen
                             class="w-full border-none rounded-xl broadcastify-iframe">
                     </iframe>
@@ -3351,11 +3362,12 @@ class WebsiteGenerator:
             
             <!-- Transcript Box -->
             <div class="bg-[#1a1a1a] rounded-2xl p-5 shadow-2xl" style="box-shadow: 0 8px 32px rgba(0,0,0,0.6);">
-                <h2 class="text-xl font-semibold text-white mb-4 mt-0">Live Call Transcript</h2>
-                <div class="broadcastify-container">
+                <h2 class="text-xl font-semibold text-white mb-4 mt-0 text-center">Live Call Transcript & Radio Codes</h2>
+                <div class="broadcastify-container transcript-container">
                     <iframe src="https://www.broadcastify.com/listen/feed/{feed_id}/transcript" 
                             height="500"
-                            class="w-full border-none rounded-xl broadcastify-iframe">
+                            class="w-full border-none rounded-xl broadcastify-iframe"
+                            style="display: block; margin: 0 auto;">
                     </iframe>
                 </div>
             </div>
@@ -3371,6 +3383,42 @@ class WebsiteGenerator:
     
     <!-- Load main.js for search functionality -->
     <script src="{home_path}js/main.js"></script>
+    
+    <!-- Auto-play script for Broadcastify player -->
+    <script>
+        // Attempt to trigger autoplay when page loads
+        // Note: Browser autoplay policies may prevent this from working
+        // Users may need to interact with the page first
+        (function() {{
+            // Wait for iframe to load
+            const iframe = document.getElementById('broadcastifyPlayer');
+            if (iframe) {{
+                iframe.addEventListener('load', function() {{
+                    // Try to trigger play via postMessage (may not work due to CORS)
+                    try {{
+                        // Some players respond to postMessage for play commands
+                        iframe.contentWindow.postMessage({{action: 'play'}}, 'https://www.broadcastify.com');
+                    }} catch (e) {{
+                        // Cross-origin restrictions may prevent this
+                        console.log('Autoplay attempt (may be blocked by browser policy)');
+                    }}
+                }});
+                
+                // Also try clicking play button after a short delay
+                setTimeout(function() {{
+                    try {{
+                        // Try to find and click play button in iframe (may not work due to CORS)
+                        const playButton = iframe.contentDocument?.querySelector('button[name="Play"], button[aria-label*="Play"], .play-button');
+                        if (playButton) {{
+                            playButton.click();
+                        }}
+                    }} catch (e) {{
+                        // Expected: Cross-origin restrictions prevent direct DOM access
+                    }}
+                }}, 1000);
+            }}
+        }})();
+    </script>
 </body>
 </html>'''
         
