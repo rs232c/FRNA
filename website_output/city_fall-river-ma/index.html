@@ -142,8 +142,7 @@
     <div class="hidden lg:flex flex-col items-center gap-3 w-full">
         <!-- Top Row: Primary Navigation (Big, Bold) -->
         <div class="flex flex-wrap items-center justify-center gap-2 lg:gap-3">
-            <a href="index.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-white font-bold bg-blue-500/20 border border-blue-500/40" data-tab="all">Home</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
-            <a href="category/local-news.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-category-slug="local-news">Local</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
+            <a href="index.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-white font-bold bg-blue-500/20 border border-blue-500/40" data-tab="all">Local</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
             <a href="category/crime.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-category-slug="crime">Police & Fire</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
             <a href="category/sports.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-category-slug="sports">Sports</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
             <a href="category/obituaries.html" class="nav-category-link px-4 py-2.5 rounded-md text-base lg:text-lg font-bold transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30" data-category-slug="obituaries">Obituaries</a> <span class="text-gray-700 mx-2 text-sm">•</span> 
@@ -229,15 +228,6 @@
                     <!-- Primary Categories -->
                     <div class="space-y-2">
                         <div class="text-xs font-medium text-gray-500 px-2 mb-2">Primary Navigation</div>
-                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="local-news">
-                            <div class="flex items-center gap-3 flex-1">
-                                <a href="category/local-news.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="local-news">Local</a>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer ml-4">
-                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="local-news" checked>
-                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                            </label>
-                        </div>
                         <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="crime">
                             <div class="flex items-center gap-3 flex-1">
                                 <a href="category/crime.html" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1" data-category-slug="crime">Police & Fire</a>
@@ -604,11 +594,6 @@
             Fall River · 02720
         </div>
         
-        <!-- Fixed Generation Timestamp (Top-Left, below location badge) -->
-        <div class="fixed top-20 left-4 z-50 text-white px-3 py-1.5 rounded-lg text-xs font-mono shadow-lg" style="background: rgba(34, 197, 94, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);">
-            Generated: 2025-12-10 11:39:34 PM
-        </div>
-        
         <!-- Fixed Weather Pill (Top-Right) -->
         <a href="https://www.wunderground.com/weather/us/ma/fall-river" target="_blank" rel="noopener" id="weatherPill" class="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" style="background: rgba(37, 99, 235, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(37, 99, 235, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)';" onmouseout="this.style.background='rgba(37, 99, 235, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)';">
             <span id="weatherIcon" class="text-xl">🌤️</span>
@@ -784,7 +769,43 @@
                                             <span class="text-sm">🔥</span>
                                             <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">City Exploring the Purchase of Bishop Connolly Site</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">FRCMedia (Fall River Community Media) • December 10, 2025</div>
+                                        <div class="text-xs text-gray-500">FRCMedia (Fall River Community Media) • December 10 at 04:54 PM</div>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="https://fallriverreporter.com/if-it-feels-like-more-people-are-committing-suicide-sadly-you-are-right/?utm_source=rss&utm_medium=rss&utm_campaign=if-it-feels-like-more-people-are-committing-suicide-sadly-you-are-right" target="_blank" rel="noopener" class="block group">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                    
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
+                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="text-sm">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">If it feels like more people are committing suicide, sadly, you are right</h4>
+                                        </div>
+                                        <div class="text-xs text-gray-500">Fall River Reporter • December 11 at 12:25 AM</div>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="https://fallriverreporter.com/if-it-feels-like-more-people-are-committing-suicide-sadly-your-right/?utm_source=rss&utm_medium=rss&utm_campaign=if-it-feels-like-more-people-are-committing-suicide-sadly-your-right" target="_blank" rel="noopener" class="block group">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                    
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
+                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
+                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
+                                    </div>
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="text-sm">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">If it feels like more people are committing suicide, sadly, your right</h4>
+                                        </div>
+                                        <div class="text-xs text-gray-500">Fall River Reporter • December 11 at 12:25 AM</div>
                                     </div>
                                 </div>
                             </a>
@@ -802,7 +823,7 @@
                                             <span class="text-sm">🔥</span>
                                             <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">‘Rate shock’ for Fall River: Healey’s affordability push meets a dramatic proposed gas bill hike - Rhode Island Current</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">Google News (Fall River, MA) • December 10, 2025</div>
+                                        <div class="text-xs text-gray-500">Google News (Fall River, MA) • December 10 at 09:11 PM</div>
                                     </div>
                                 </div>
                             </a>
@@ -820,43 +841,7 @@
                                             <span class="text-sm">🔥</span>
                                             <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Group receives $4.9 million in financing from MassHousing to acquire 30-unit St. Mathieu’s Apartments in Fall River</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">Fall River Reporter • December 10, 2025</div>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <a href="https://fallriverreporter.com/trial-date-set-for-41-year-old-new-york-man-facing-charges-in-somerset-crash-that-killed-3/?utm_source=rss&utm_medium=rss&utm_campaign=trial-date-set-for-41-year-old-new-york-man-facing-charges-in-somerset-crash-that-killed-3" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
-                                    
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
-                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
-                                    </div>
-                                    
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-1 mb-1">
-                                            <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Trial date set for 41-year-old New York man facing charges in Somerset crash that killed 3</h4>
-                                        </div>
-                                        <div class="text-xs text-gray-500">Fall River Reporter • December 10, 2025</div>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <a href="https://fallriverreporter.com/office-of-the-child-advocate-sights-dcf-oversights-after-massachusetts-man-charged-in-death-of-4-year-old-daughter/?utm_source=rss&utm_medium=rss&utm_campaign=office-of-the-child-advocate-sights-dcf-oversights-after-massachusetts-man-charged-in-death-of-4-year-old-daughter" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
-                                    
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-violet-700 to-purple-300 flex items-center justify-center relative overflow-hidden">
-                                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">FR</div>
-                                    </div>
-                                    
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-1 mb-1">
-                                            <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">Office of the Child Advocate sights DCF oversights after Massachusetts man charged in death of 4-year-old daughter</h4>
-                                        </div>
-                                        <div class="text-xs text-gray-500">Fall River Reporter • December 10, 2025</div>
+                                        <div class="text-xs text-gray-500">Fall River Reporter • December 10 at 10:28 PM</div>
                                     </div>
                                 </div>
                             </a>
@@ -1863,7 +1848,7 @@
                 <div>
                     <h4 class="text-lg font-bold text-gray-100 mb-3">Quick Links</h4>
                     <ul class="space-y-2">
-                        <li><a href="index.html" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Home</a></li>
+                        <li><a href="index.html" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Local</a></li>
                     </ul>
                 </div>
             </div>
@@ -1876,8 +1861,8 @@
     <!-- Mobile Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-md border-t border-gray-900/30 px-4 py-2 flex justify-around items-center z-50 lg:hidden">
         <a href="index.html" class="flex flex-col items-center gap-1 text-gray-400 hover:text-blue-400 transition-colors py-2 px-4 rounded-lg min-h-[44px] min-w-[44px]">
-            <span class="text-xl">🏠</span>
-            <span class="text-xs">Home</span>
+            <span class="text-xl">📍</span>
+            <span class="text-xs">Local</span>
         </a>
         <a href="https://www.wunderground.com/weather/us/ma/fall-river" target="_blank" rel="noopener" class="flex flex-col items-center gap-1 text-gray-400 hover:text-blue-400 transition-colors py-2 px-4 rounded-lg min-h-[44px] min-w-[44px]">
             <span class="text-xl">☀️</span>
@@ -1892,7 +1877,7 @@
         // Set weather API key for frontend before weather.js loads
         window.WEATHER_API_KEY = 'a712d56f3aaf62271434a06aa0c33cab';
     </script>
-    <script src="js/weather.js?v=1139PM"></script>
+    <script src="js/weather.js?v=1235AM"></script>
     <script src="js/main.js"></script>
     <script>
         // Lazy image loading
@@ -1911,5 +1896,11 @@
             images.forEach(img => imageObserver.observe(img));
         });
     </script>
+    
+    <!-- Generation Timestamp Badge (Bottom-Right) -->
+    <div class="fixed bottom-4 right-4 z-50 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-mono shadow-lg" style="background: rgba(16, 16, 16, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05);">
+        <div>Generated: 2025-12-11 12:35:05 AM</div>
+        <div>DB Updated: 2025-12-10 11:55:16 PM</div>
+    </div>
 </body>
 </html>
