@@ -94,7 +94,7 @@ def logout():
     return redirect(url_for('admin.login'))
 
 
-@admin_bp.route('/')
+@admin_bp.route('/', strict_slashes=False)  # Match both /admin and /admin/
 @login_required
 def main_dashboard():
     """Main admin dashboard - shows all zip codes"""

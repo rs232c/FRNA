@@ -52,6 +52,16 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'false').lower() == 'true'  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
+# Register admin blueprint EARLY to ensure admin routes are matched before catch-all routes
+# This must happen before other routes are defined to ensure proper route priority
+try:
+    from admin import admin_bp
+    import admin.routes  # Import routes to register them on the blueprint
+    app.register_blueprint(admin_bp)
+    logger.info("Admin blueprint registered early for route priority")
+except Exception as e:
+    logger.warning(f"Could not register admin blueprint early: {e}. Will register later.")
+
 # Security: Rate limiting (optional)
 if FLASK_LIMITER_AVAILABLE:
     limiter = Limiter(
@@ -629,6 +639,13 @@ def logout():
     session.pop('logged_in', None)
     return redirect(url_for('login'))
 
+# Explicit route for /admin (without trailing slash) to ensure blueprint handles it
+# This must come BEFORE the catch-all route to ensure it matches first
+@app.route('/admin', strict_slashes=False)
+def admin_redirect():
+    """Redirect /admin to blueprint route /admin/"""
+    return redirect('/admin/', code=301)
+
 # Serve Sortable.min.js from root
 @app.route('/Sortable.min.js')
 def serve_sortable():
@@ -639,12 +656,16 @@ def serve_sortable():
         return "Sortable.min.js not found", 404
 
 # Serve static website files (must come after zip code and admin routes)
+# NOTE: This route matches AFTER blueprint routes due to Flask's route priority
+# Blueprint routes registered with url_prefix='/admin' have higher specificity
 @app.route('/<path:filename>')
 def serve_website(filename):
-    """Serve static website files"""
-    # Security: Skip admin routes and API routes
-    if filename.startswith('admin') or filename.startswith('api'):
-        return "Not found", 404
+    """Serve static website files - excludes admin and api paths"""
+    # Security: Skip admin routes and API routes - blueprint handles them
+    # Also explicitly block admin.html static file from being served
+    if filename == 'admin' or filename == 'admin.html' or filename.startswith('admin/') or filename.startswith('api/'):
+        # Block serving admin.html static file - blueprint should handle /admin routes
+        return "Admin routes handled by blueprint. Static admin.html file blocked.", 404
     
     # Skip zip code routes (handled by zip_page route above) - 5 digits
     if validate_zip_code(filename):
@@ -663,37 +684,15 @@ def serve_website(filename):
                 return f"File not found: {filename}", 404
         return f"Error serving file: {e}", 500
 
-@app.route('/admin')
-@app.route('/admin/<path:path>')
-@login_required
-def admin_route(path=None):
-    """Handle admin routes - supports /admin (main), /admin/02720, and /admin/02720/articles"""
-    # Check if it's main admin dashboard (no path or path is 'main')
-    if not path or path == 'main':
-        # Main admin dashboard - show list of zip codes and global controls
-        return admin_main_dashboard()
-    
-    # Check if path is a zip code (5 digits)
-    if path.isdigit() and len(path) == 5:
-        # Path is a zip code: /admin/02720
-        zip_code = path
-        tab = 'articles'  # Default tab
-        return admin_dashboard_legacy(tab, zip_code)
-    
-    # Check if it's /admin/<zip>/<tab> format
-    if '/' in path:
-        parts = path.split('/', 1)
-        zip_code = parts[0]
-        tab = parts[1] if len(parts) > 1 else 'articles'
-        
-        if zip_code.isdigit() and len(zip_code) == 5:
-            # Redirect auto-filtered to trash
-            if tab == 'auto-filtered':
-                return redirect(f'/admin/{zip_code}/trash')
-            return admin_dashboard_legacy(tab, zip_code)
-    
-    # Legacy route: /admin/<tab> (no zip code) - redirect to main admin
-    return redirect('/admin')
+# Removed catch-all route - blueprint handles all /admin routes now
+# The admin blueprint (admin_bp) handles all /admin/* routes
+# @app.route('/admin')
+# @app.route('/admin/<path:path>')
+# @login_required  
+# def admin_route(path=None):
+#     """This route is now handled by the admin blueprint"""
+#     pass
+
 
 def admin_main_dashboard():
     """Main admin dashboard - shows all zip codes and global controls"""
@@ -9985,12 +9984,8 @@ ADMIN_TEMPLATE = """
 </html>
 """
 
-# Import admin blueprint and routes BEFORE registering
-from admin import admin_bp
-# Import routes to register them on the blueprint first
-import admin.routes
-# NOW register the blueprint with the app
-app.register_blueprint(admin_bp)
+# Admin blueprint is already registered early (right after app creation) for route priority
+# No need to register again here
 
 if __name__ == '__main__':
     init_admin_db()

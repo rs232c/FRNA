@@ -15,10 +15,12 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # Create Blueprint
+# Template folder is relative to this file's directory (admin/)
+# Flask will look for templates in: admin/templates/admin/*.html
 admin_bp = Blueprint(
     'admin',
     __name__,
-    template_folder='templates',
+    template_folder='templates',  # This resolves to admin/templates/
     static_folder='static',
     url_prefix='/admin'
 )

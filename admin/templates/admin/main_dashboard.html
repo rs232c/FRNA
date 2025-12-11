@@ -144,7 +144,7 @@
         
         function regenerateAll() {
             if (confirm('Regenerate websites for all zip codes?')) {
-                fetch('{{ url_for("admin.regenerate_all_websites") }}', {method: "POST"})
+                fetch('{{ url_for("admin.regenerate_all_websites_api") }}', {method: "POST"})
                     .then(r => r.json())
                     .then(data => alert(data.message || 'Regeneration started'));
             }
@@ -152,7 +152,7 @@
         function regenerateSelected() {
             const zip = prompt('Enter zip code to regenerate:');
             if (zip && /^\d{5}$/.test(zip)) {
-                fetch('{{ url_for("admin.regenerate_website") }}?zip=' + encodeURIComponent(zip), {method: "POST"})
+                fetch('{{ url_for("admin.regenerate_website_api") }}?zip=' + encodeURIComponent(zip), {method: "POST"})
                     .then(r => r.json())
                     .then(data => alert(data.message || 'Regeneration started'));
             }
