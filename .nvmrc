@@ -1,0 +1,3 @@
+# Netlify: This is a static site, no Node.js needed
+# Empty file to prevent Netlify from trying to install Node dependencies
+

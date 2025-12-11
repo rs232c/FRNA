@@ -1,6 +1,7 @@
 [build]
   publish = "website_output"
-  command = "echo 'Static site - no build needed'"
+  # Empty command - this is a static site, no build needed
+  command = ""
 
 [[redirects]]
   from = "/"
@@ -37,6 +38,3 @@
   from = "/02842/category/*"
   to = "/zip_02842/category/:splat.html"
   status = 200
-
-[build.environment]
-  PYTHON_VERSION = "3.11"
