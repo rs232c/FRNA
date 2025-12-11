@@ -1,13 +1,14 @@
+# Netlify configuration for static site deployment
 [build]
   publish = "website_output"
-  # Empty command - this is a static site, no build needed
-  # Netlify will skip dependency installation if no command is specified
+  # Empty command tells Netlify this is a pre-built static site
   command = ""
 
-# Explicitly tell Netlify this is a static site
+# Tell Netlify to skip all processing (no Python, Node, etc.)
 [build.processing]
   skip_processing = true
 
+# Redirects configuration
 [[redirects]]
   from = "/"
   to = "/02720"
