@@ -38,6 +38,9 @@ public/
 cache/
 *.json
 !package.json
+# Exclude admin static files from deployment
+admin.html
+website_output/admin.html
 
 # Prevent Netlify from detecting Python
 runtime.txt
