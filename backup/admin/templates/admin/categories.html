@@ -39,21 +39,15 @@
             </div>
         </div>
         
-        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 8px;">
-            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">Recategorize All Articles</h3>
-            <button onclick="recategorizeAllArticles()" style="padding: 0.75rem 1.5rem; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Recategorize All Articles</button>
-            <p style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">Update all article categories based on current keywords and training data.</p>
-        </div>
-        
         <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px;">
-            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">Recalculate Category Info</h3>
-            <button onclick="recalculateCategoryInfo()" style="padding: 0.75rem 1.5rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Recalculate Category Info</button>
-            <p style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">Update categories, primary categories, and local focus scores for all articles.</p>
-        </div>
-        
-        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 8px;">
-            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">Retrain All Categories</h3>
-            <button onclick="retrainAllCategories()" style="padding: 0.75rem 1.5rem; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Retrain All Categories</button>
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">Recalculate All Category Data</h3>
+            <button onclick="recalculateCategoryInfo()" style="padding: 0.75rem 1.5rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Recalculate All Category Data</button>
+            <p style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
+                Updates categories, primary categories, category confidence, and local focus scores for all articles based on current keywords and training data. This is the most comprehensive option and replaces the need for separate "Retrain" and "Recategorize" buttons.
+            </p>
+            <p style="margin-top: 0.5rem; color: #888; font-size: 0.85rem; font-style: italic;">
+                ⏱️ Estimated time: ~3-30 seconds depending on article count (typically under 15 seconds for 200-500 articles).
+            </p>
         </div>
         
         <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px;">

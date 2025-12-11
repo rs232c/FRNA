@@ -13,20 +13,26 @@ logger = logging.getLogger(__name__)
 _relevance_config_cache = {}  # Dict[zip_code or None, config]
 _cache_timestamp = {}  # Dict[zip_code or None, timestamp]
 
+# Cache for hard filter keywords (zip-specific)
+_hard_filter_cache = {}  # Dict[zip_code, List[str]]
 
-def load_relevance_config(force_reload=False, zip_code=None):
-    """Load relevance configuration from database with caching (zip-specific)
+
+def load_relevance_config(force_reload=False, zip_code=None, city_state=None):
+    """Load relevance configuration from database with caching (zip-specific or city-specific)
+    Phase 5: Now supports city_state for city-based relevance
     
     Args:
         force_reload: If True, clear cache and reload
         zip_code: Optional zip code to load zip-specific config. If None, loads global config.
+        city_state: Optional city_state (e.g., "Fall River, MA") to load city-specific config.
     
     Returns:
         Dict with relevance configuration
     """
     global _relevance_config_cache, _cache_timestamp
     
-    cache_key = zip_code if zip_code else None
+    # Phase 5: Use city_state as primary key, fallback to zip_code
+    cache_key = city_state if city_state else (zip_code if zip_code else None)
     
     # Clear cache if forcing reload
     if force_reload:
@@ -42,11 +48,11 @@ def load_relevance_config(force_reload=False, zip_code=None):
     db_path = DATABASE_CONFIG.get("path", "fallriver_news.db")
     config = {
         'high_relevance': [],
-        'medium_relevance': [],
         'local_places': [],
         'topic_keywords': {},
         'source_credibility': {},
-        'clickbait_patterns': []
+        'clickbait_patterns': [],
+        'excluded_towns': []
     }
     
     try:
@@ -54,11 +60,13 @@ def load_relevance_config(force_reload=False, zip_code=None):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        # Load zip-specific config if zip_code provided, otherwise load global (zip_code IS NULL)
-        if zip_code:
+        # Phase 5: Load city_state-specific config first, then zip_code, then global
+        if city_state:
+            cursor.execute('SELECT category, item, points FROM relevance_config WHERE city_state = ?', (city_state,))
+        elif zip_code:
             cursor.execute('SELECT category, item, points FROM relevance_config WHERE zip_code = ?', (zip_code,))
         else:
-            cursor.execute('SELECT category, item, points FROM relevance_config WHERE zip_code IS NULL')
+            cursor.execute('SELECT category, item, points FROM relevance_config WHERE zip_code IS NULL AND city_state IS NULL')
         
         rows = cursor.fetchall()
         
@@ -67,7 +75,7 @@ def load_relevance_config(force_reload=False, zip_code=None):
             item = row['item']
             points = row['points']
             
-            if category in ['high_relevance', 'medium_relevance', 'local_places', 'clickbait_patterns']:
+            if category in ['high_relevance', 'local_places', 'clickbait_patterns', 'excluded_towns']:
                 config[category].append(item)
             elif category == 'topic_keywords':
                 config[category][item] = points if points is not None else 0.0
@@ -100,15 +108,41 @@ def load_relevance_config(force_reload=False, zip_code=None):
         
         conn.close()
         
-        # If no config found for zip, use defaults
+        # Phase 5: If no config found, auto-initialize for new city or use defaults
         if not any(config.values()):
-            logger.info(f"No relevance config found for zip {zip_code}, using defaults")
-            config = get_default_relevance_config()
+            if city_state:
+                # Try to auto-initialize for new city
+                try:
+                    parts = city_state.split(", ")
+                    if len(parts) == 2:
+                        city_name = parts[0]
+                        state_abbrev = parts[1]
+                        initialize_relevance_for_city(city_state, city_name, state_abbrev)
+                        # Reload config after initialization
+                        if city_state:
+                            cursor.execute('SELECT category, item, points FROM relevance_config WHERE city_state = ?', (city_state,))
+                            rows = cursor.fetchall()
+                            for row in rows:
+                                category = row['category']
+                                item = row['item']
+                                points = row['points']
+                                if category in ['high_relevance', 'local_places', 'clickbait_patterns', 'excluded_towns']:
+                                    config[category].append(item)
+                                elif category == 'topic_keywords':
+                                    config[category][item] = points if points is not None else 0.0
+                                elif category == 'source_credibility':
+                                    config[category][item] = points if points is not None else 0.0
+                except Exception as e:
+                    logger.warning(f"Error auto-initializing relevance for {city_state}: {e}")
+            
+            # If still no config, use defaults (Fall River)
+            if not any(config.values()):
+                logger.info(f"No relevance config found for {city_state or zip_code}, using Fall River defaults")
+                config = get_default_relevance_config()
         
         # Cache the config
         _relevance_config_cache[cache_key] = config
         _cache_timestamp[cache_key] = datetime.now()
-        
         return config
     except Exception as e:
         logger.warning(f"Error loading relevance config from database: {e}. Using defaults.")
@@ -116,14 +150,115 @@ def load_relevance_config(force_reload=False, zip_code=None):
         return get_default_relevance_config()
 
 
+def check_hard_zip_filter(article: Dict, zip_code: Optional[str] = None) -> bool:
+    """Check if article passes hard zip-specific filter (instant kill if fails)
+    
+    Args:
+        article: Article dict with title, content, summary
+        zip_code: Zip code to check filter for
+        
+    Returns:
+        True if article passes (has at least one required keyword), False if should be rejected
+    """
+    if not zip_code:
+        # If no zip code, allow through (backward compatibility)
+        return True
+    
+    global _hard_filter_cache
+    
+    # Load keywords from cache or database
+    if zip_code not in _hard_filter_cache:
+        db_path = DATABASE_CONFIG.get("path", "fallriver_news.db")
+        keywords = []
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute('SELECT keyword FROM zip_hard_filters WHERE zip_code = ?', (zip_code,))
+            rows = cursor.fetchall()
+            keywords = [row[0].lower() for row in rows]
+            conn.close()
+            _hard_filter_cache[zip_code] = keywords
+        except Exception as e:
+            logger.warning(f"Error loading hard filter keywords for zip {zip_code}: {e}")
+            # If error, allow through (fail open)
+            return True
+    
+    keywords = _hard_filter_cache.get(zip_code, [])
+    
+    # If no keywords configured for this zip, allow through
+    if not keywords:
+        return True
+    
+    # Check title and summary for at least one keyword match
+    title = article.get("title", "").lower()
+    summary = article.get("summary", "").lower()
+    content = article.get("content", "").lower()
+    combined = f"{title} {summary} {content}"
+    
+    # Check if ANY keyword matches
+    for keyword in keywords:
+        if keyword.lower() in combined:
+            return True  # Pass - found at least one required keyword
+    
+    # No keywords matched - reject
+    return False
+
+
+def initialize_relevance_for_city(city_state: str, city_name: str, state: str):
+    """Auto-initialize basic relevance config for a new city (Phase 5)
+    
+    Args:
+        city_state: City state string (e.g., "Fall River, MA")
+        city_name: City name (e.g., "Fall River")
+        state: State abbreviation (e.g., "MA")
+    """
+    try:
+        db_path = DATABASE_CONFIG.get("path", "fallriver_news.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Check if config already exists
+        cursor.execute('SELECT COUNT(*) FROM relevance_config WHERE city_state = ?', (city_state,))
+        if cursor.fetchone()[0] > 0:
+            conn.close()
+            logger.debug(f"Relevance config already exists for {city_state}")
+            return
+        
+        # Start with city name as high relevance (15 points)
+        city_lower = city_name.lower()
+        state_lower = state.lower()
+        
+        cursor.execute('''
+            INSERT OR IGNORE INTO relevance_config (category, item, points, city_state)
+            VALUES (?, ?, ?, ?)
+        ''', ('high_relevance', city_lower, 15.0, city_state))
+        
+        cursor.execute('''
+            INSERT OR IGNORE INTO relevance_config (category, item, points, city_state)
+            VALUES (?, ?, ?, ?)
+        ''', ('high_relevance', f"{city_lower}, {state_lower}", 15.0, city_state))
+        
+        # State as medium relevance (5 points)
+        cursor.execute('''
+            INSERT OR IGNORE INTO relevance_config (category, item, points, city_state)
+            VALUES (?, ?, ?, ?)
+        ''', ('medium_relevance', state_lower, 5.0, city_state))
+        
+        conn.commit()
+        conn.close()
+        logger.info(f"Initialized relevance config for {city_state} with city name and state keywords")
+    except Exception as e:
+        logger.warning(f"Error initializing relevance config for {city_state}: {e}")
+
+
 def get_default_relevance_config():
-    """Get default hardcoded relevance configuration"""
+    """Get default hardcoded relevance configuration (Fall River defaults)"""
     return {
         'high_relevance': ["fall river", "fallriver", "fall river ma", "fall river, ma", 
                           "fall river massachusetts", "fall river, massachusetts"],
-        'medium_relevance': ["somerset", "swansea", "westport", "freetown", "taunton", "new bedford", 
-                            "bristol county", "massachusetts state police", "bristol county sheriff",
-                            "dighton", "rehoboth", "seekonk", "warren ri", "tiverton ri"],
+    'excluded_towns': ["somerset", "swansea", "westport", "freetown", "taunton", "new bedford",
+                       "bristol county", "massachusetts state police", "bristol county sheriff",
+                       "dighton", "rehoboth", "seekonk", "warren ri", "tiverton ri"],
         'local_places': [
             "watuppa", "wattupa", "quequechan", "taunton river", "mount hope bay",
             "battleship cove", "lizzie borden", "lizzie borden house", "fall river heritage state park",
@@ -157,12 +292,13 @@ def get_default_relevance_config():
             "fundraiser": 4.0, "charity": 4.0
         },
         'source_credibility': {
-            "herald news": 25.0,
+            "herald news": 30.0,
             "fall river reporter": 25.0,
-            "wpri": 8.0,
+            "wpri": 20.0,
+            "fun107": 15.0,
+            "google news": 10.0,
             "abc6": 8.0,
             "nbc10": 8.0,
-            "fun107": 5.0,
             "masslive": 5.0,
             "taunton gazette": 4.0,
             "southcoast today": 4.0
@@ -174,20 +310,26 @@ def get_default_relevance_config():
     }
 
 
-def calculate_relevance_score(article: Dict, config: Optional[Dict] = None, zip_code: Optional[str] = None) -> float:
+def calculate_relevance_score(article: Dict, config: Optional[Dict] = None, zip_code: Optional[str] = None, city_state: Optional[str] = None) -> float:
     """Calculate relevance score (0-100) with enhanced local knowledge
+    Phase 5: Now supports city_state for city-based relevance
     
     Args:
         article: Article dict with title, content, source, etc. May include is_stellar field.
         config: Optional pre-loaded relevance config. If None, loads from database.
         zip_code: Optional zip code to use zip-specific relevance config.
+        city_state: Optional city_state (e.g., "Fall River, MA") for city-based config.
     
     Returns:
         Relevance score between 0 and 100
     """
-    # Load config from database if not provided
+    # STEP 1: Hard zip filter check (instant kill if fails)
+    if not check_hard_zip_filter(article, zip_code):
+        return 0.0  # Instant reject - no zip-specific keywords found
+    
+    # Load config from database if not provided (Phase 5: city_state takes priority)
     if config is None:
-        config = load_relevance_config(zip_code=zip_code)
+        config = load_relevance_config(zip_code=zip_code, city_state=city_state)
     
     content = article.get("content", article.get("summary", "")).lower()
     title = article.get("title", "").lower()
@@ -225,20 +367,6 @@ def calculate_relevance_score(article: Dict, config: Optional[Dict] = None, zip_
         if keyword in combined:
             score += float(high_relevance_points)
     
-    # Medium relevance keywords - only count if Fall River is also mentioned, otherwise penalize
-    # These are nearby towns that should be ignored unless Fall River is also mentioned
-    medium_relevance = config.get('medium_relevance', [])
-    has_fall_river_mention = any(kw in combined for kw in ['fall river', 'fallriver'])
-    
-    for keyword in medium_relevance:
-        if keyword in combined:
-            if has_fall_river_mention:
-                # If Fall River is mentioned, give small positive points (1 point instead of 5)
-                score += 1.0
-            else:
-                # If Fall River is NOT mentioned, heavily penalize (these are nearby towns we want to ignore)
-                score -= 15.0
-    
     # Expanded local landmarks/places (3 points each, configurable)
     local_places = config.get('local_places', [])
     local_places_points = config.get('local_places_points', 3.0)  # Default 3, but editable
@@ -255,26 +383,47 @@ def calculate_relevance_score(article: Dict, config: Optional[Dict] = None, zip_
     # Source credibility scoring
     source = article.get("source", "").lower()
     source_credibility = config.get('source_credibility', {})
+    source_boost = 0.0
     for source_name, points in source_credibility.items():
         if source_name in source:
+            source_boost = points
             score += points
             break
     
-    # Recency weighting (newer articles get bonus)
+    # Recency multiplier (applied AFTER source boost, BEFORE Bayesian adjustment)
+    recency_multiplier = 1.0
     published = article.get("published")
     if published:
         try:
             pub_date = datetime.fromisoformat(published.replace('Z', '+00:00').split('+')[0])
-            days_old = (datetime.now() - pub_date.replace(tzinfo=None)).days
-            if days_old == 0:
-                score += 5.0  # Today's news
-            elif days_old <= 1:
-                score += 3.0  # Yesterday
-            elif days_old <= 7:
-                score += 1.0  # This week
-            # Articles older than a week get no recency bonus
+            hours_old = (datetime.now() - pub_date.replace(tzinfo=None)).total_seconds() / 3600
+            
+            if hours_old < 6:
+                recency_multiplier = 2.0  # <6h: ×2.0
+            elif hours_old < 24:
+                recency_multiplier = 1.5  # <24h: ×1.5
+            elif hours_old < 72:
+                recency_multiplier = 1.0  # <72h: ×1.0
+            else:
+                recency_multiplier = 0.5  # older: ×0.5
+            
+            # Apply multiplier to current score
+            score = score * recency_multiplier
         except:
             pass
+    
+    # Bayesian relevance adjustment (will be added after creating bayesian_relevance module)
+    # For now, placeholder - will integrate after creating the module
+    try:
+        from utils.bayesian_relevance import BayesianRelevanceLearner
+        learner = BayesianRelevanceLearner()
+        bayesian_adjustment = learner.calculate_relevance_adjustment(article, zip_code)
+        score += bayesian_adjustment
+    except ImportError:
+        # Module not created yet, skip adjustment
+        pass
+    except Exception as e:
+        logger.debug(f"Error calculating Bayesian adjustment: {e}")
     
     # Penalize clickbait/low-quality content
     clickbait_patterns = config.get('clickbait_patterns', [])
@@ -282,11 +431,14 @@ def calculate_relevance_score(article: Dict, config: Optional[Dict] = None, zip_
         if pattern in combined:
             score -= 5.0
     
-    # Penalize if no local connection
+    # Penalize if no local connection (but only if we got past hard filter)
     if score == 0:
-        score = -10.0  # Negative score for completely unrelated
+        score = 10.0  # Minimum score if passed hard filter but no other matches
     
-    return min(100.0, max(0.0, score))
+    # Clamp final score to 0-100
+    final_score = min(100.0, max(0.0, score))
+    
+    return final_score
 
 
 def calculate_relevance_score_with_tags(article: Dict, config: Optional[Dict] = None, zip_code: Optional[str] = None) -> Tuple[float, Dict[str, List[str]]]:
@@ -302,9 +454,17 @@ def calculate_relevance_score_with_tags(article: Dict, config: Optional[Dict] = 
         - 'matched': List of matched keywords/tags
         - 'missing': List of important tags that were NOT found
     """
-    # Load config from database if not provided
+    # STEP 1: Hard zip filter check (instant kill if fails)
+    hard_filter_passed = check_hard_zip_filter(article, zip_code)
+    if not hard_filter_passed:
+        return 0.0, {
+            'matched': [],
+            'missing': ['Hard filter: Article missing required zip-specific keywords']
+        }
+    
+    # Load config from database if not provided (Phase 5: city_state takes priority)
     if config is None:
-        config = load_relevance_config(zip_code=zip_code)
+        config = load_relevance_config(zip_code=zip_code, city_state=city_state)
     
     content = article.get("content", article.get("summary", "")).lower()
     title = article.get("title", "").lower()
@@ -331,20 +491,6 @@ def calculate_relevance_score_with_tags(article: Dict, config: Optional[Dict] = 
     if not found_high_relevance and high_relevance:
         missing_important_tags.append("High relevance keywords (Fall River mentions)")
     
-    # Medium relevance keywords
-    medium_relevance = config.get('medium_relevance', [])
-    has_fall_river_mention = any(kw in combined for kw in ['fall river', 'fallriver'])
-    found_medium = []
-    for keyword in medium_relevance:
-        if keyword in combined:
-            if has_fall_river_mention:
-                score += 1.0
-                matched_tags.append(f"🏘️ {keyword} (+1)")
-            else:
-                score -= 15.0
-                matched_tags.append(f"⚠️ {keyword} (-15, no Fall River mention)")
-            found_medium.append(keyword)
-    
     # Local landmarks/places
     local_places = config.get('local_places', [])
     local_places_points = config.get('local_places_points', 3.0)
@@ -367,9 +513,11 @@ def calculate_relevance_score_with_tags(article: Dict, config: Optional[Dict] = 
     # Source credibility scoring
     source = article.get("source", "").lower()
     source_credibility = config.get('source_credibility', {})
+    source_boost = 0.0
     found_source = False
     for source_name, points in source_credibility.items():
         if source_name in source:
+            source_boost = points
             score += points
             matched_tags.append(f"📺 {source_name} (+{points})")
             found_source = True
@@ -377,23 +525,48 @@ def calculate_relevance_score_with_tags(article: Dict, config: Optional[Dict] = 
     if not found_source:
         missing_important_tags.append("Credible local source")
     
-    # Recency weighting
+    # Recency multiplier (applied AFTER source boost, BEFORE Bayesian adjustment)
+    recency_multiplier = 1.0
     published = article.get("published")
     if published:
         try:
             pub_date = datetime.fromisoformat(published.replace('Z', '+00:00').split('+')[0])
-            days_old = (datetime.now() - pub_date.replace(tzinfo=None)).days
-            if days_old == 0:
-                score += 5.0
-                matched_tags.append("🕐 Published today (+5)")
-            elif days_old <= 1:
-                score += 3.0
-                matched_tags.append("🕐 Published yesterday (+3)")
-            elif days_old <= 7:
-                score += 1.0
-                matched_tags.append("🕐 Published this week (+1)")
+            hours_old = (datetime.now() - pub_date.replace(tzinfo=None)).total_seconds() / 3600
+            
+            if hours_old < 6:
+                recency_multiplier = 2.0  # <6h: ×2.0
+                matched_tags.append("🕐 Published <6h ago (×2.0)")
+            elif hours_old < 24:
+                recency_multiplier = 1.5  # <24h: ×1.5
+                matched_tags.append("🕐 Published <24h ago (×1.5)")
+            elif hours_old < 72:
+                recency_multiplier = 1.0  # <72h: ×1.0
+                matched_tags.append("🕐 Published <72h ago (×1.0)")
+            else:
+                recency_multiplier = 0.5  # older: ×0.5
+                matched_tags.append("🕐 Published >72h ago (×0.5)")
+            
+            # Apply multiplier to current score
+            score = score * recency_multiplier
         except:
             pass
+    
+    # Bayesian relevance adjustment
+    bayesian_adjustment = 0.0
+    try:
+        from utils.bayesian_relevance import BayesianRelevanceLearner
+        learner = BayesianRelevanceLearner()
+        bayesian_adjustment = learner.calculate_relevance_adjustment(article, zip_code)
+        if bayesian_adjustment != 0:
+            score += bayesian_adjustment
+            if bayesian_adjustment > 0:
+                matched_tags.append(f"🧠 Bayesian boost (+{bayesian_adjustment:.1f})")
+            else:
+                matched_tags.append(f"🧠 Bayesian penalty ({bayesian_adjustment:.1f})")
+    except ImportError:
+        pass
+    except Exception as e:
+        logger.debug(f"Error calculating Bayesian adjustment: {e}")
     
     # Penalize clickbait
     clickbait_patterns = config.get('clickbait_patterns', [])
@@ -402,9 +575,16 @@ def calculate_relevance_score_with_tags(article: Dict, config: Optional[Dict] = 
             score -= 5.0
             matched_tags.append(f"❌ Clickbait pattern: '{pattern}' (-5)")
     
-    # Penalize if no local connection
+    # Penalize clickbait
+    clickbait_patterns = config.get('clickbait_patterns', [])
+    for pattern in clickbait_patterns:
+        if pattern in combined:
+            score -= 5.0
+            matched_tags.append(f"❌ Clickbait pattern: '{pattern}' (-5)")
+    
+    # Penalize if no local connection (but only if we got past hard filter)
     if score == 0:
-        score = -10.0
+        score = 10.0  # Minimum score if passed hard filter but no other matches
         missing_important_tags.append("Any local relevance")
     
     final_score = min(100.0, max(0.0, score))

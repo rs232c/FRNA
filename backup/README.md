@@ -266,3 +266,4 @@ The project uses semantic versioning. Check `config.py` for the current version 
 
 This project is provided as-is for educational and local news aggregation purposes.
 
+" " 

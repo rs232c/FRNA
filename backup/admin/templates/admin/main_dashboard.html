@@ -24,6 +24,18 @@
             <h2>Global Actions</h2>
             <button onclick="regenerateAll()">Regenerate All Websites</button>
             <button onclick="regenerateSelected()">Regenerate Selected Zip</button>
+            
+            <!-- Phase 9: Zip Pin Editability Toggle -->
+            <div style="margin-top: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
+                <h3 style="margin-bottom: 0.5rem;">Zip Pin Settings</h3>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="zipPinEditable" onchange="toggleZipPinEditable()" style="width: 20px; height: 20px;">
+                    <span>Enable Zip Pin Editing (users can change zip code from frontend)</span>
+                </label>
+                <p style="margin-top: 0.5rem; font-size: 0.9em; color: #666;">
+                    When enabled, the purple zip pin on the frontend becomes clickable, allowing users to change their zip code.
+                </p>
+            </div>
         </div>
         
         <h2>Zip Code Admins ({{ zip_codes|length }} total)</h2>
@@ -57,6 +69,48 @@
         </div>
     </div>
     <script>
+        // Phase 9: Load zip pin setting on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadZipPinSetting();
+        });
+        
+        function loadZipPinSetting() {
+            fetch('/admin/api/get-zip-pin-setting')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success !== false) {
+                        document.getElementById('zipPinEditable').checked = data.editable || false;
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading zip pin setting:', err);
+                });
+        }
+        
+        function toggleZipPinEditable() {
+            const checkbox = document.getElementById('zipPinEditable');
+            const enabled = checkbox.checked;
+            
+            fetch('/admin/api/toggle-zip-pin-editable', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || `Zip pin editing ${data.editable ? 'enabled' : 'disabled'}`);
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to update setting'));
+                    checkbox.checked = !enabled; // Revert checkbox
+                }
+            })
+            .catch(err => {
+                console.error('Error toggling zip pin setting:', err);
+                alert('Error updating setting');
+                checkbox.checked = !enabled; // Revert checkbox
+            });
+        }
+        
         function regenerateAll() {
             if (confirm('Regenerate websites for all zip codes?')) {
                 fetch('{{ url_for("admin.regenerate_all_websites") }}', {method: "POST"})

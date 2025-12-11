@@ -151,6 +151,7 @@ class NewsAggregatorApp:
     
     def run_aggregation_cycle(self, zip_code: Optional[str] = None):
         """Run one complete aggregation cycle
+        Phase 3 & 8: Resolves zip → city_state before aggregation
         
         Args:
             zip_code: Optional zip code for zip-specific aggregation
@@ -158,6 +159,21 @@ class NewsAggregatorApp:
         logger.info("=" * 60)
         logger.info(f"Starting aggregation cycle{' for zip ' + zip_code if zip_code else ''}")
         logger.info("=" * 60)
+        
+        # Phase 3 & 8: Resolve zip to city_state and ensure city setup
+        city_state = None
+        if zip_code:
+            try:
+                from zip_resolver import get_city_state_for_zip
+                city_state = get_city_state_for_zip(zip_code)
+                if city_state:
+                    logger.info(f"Resolved zip {zip_code} to city_state: {city_state}")
+                    # Ensure city is set up (Phase 8: auto-start)
+                    self._ensure_city_setup(zip_code, city_state)
+                else:
+                    logger.warning(f"Could not resolve city_state for zip {zip_code}, proceeding with zip_code only")
+            except Exception as e:
+                logger.warning(f"Error resolving city_state for zip {zip_code}: {e}")
         
         metrics = get_metrics()
         
@@ -177,7 +193,7 @@ class NewsAggregatorApp:
                     force_refresh = self.force_refresh or (os.environ.get('FORCE_REFRESH', '0') == '1')
                     if force_refresh:
                         logger.info("Force refresh enabled - fetching fresh data from all sources")
-                    articles = self.aggregator.aggregate(force_refresh=force_refresh, zip_code=zip_code)
+                    articles = self.aggregator.aggregate(force_refresh=force_refresh, zip_code=zip_code, city_state=city_state)
                     metrics.record_count("articles_aggregated", len(articles))
             except Exception as e:
                 logger.error(f"Error during aggregation: {e}", exc_info=True)
@@ -198,15 +214,16 @@ class NewsAggregatorApp:
                 # Save articles to database (with deduplication)
                 with TimingContext("save_articles"):
                     logger.info("Saving articles to database...")
-                    # Get zip_code from environment or use None for global
-                    zip_code = os.environ.get('ZIP_CODE')
-                    self.database.save_articles(articles, zip_code=zip_code)
+                    # Use zip_code parameter or environment variable
+                    save_zip_code = zip_code or os.environ.get('ZIP_CODE')
+                    self.database.save_articles(articles, zip_code=save_zip_code)
             
             # Get articles from database (to ensure no duplicates)
             # Get all articles, not just recent ones, sorted by publication date
             # This ensures website is generated even if no new articles were aggregated
+            # Phase 2: Use city_state for city-based consolidation
             with TimingContext("get_articles_from_db"):
-                db_articles = self.database.get_all_articles(limit=500, zip_code=zip_code)
+                db_articles = self.database.get_all_articles(limit=500, zip_code=zip_code, city_state=city_state)
                 logger.info(f"Retrieved {len(db_articles)} articles from database")
             
             # Enrich articles with formatted dates and metadata before generating website
@@ -216,10 +233,10 @@ class NewsAggregatorApp:
                 enriched_articles = self.aggregator.enrich_articles(db_articles)
                 logger.info(f"Enriched {len(enriched_articles)} articles")
             
-            # Generate website from enriched articles
+            # Generate website from enriched articles (Phase 6: city-based generation)
             with TimingContext("generate_website"):
                 logger.info("Generating website...")
-                self.website_generator.generate(enriched_articles, zip_code=zip_code)
+                self.website_generator.generate(enriched_articles, zip_code=zip_code, city_state=city_state)
                 logger.info("Website generated successfully")
             
             # Save metrics
@@ -249,6 +266,32 @@ class NewsAggregatorApp:
         
         except Exception as e:
             logger.error(f"Error in aggregation cycle: {e}", exc_info=True)
+    
+    def _ensure_city_setup(self, zip_code: str, city_state: str):
+        """Ensure city is set up for aggregation (Phase 8: auto-start)
+        
+        Args:
+            zip_code: Zip code
+            city_state: City state string (e.g., "Fall River, MA")
+        """
+        try:
+            # Initialize relevance config if new city (Phase 5)
+            from utils.relevance_calculator import load_relevance_config
+            config = load_relevance_config(zip_code=None, city_state=city_state)
+            
+            # Check if config is empty (new city)
+            if not any(config.values()) or len(config.get('high_relevance', [])) == 0:
+                logger.info(f"New city detected: {city_state}, initializing relevance config...")
+                from utils.relevance_calculator import initialize_relevance_for_city
+                # Parse city_state to get city_name and state
+                parts = city_state.split(", ")
+                if len(parts) == 2:
+                    city_name = parts[0]
+                    state_abbrev = parts[1]
+                    initialize_relevance_for_city(city_state, city_name, state_abbrev)
+                    logger.info(f"Initialized relevance config for {city_state}")
+        except Exception as e:
+            logger.warning(f"Error ensuring city setup for {city_state}: {e}")
     
     def setup_scheduler(self):
         """Setup scheduled tasks based on admin settings"""

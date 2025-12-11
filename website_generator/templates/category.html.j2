@@ -26,9 +26,9 @@
         .lazy-image.loaded { opacity: 1; }
     </style>
 </head>
-<body class="bg-[#0f0f0f] text-gray-100 min-h-screen">
+<body class="bg-[#0a0a0a] text-gray-100 min-h-screen">
     <!-- Top Bar -->
-    <div class="bg-[#0f0f0f]/50 backdrop-blur-sm border-b border-gray-900/30 py-2">
+    <div class="bg-[#0a0a0a]/50 backdrop-blur-sm border-b border-gray-900/30 py-2">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="w-full sm:w-auto flex-1">
@@ -67,7 +67,7 @@
     </div>
     
     <!-- Navigation -->
-    <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
+    <nav class="bg-[#0a0a0a]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="text-xl font-semibold text-blue-400">FRNA</div>
@@ -79,13 +79,13 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
         <!-- Fixed Location Badge (Top-Left) -->
-        <div class="fixed top-4 left-4 z-50 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+        <div class="fixed top-4 left-4 z-50 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg" style="background: rgba(147, 51, 234, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);">
             {{ location_badge_text }}
         </div>
         
         <!-- Fixed Weather Pill (Top-Right) -->
-        <a href="{{ weather_station_url }}" target="_blank" rel="noopener" class="fixed top-4 right-4 z-50 flex items-center gap-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <span class="text-xl">🌤️</span>
+        <a href="{{ weather_station_url }}" target="_blank" rel="noopener" class="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" style="background: rgba(37, 99, 235, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(37, 99, 235, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)';" onmouseout="this.style.background='rgba(37, 99, 235, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)';">
+            <span class="text-xl">{{ weather_icon }}</span>
             <div class="text-white">
                 <div class="font-bold text-sm leading-tight">{{ weather.current.temperature }}{{ weather.current.unit }}</div>
                 <div class="text-blue-100 text-xs">{{ weather.current.condition }}</div>
@@ -100,11 +100,11 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10 items-start">
             <!-- Massive Hero Carousel (65% - 8 columns) -->
             <div class="lg:col-span-8">
-                <div class="relative rounded-xl overflow-hidden shadow-2xl h-[400px] lg:h-[600px]">
+                <div class="relative rounded-xl overflow-hidden shadow-2xl h-[400px] lg:h-[600px]" style="overflow: hidden;">
                     <!-- Carousel Container -->
-                    <div class="top-stories-track relative h-full" style="display: flex; transition: transform 0.5s ease-in-out;">
+                    <div class="top-stories-track relative h-full" style="display: flex; width: calc(100% * {{ hero_articles|length }}); transition: transform 0.5s ease-in-out;">
                         {% for hero_article in hero_articles %}
-                        <div class="story-slide flex-shrink-0 h-full relative" style="width: 100%; min-width: 100%;">
+                        <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / {{ hero_articles|length }}); width: calc(100% / {{ hero_articles|length }});">
                             <a href="{{ hero_article.url }}" target="_blank" rel="noopener" class="group block relative w-full h-full">
                                 {% if show_images and hero_article.image_url %}
                                 <div class="relative h-full overflow-hidden">
@@ -123,7 +123,7 @@
                                     {% endif %}
                                     <!-- Content overlay at bottom -->
                                     <div class="absolute bottom-0 left-0 right-0 p-8 lg:p-10">
-                                        <h2 class="text-3xl lg:text-5xl font-bold text-white mb-4 line-clamp-3 group-hover:text-blue-300 transition-colors" style="font-size: 3rem; line-height: 1.2;">
+                                        <h2 class="text-3xl lg:text-4xl font-bold text-white mb-3 line-clamp-3 group-hover:text-blue-300 transition-colors leading-[1.15]">
                                             {{ hero_article.title }}
                                         </h2>
                                         <div class="flex items-center gap-3 text-sm text-gray-200">
@@ -159,7 +159,7 @@
                                     {% endif %}
                                     <!-- Content overlay at bottom -->
                                     <div class="absolute bottom-0 left-0 right-0 p-8 lg:p-10 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
-                                        <h2 class="text-3xl lg:text-5xl font-bold text-white mb-4 line-clamp-3 group-hover:text-blue-300 transition-colors" style="font-size: 3rem; line-height: 1.2;">
+                                        <h2 class="text-3xl lg:text-4xl font-bold text-white mb-3 line-clamp-3 group-hover:text-blue-300 transition-colors leading-[1.15]">
                                             {{ hero_article.title }}
                                         </h2>
                                         <div class="flex items-center gap-3 text-sm text-gray-200">
@@ -204,7 +204,7 @@
             
             <!-- Narrow Trending Sidebar (35% - 4 columns) -->
             <aside class="lg:col-span-4">
-                <div class="bg-[#161616] rounded-xl p-6 border border-gray-800/30">
+                <div class="rounded-xl p-6" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);">
                     <div class="flex items-center gap-2 mb-6">
                         <span class="text-2xl">🔥</span>
                         <h3 class="text-lg font-bold text-gray-100">Trending in {{ locale.split(',')[0] if ',' in locale else locale }}</h3>
@@ -213,7 +213,7 @@
                         {% if trending_articles %}
                             {% for article in trending_articles[:8] %}
                             <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-4 border-b border-gray-800/30 last:border-0 hover:bg-[#1a1a1a] -mx-2 px-2 rounded-lg transition-colors">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
                                     {% if show_images and article.image_url %}
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f]">
                                         <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 lazy-image">
@@ -247,58 +247,67 @@
         {% if articles %}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="articlesGrid">
             {% for article in articles %}
-            <article class="bg-[#161616] rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.03] border border-gray-800/30 flex flex-col h-full" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}">
-                <!-- Square Thumbnail Top -->
-                {% if show_images and article.image_url %}
-                <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-700 to-gray-900">
-                    <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500 lazy-image">
-                    <!-- Source pill bottom-left -->
-                    <div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-white">
-                        {{ article.source_display }}
+            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}">
+                <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
+                    {% if show_images and article.image_url %}
+                    <div class="relative aspect-square overflow-hidden" style="border-radius: 12px;">
+                        <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover lazy-image">
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px {{ article.source_glow_color }};">
+                            {{ article.source_initials }}
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                {{ article.title }}
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}{% if article.reading_time %} • {{ article.reading_time }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                {% else %}
-                <div class="relative aspect-square overflow-hidden bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center">
-                    <!-- Subtle pattern overlay -->
-                    <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px);"></div>
-                    <!-- City skyline silhouette -->
-                    <div class="absolute bottom-0 left-0 right-0 h-16 opacity-5">
-                        <svg viewBox="0 0 400 100" class="w-full h-full" preserveAspectRatio="none">
-                            <path d="M0,100 L0,80 L20,75 L40,70 L60,65 L80,60 L100,55 L120,50 L140,45 L160,50 L180,55 L200,60 L220,65 L240,70 L260,75 L280,80 L300,75 L320,70 L340,65 L360,60 L380,55 L400,50 L400,100 Z" fill="white"/>
-                        </svg>
+                    {% else %}
+                    <!-- Placeholder with square ratio and gradient background -->
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br {{ article.source_gradient }}" style="border-radius: 12px;">
+                        <!-- Subtle pattern overlay for texture -->
+                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
+                        <!-- Source initials in top-right corner -->
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px {{ article.source_glow_color }};">
+                            {{ article.source_initials }}
+                        </div>
+                        <!-- Image placeholder icon centered -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                {{ article.title }}
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}{% if article.reading_time %} • {{ article.reading_time }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <!-- Source initials -->
-                    <div class="text-center relative z-10">
-                        <div class="text-6xl font-black text-white/90 drop-shadow-2xl tracking-tight" style="text-shadow: 0 4px 12px rgba(0,0,0,0.3);">{{ article.source_initials }}</div>
-                    </div>
-                    <!-- Source pill bottom-left -->
-                    <div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-white">
-                        {{ article.source_display }}
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Content -->
-                <div class="p-4 flex-1 flex flex-col">
-                    <h2 class="text-base font-bold mb-2 line-clamp-2 text-gray-100 hover:text-blue-400 transition-colors">
-                        <a href="{{ article.url }}" target="_blank" rel="noopener">{{ article.title }}</a>
-                    </h2>
-                    
-                    <!-- Exactly 2-line snippet -->
-                    <p class="text-xs text-gray-300 mb-3 line-clamp-2 flex-1">{{ article.summary[:100] if article.summary else '' }}{% if article.summary and article.summary|length > 100 %}...{% endif %}</p>
-                    
-                    <div class="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-800/30">
-                        <span>{{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}</span>
-                        {% if article.reading_time %}
-                        <span>{{ article.reading_time }}</span>
-                        {% endif %}
-                    </div>
-                </div>
+                    {% endif %}
+                </a>
             </article>
             {% endfor %}
         </div>
         {% else %}
-        <div class="bg-[#161616] rounded-xl p-12 text-center border border-gray-800/30">
+        <div class="rounded-xl p-12 text-center" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);">
             <div class="max-w-md mx-auto">
                 <div class="text-6xl mb-4">📰</div>
                 <h3 class="text-2xl font-bold text-gray-100 mb-3">{{ category_name }}</h3>
@@ -314,7 +323,7 @@
     </main>
     
     <!-- Footer -->
-    <footer class="bg-[#0f0f0f] border-t border-gray-900/30 mt-12 py-8">
+    <footer class="bg-[#0a0a0a] border-t border-gray-900/30 mt-12 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-400 text-sm">
             <p>&copy; {{ current_year }} {{ locale }} News. All rights reserved.</p>
         </div>

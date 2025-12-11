@@ -17,7 +17,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from config import DATABASE_CONFIG, NEWS_SOURCES, WEBSITE_CONFIG
-
 # Optional security imports - gracefully handle if not installed
 try:
     from flask_limiter import Limiter
@@ -869,6 +868,12 @@ def admin_dashboard_legacy(tab='articles', zip_code_param=None):
             # Zip-specific admin must have a zip code
             if not zip_code or not zip_code.isdigit() or len(zip_code) != 5:
                 return redirect('/admin/login')
+    if not zip_code:
+        # Default to Fall River if nothing else is available
+        zip_code = session.get('zip_code') or '02720'
+    if not zip_code:
+        # Default to Fall River if nothing else is available
+        zip_code = session.get('zip_code') or '02720'
     
     # Main admin can work without zip restriction, but zip-specific admin needs zip
     if not is_main_admin and (not zip_code or not zip_code.isdigit() or len(zip_code) != 5):
@@ -955,11 +960,13 @@ def admin_dashboard_legacy(tab='articles', zip_code_param=None):
                COALESCE(am.display_order, a.id) as display_order,
                COALESCE(am.is_rejected, 0) as is_rejected,
                COALESCE(am.is_top_story, 0) as is_top_story,
+               COALESCE(am.is_top_article, 0) as is_top,
+               COALESCE(am.is_alert, 0) as is_alert,
                COALESCE(am.is_stellar, 0) as is_stellar,
                COALESCE(am.is_good_fit, 0) as is_good_fit
         FROM articles a
         LEFT JOIN (
-            SELECT article_id, enabled, display_order, is_rejected, is_top_story, is_stellar, is_good_fit
+            SELECT article_id, enabled, display_order, is_rejected, is_top_story, is_top_article, is_alert, is_stellar, is_good_fit
             FROM article_management
             WHERE zip_code = ?
             AND ROWID IN (
@@ -1161,69 +1168,63 @@ def admin_dashboard_legacy(tab='articles', zip_code_param=None):
     
     # If no zip_code, return empty sources (new zip should have no sources)
     
-    # Load relevance config if on relevance or sources tab - ZIP-SPECIFIC
+    # Load relevance config for all tabs (needed for excluded towns UI)
     relevance_config = None
-    if tab == 'relevance' or tab == 'sources' or tab == 'categories':
-        try:
-            # Load relevance config from database, filtered by zip_code
-            if zip_code:
-                cursor.execute('SELECT category, item, points FROM relevance_config WHERE zip_code = ? ORDER BY category, item', (zip_code,))
-            else:
-                # Main admin - show all or default
-                cursor.execute('SELECT category, item, points FROM relevance_config WHERE zip_code IS NULL ORDER BY category, item')
-            
-            rows = cursor.fetchall()
-            relevance_config = {
-                'high_relevance': [],
-                'medium_relevance': [],
-                'local_places': [],
-                'topic_keywords': {},
-                'source_credibility': {},
-                'clickbait_patterns': []
-            }
-            
-            for row in rows:
-                category = row[0]
-                item = row[1]
-                points = row[2]
-                
-                if category in ['high_relevance', 'medium_relevance', 'local_places', 'clickbait_patterns']:
-                    relevance_config[category].append(item)
-                elif category == 'topic_keywords':
-                    relevance_config[category][item] = points if points is not None else 0.0
-                elif category == 'source_credibility':
-                    relevance_config[category][item] = points if points is not None else 0.0
-            
-            # Load category-level points from admin_settings_zip
-            if zip_code:
-                cursor.execute('SELECT key, value FROM admin_settings_zip WHERE zip_code = ? AND key IN (?, ?)', 
-                             (zip_code, 'high_relevance_points', 'local_places_points'))
-                for row in cursor.fetchall():
-                    key = row[0]
-                    value = row[1]
-                    try:
-                        relevance_config[key] = float(value)
-                    except (ValueError, TypeError):
-                        pass
-                # Set defaults if not found
-                if 'high_relevance_points' not in relevance_config:
-                    relevance_config['high_relevance_points'] = 15.0
-                if 'local_places_points' not in relevance_config:
-                    relevance_config['local_places_points'] = 3.0
-            else:
-                # Defaults for main admin
+    try:
+        # Load relevance config from database, filtered by zip_code
+        if zip_code:
+            cursor.execute('SELECT category, item, points FROM relevance_config WHERE zip_code = ? ORDER BY category, item', (zip_code,))
+        else:
+            cursor.execute('SELECT category, item, points FROM relevance_config WHERE zip_code IS NULL ORDER BY category, item')
+
+        rows = cursor.fetchall()
+        relevance_config = {
+            'high_relevance': [],
+            'local_places': [],
+            'topic_keywords': {},
+            'source_credibility': {},
+            'clickbait_patterns': [],
+            'excluded_towns': []
+        }
+
+        for row in rows:
+            category = row[0]
+            item = row[1]
+            points = row[2]
+
+            if category in ['high_relevance', 'local_places', 'clickbait_patterns', 'excluded_towns']:
+                relevance_config[category].append(item)
+            elif category == 'topic_keywords':
+                relevance_config[category][item] = points if points is not None else 0.0
+            elif category == 'source_credibility':
+                relevance_config[category][item] = points if points is not None else 0.0
+
+        if zip_code:
+            cursor.execute('SELECT key, value FROM admin_settings_zip WHERE zip_code = ? AND key IN (?, ?)', (zip_code, 'high_relevance_points', 'local_places_points'))
+            for row in cursor.fetchall():
+                key = row[0]
+                value = row[1]
+                try:
+                    relevance_config[key] = float(value)
+                except (ValueError, TypeError):
+                    pass
+            if 'high_relevance_points' not in relevance_config:
                 relevance_config['high_relevance_points'] = 15.0
+            if 'local_places_points' not in relevance_config:
                 relevance_config['local_places_points'] = 3.0
-        except Exception as e:
-            logger.error(f"Error loading relevance config: {e}")
-            relevance_config = {
-                'high_relevance': [],
-                'medium_relevance': [],
-                'local_places': [],
-                'topic_keywords': {},
-                'source_credibility': {},
-                'clickbait_patterns': []
-            }
+        else:
+            relevance_config['high_relevance_points'] = 15.0
+            relevance_config['local_places_points'] = 3.0
+    except Exception as e:
+        logger.error(f"Error loading relevance config: {e}", exc_info=True)
+        relevance_config = {
+            'high_relevance': [],
+            'local_places': [],
+            'topic_keywords': {},
+            'source_credibility': {},
+            'clickbait_patterns': [],
+            'excluded_towns': []
+        }
     
     # Add relevance scores to sources_config from zip-specific relevance_config
     if tab == 'sources' or tab == 'relevance':
@@ -1441,6 +1442,13 @@ def get_rejected_articles():
         # Set row factory for dict results
         conn.row_factory = sqlite3.Row
         
+        # Ensure rejection_tags column exists
+        try:
+            cursor.execute('ALTER TABLE article_management ADD COLUMN rejection_tags TEXT')
+            conn.commit()
+        except:
+            pass  # Column already exists
+        
         # Get rejected articles filtered by zip_code with all needed fields
         # Show articles rejected for this specific zip_code OR auto-filtered articles with NULL zip_code (backward compatibility)
         cursor.execute('''
@@ -1449,6 +1457,7 @@ def get_rejected_articles():
                    COALESCE(am.is_rejected, 0) as is_rejected,
                    COALESCE(am.is_auto_rejected, 0) as is_auto_rejected,
                    am.auto_reject_reason,
+                   am.rejection_tags,
                    CASE 
                        WHEN am.is_auto_rejected = 1 THEN 'auto'
                        WHEN am.is_rejected = 1 THEN 'manual'
@@ -1456,7 +1465,7 @@ def get_rejected_articles():
                    END as rejection_type
             FROM articles a
             JOIN (
-                SELECT article_id, is_rejected, is_auto_rejected, auto_reject_reason, zip_code
+                SELECT article_id, is_rejected, is_auto_rejected, auto_reject_reason, rejection_tags, zip_code
                 FROM article_management
                 WHERE (zip_code = ? OR (zip_code IS NULL AND is_auto_rejected = 1))
                 AND ROWID IN (
@@ -1964,6 +1973,144 @@ def get_top_stories():
         logger.error(f"Error getting top stories: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/admin/api/update-rejection-tags', methods=['POST', 'OPTIONS'])
+@login_required
+def update_rejection_tags():
+    """Update rejection tags for an article"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    data = request.json or {}
+    article_id = data.get('article_id')
+    tags = data.get('tags', [])  # List of tag strings
+    zip_code = session.get('zip_code')
+    
+    if not article_id:
+        return jsonify({'success': False, 'message': 'Article ID required'}), 400
+    
+    if not zip_code:
+        return jsonify({'success': False, 'message': 'Zip code required'}), 400
+    
+    try:
+        conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+        cursor = conn.cursor()
+        
+        # Ensure rejection_tags column exists
+        try:
+            cursor.execute('ALTER TABLE article_management ADD COLUMN rejection_tags TEXT')
+            conn.commit()
+        except:
+            pass  # Column already exists
+        
+        # Store tags as comma-separated string
+        tags_str = ','.join(tags) if tags else None
+        
+        # Update or insert rejection tags
+        cursor.execute('''
+            UPDATE article_management 
+            SET rejection_tags = ?
+            WHERE article_id = ? AND zip_code = ?
+        ''', (tags_str, article_id, zip_code))
+        
+        if cursor.rowcount == 0:
+            # Insert new entry
+            cursor.execute('''
+                INSERT INTO article_management (article_id, zip_code, rejection_tags, is_rejected)
+                VALUES (?, ?, ?, 1)
+            ''', (article_id, zip_code, tags_str))
+        
+        conn.commit()
+        
+        # If any tag is a nearby town (not Fall River), add to excluded_towns
+        from utils.bayesian_learner import NEARBY_TOWNS
+        for tag in tags:
+            tag_lower = tag.lower().strip()
+            if tag_lower in NEARBY_TOWNS and tag_lower not in ['fall river', 'fallriver']:
+                # Add to excluded_towns if not already there
+                cursor.execute('''
+                    SELECT id FROM relevance_config 
+                    WHERE category = 'excluded_towns' AND item = ? AND zip_code = ?
+                ''', (tag_lower, zip_code))
+                
+                if not cursor.fetchone():
+                    cursor.execute('''
+                        INSERT INTO relevance_config (category, item, points, zip_code)
+                        VALUES ('excluded_towns', ?, NULL, ?)
+                    ''', (tag_lower, zip_code))
+                    logger.info(f"Added '{tag_lower}' to excluded_towns from rejection tag")
+        
+        conn.commit()
+        conn.close()
+        
+        # Clear relevance config cache
+        try:
+            from utils.relevance_calculator import load_relevance_config
+            load_relevance_config(force_reload=True, zip_code=zip_code)
+        except:
+            pass
+        
+        return jsonify({'success': True, 'message': 'Tags updated successfully'})
+    except Exception as e:
+        logger.error(f"Error updating rejection tags: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/admin/api/get-rejection-tag-suggestions', methods=['GET', 'OPTIONS'])
+@login_required
+def get_rejection_tag_suggestions():
+    """Get suggested rejection tags based on article content"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    article_id = request.args.get('article_id')
+    if not article_id:
+        return jsonify({'success': False, 'message': 'Article ID required'}), 400
+    
+    try:
+        conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Get article content
+        cursor.execute('SELECT title, content, summary FROM articles WHERE id = ?', (article_id,))
+        article = cursor.fetchone()
+        conn.close()
+        
+        if not article:
+            return jsonify({'success': False, 'message': 'Article not found'}), 404
+        
+        # Extract text
+        title = article['title'] or ''
+        content = article['content'] or article['summary'] or ''
+        combined = f"{title} {content}".lower()
+        
+        # Get nearby towns from article
+        from utils.bayesian_learner import NEARBY_TOWNS
+        mentioned_towns = [town for town in NEARBY_TOWNS if town in combined and town not in ['fall river', 'fallriver']]
+        
+        # Common rejection reasons
+        common_reasons = [
+            "Not local",
+            "Wrong category",
+            "Duplicate",
+            "Low quality",
+            "Clickbait",
+            "Not relevant",
+            "Too old",
+            "Spam"
+        ]
+        
+        return jsonify({
+            'success': True,
+            'suggestions': {
+                'towns': mentioned_towns,
+                'common_reasons': common_reasons,
+                'all_nearby_towns': [t for t in NEARBY_TOWNS if t not in ['fall river', 'fallriver']]
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting tag suggestions: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/admin/api/reject-article', methods=['POST', 'OPTIONS'])
 @login_required
 def reject_article():
@@ -2037,6 +2184,74 @@ def reject_article():
             
             reject_reason = " | ".join(reason_parts)
             logger.info(f"Calculated tags for manual rejection of article {article_id}: {len(tag_info.get('matched', []))} matched, {len(tag_info.get('missing', []))} missing")
+            
+            # Extract town names from rejected article and add to excluded_towns list
+            try:
+                from utils.bayesian_learner import NEARBY_TOWNS
+                import re
+                
+                content = (article_data.get('content', '') or article_data.get('summary', '') or '').lower()
+                title = (article_data.get('title', '') or '').lower()
+                combined = f"{title} {content}"
+                
+                # Extract town names mentioned in the article
+                mentioned_towns = []
+                
+                # Check against known nearby towns list
+                for town in NEARBY_TOWNS:
+                    if town in combined:
+                        mentioned_towns.append(town)
+                
+                # Also try to extract capitalized place names (common pattern: "Town, MA" or "Town, Massachusetts")
+                # Look for patterns like "Town," or "Town " followed by state abbreviations
+                place_patterns = [
+                    r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),\s*(?:MA|Massachusetts|RI|Rhode Island)\b',
+                    r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:MA|Massachusetts|RI|Rhode Island)\b'
+                ]
+                full_text = article_data.get('title', '') + ' ' + (article_data.get('content', '') or article_data.get('summary', ''))
+                for pattern in place_patterns:
+                    matches = re.findall(pattern, full_text)
+                    for match in matches:
+                        town_name = match.lower().strip()
+                        # Exclude common words and Fall River
+                        if (town_name not in ['fall river', 'fallriver', 'the', 'and', 'or', 'but', 'massachusetts', 'rhode island'] and 
+                            len(town_name) > 2 and 
+                            town_name not in mentioned_towns):
+                            mentioned_towns.append(town_name)
+                
+                # Add mentioned towns to excluded_towns list in relevance_config
+                if mentioned_towns and zip_code:
+                    # Use a separate connection for this operation
+                    exclude_conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+                    exclude_cursor = exclude_conn.cursor()
+                    
+                    for town in mentioned_towns:
+                        # Check if already in excluded_towns for this zip
+                        exclude_cursor.execute('''
+                            SELECT id FROM relevance_config 
+                            WHERE category = 'excluded_towns' AND item = ? AND zip_code = ?
+                        ''', (town, zip_code))
+                        
+                        if not exclude_cursor.fetchone():
+                            # Add to excluded_towns
+                            exclude_cursor.execute('''
+                                INSERT INTO relevance_config (category, item, points, zip_code)
+                                VALUES ('excluded_towns', ?, NULL, ?)
+                            ''', (town, zip_code))
+                            logger.info(f"Added '{town}' to excluded_towns list for zip {zip_code}")
+                    
+                    exclude_conn.commit()
+                    exclude_conn.close()
+                    
+                    # Clear relevance config cache so it updates on the relevance page
+                    try:
+                        from utils.relevance_calculator import load_relevance_config
+                        load_relevance_config(force_reload=True, zip_code=zip_code)
+                        logger.info(f"Cleared relevance config cache for zip {zip_code}")
+                    except Exception as e:
+                        logger.warning(f"Could not clear relevance config cache: {e}")
+            except Exception as e:
+                logger.warning(f"Could not extract/add towns to exclusion list: {e}")
         except Exception as e:
             logger.warning(f"Could not calculate tags for manual rejection: {e}")
             reject_reason = "Manually rejected"
@@ -2353,24 +2568,62 @@ def regenerate_zip_website(zip_code: str, force_refresh: bool = False):
         
         # Step 2: Run main.py with zip_code to fetch fresh articles (if force_refresh) and generate website
         logger.info(f"Running aggregation cycle for zip {zip_code}...")
+        
+        # Get the directory where admin.py is located (project root)
+        admin_file_path = os.path.abspath(__file__)
+        project_root = os.path.dirname(admin_file_path)
+        
         cmd = [sys.executable, 'main.py', '--once', '--zip', zip_code]
         env = os.environ.copy()
         env['ZIP_CODE'] = zip_code
         if force_refresh:
             env['FORCE_REFRESH'] = '1'
         
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=600,  # 10 minute timeout
-            env=env
-        )
+        logger.info(f"Running command: {' '.join(cmd)} in directory: {project_root}")
+        logger.info(f"Environment: ZIP_CODE={zip_code}, FORCE_REFRESH={env.get('FORCE_REFRESH', '0')}")
         
-        if result.returncode != 0:
-            error_msg = result.stderr or result.stdout or 'Unknown error'
-            logger.error(f"Regeneration failed: {error_msg}")
-            return False, f"Regeneration failed: {error_msg}"
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=project_root,  # Run from project root directory
+                capture_output=True,
+                text=True,
+                timeout=600,  # 10 minute timeout
+                env=env
+            )
+            
+            # Log output for debugging
+            if result.stdout:
+                logger.info(f"main.py stdout: {result.stdout[-500:]}")  # Last 500 chars
+            if result.stderr:
+                logger.warning(f"main.py stderr: {result.stderr[-500:]}")  # Last 500 chars
+            
+            if result.returncode != 0:
+                # Combine stderr and stdout for better error reporting
+                error_parts = []
+                if result.stderr:
+                    error_parts.append(f"STDERR: {result.stderr[-1000:]}")
+                if result.stdout:
+                    error_parts.append(f"STDOUT: {result.stdout[-1000:]}")
+                error_msg = "\n".join(error_parts) if error_parts else 'Unknown error (no output)'
+                logger.error(f"Regeneration failed with return code {result.returncode}: {error_msg}")
+                # Return a more user-friendly error message
+                if "Traceback" in error_msg or "Error" in error_msg:
+                    # Extract the last meaningful error line
+                    error_lines = error_msg.split('\n')
+                    last_error = [line for line in reversed(error_lines) if line.strip() and not line.startswith('  File')][:3]
+                    user_error = '\n'.join(reversed(last_error)) if last_error else error_msg[:200]
+                    return False, f"Regeneration failed: {user_error}"
+                return False, f"Regeneration failed: {error_msg[:500]}"
+        except subprocess.TimeoutExpired as e:
+            logger.error(f"Regeneration timed out for zip {zip_code}")
+            return False, "Regeneration timed out after 10 minutes. The process may be stuck or taking too long."
+        except FileNotFoundError:
+            logger.error(f"main.py not found in {project_root}")
+            return False, f"Error: main.py not found. Please ensure main.py exists in the project directory."
+        except Exception as e:
+            logger.error(f"Error running subprocess: {e}", exc_info=True)
+            return False, f"Error running regeneration: {str(e)}"
         
         # Step 3: Update last regeneration time for this zip
         conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
@@ -2457,31 +2710,116 @@ def regenerate_website():
         
         # Run the main aggregator
         try:
+            # Get the directory where admin.py is located (project root)
+            admin_file_path = os.path.abspath(__file__)
+            project_root = os.path.dirname(admin_file_path)
+            
             cmd = [sys.executable, 'main.py', '--once']
             env = os.environ.copy()
             if force_refresh:
                 env['FORCE_REFRESH'] = '1'
+            
+            logger.info(f"Running command: {' '.join(cmd)} in directory: {project_root}")
+            
             result = subprocess.run(
                 cmd,
+                cwd=project_root,  # Run from project root directory
                 capture_output=True,
                 text=True,
                 timeout=600,  # Increased timeout for force refresh (10 minutes)
                 env=env
             )
             
+            # Log output for debugging
+            if result.stdout:
+                logger.info(f"main.py stdout: {result.stdout[-500:]}")
+            if result.stderr:
+                logger.warning(f"main.py stderr: {result.stderr[-500:]}")
+            
             if result.returncode == 0:
                 logger.info("Website regenerated successfully")
                 return jsonify({'success': True, 'message': 'Website regenerated successfully'})
             else:
-                error_msg = result.stderr or result.stdout or 'Unknown error'
-                logger.error(f"Regeneration failed: {error_msg}")
-                return jsonify({'success': False, 'message': error_msg})
+                # Combine stderr and stdout for better error reporting
+                error_parts = []
+                if result.stderr:
+                    error_parts.append(f"STDERR: {result.stderr[-1000:]}")
+                if result.stdout:
+                    error_parts.append(f"STDOUT: {result.stdout[-1000:]}")
+                error_msg = "\n".join(error_parts) if error_parts else 'Unknown error (no output)'
+                logger.error(f"Regeneration failed with return code {result.returncode}: {error_msg}")
+                # Extract meaningful error message
+                if "Traceback" in error_msg or "Error" in error_msg:
+                    error_lines = error_msg.split('\n')
+                    last_error = [line for line in reversed(error_lines) if line.strip() and not line.startswith('  File')][:3]
+                    user_error = '\n'.join(reversed(last_error)) if last_error else error_msg[:200]
+                    return jsonify({'success': False, 'message': user_error})
+                return jsonify({'success': False, 'message': error_msg[:500]})
         except subprocess.TimeoutExpired:
             logger.error("Regeneration timed out after 10 minutes")
-            return jsonify({'success': False, 'message': 'Regeneration timed out after 10 minutes'})
+            return jsonify({'success': False, 'message': 'Regeneration timed out after 10 minutes. The process may be stuck or taking too long.'})
+        except FileNotFoundError:
+            logger.error(f"main.py not found in {project_root}")
+            return jsonify({'success': False, 'message': f'Error: main.py not found. Please ensure main.py exists in the project directory.'})
+        except Exception as e:
+            logger.error(f"Error running subprocess: {e}", exc_info=True)
+            return jsonify({'success': False, 'message': f'Error running regeneration: {str(e)}'})
     except Exception as e:
         logger.error(f"Error in regenerate_website: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/api/check-regeneration-needed', methods=['GET', 'OPTIONS'])
+@login_required
+def check_regeneration_needed():
+    """Check if regeneration is needed based on interval setting"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        import sqlite3
+        from datetime import datetime, timedelta
+        from config import DATABASE_CONFIG
+        
+        conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+        cursor = conn.cursor()
+        
+        # Get regenerate interval setting
+        cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('regenerate_interval',))
+        row = cursor.fetchone()
+        interval_minutes = int(row[0]) if row and row[0] else 10
+        
+        # Get last regeneration time
+        cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('last_regeneration_time',))
+        row = cursor.fetchone()
+        
+        if not row or not row[0]:
+            # Never regenerated, needs regeneration
+            conn.close()
+            return jsonify({'needs_regeneration': True, 'reason': 'Never regenerated'})
+        
+        try:
+            last_time = datetime.fromisoformat(row[0])
+        except (ValueError, AttributeError) as e:
+            # Handle different datetime formats or invalid data
+            logger.warning(f"Error parsing last_regeneration_time: {e}, value: {row[0]}")
+            conn.close()
+            return jsonify({'needs_regeneration': True, 'reason': 'Invalid last regeneration time'})
+        
+        next_time = last_time + timedelta(minutes=interval_minutes)
+        now = datetime.now()
+        
+        conn.close()
+        
+        needs_regeneration = now >= next_time
+        return jsonify({
+            'needs_regeneration': needs_regeneration,
+            'last_regeneration': last_time.isoformat(),
+            'next_regeneration': next_time.isoformat(),
+            'interval_minutes': interval_minutes
+        })
+    except Exception as e:
+        logger.error(f"Error checking regeneration status: {e}", exc_info=True)
+        return jsonify({'needs_regeneration': False, 'error': str(e)}), 500
 
 @app.route('/admin/api/regenerate-all', methods=['POST', 'OPTIONS'])
 @login_required
@@ -2509,26 +2847,55 @@ def regenerate_all_websites():
         
         # Run the main aggregator for all zips
         try:
+            # Get the directory where admin.py is located (project root)
+            admin_file_path = os.path.abspath(__file__)
+            project_root = os.path.dirname(admin_file_path)
+            
             cmd = [sys.executable, 'main.py', '--once']
+            logger.info(f"Running command: {' '.join(cmd)} in directory: {project_root}")
+            
             result = subprocess.run(
                 cmd,
+                cwd=project_root,  # Run from project root directory
                 capture_output=True,
                 text=True,
                 timeout=600
             )
+            
+            # Log output for debugging
+            if result.stdout:
+                logger.info(f"main.py stdout: {result.stdout[-500:]}")
+            if result.stderr:
+                logger.warning(f"main.py stderr: {result.stderr[-500:]}")
+            
             if result.returncode == 0:
                 logger.info("Website regeneration completed for all zips")
                 return jsonify({'success': True, 'message': 'Website regeneration completed for all zip codes'})
             else:
-                error_msg = result.stderr or result.stdout or 'Unknown error'
-                logger.error(f"Regeneration failed: {error_msg}")
-                return jsonify({'success': False, 'message': error_msg})
+                # Combine stderr and stdout for better error reporting
+                error_parts = []
+                if result.stderr:
+                    error_parts.append(f"STDERR: {result.stderr[-1000:]}")
+                if result.stdout:
+                    error_parts.append(f"STDOUT: {result.stdout[-1000:]}")
+                error_msg = "\n".join(error_parts) if error_parts else 'Unknown error (no output)'
+                logger.error(f"Regeneration failed with return code {result.returncode}: {error_msg}")
+                # Extract meaningful error message
+                if "Traceback" in error_msg or "Error" in error_msg:
+                    error_lines = error_msg.split('\n')
+                    last_error = [line for line in reversed(error_lines) if line.strip() and not line.startswith('  File')][:3]
+                    user_error = '\n'.join(reversed(last_error)) if last_error else error_msg[:200]
+                    return jsonify({'success': False, 'message': user_error})
+                return jsonify({'success': False, 'message': error_msg[:500]})
         except subprocess.TimeoutExpired:
             logger.error("Regeneration timed out")
-            return jsonify({'success': False, 'message': 'Regeneration timed out'})
+            return jsonify({'success': False, 'message': 'Regeneration timed out after 10 minutes. The process may be stuck or taking too long.'})
+        except FileNotFoundError:
+            logger.error(f"main.py not found in {project_root}")
+            return jsonify({'success': False, 'message': f'Error: main.py not found. Please ensure main.py exists in the project directory.'})
         except Exception as e:
             logger.error(f"Error running regeneration: {e}", exc_info=True)
-            return jsonify({'success': False, 'message': str(e)})
+            return jsonify({'success': False, 'message': f'Error running regeneration: {str(e)}'})
     except Exception as e:
         logger.error(f"Error regenerating websites: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)})
@@ -2650,11 +3017,11 @@ def toggle_top_story():
     if request.method == 'OPTIONS':
         return '', 200
     data = request.json or {}
-    article_id = data.get('id')
-    is_top_story = data.get('is_top_story', False)
+    article_id = data.get('id') or data.get('article_id')
+    is_top_story = data.get('is_top_story', True)  # Default to True if not specified
     
-    # Get zip_code from session
-    zip_code = session.get('zip_code')
+    # Get zip_code from session or request
+    zip_code = data.get('zip_code') or session.get('zip_code')
     is_main_admin = session.get('is_main_admin', False)
     
     # Main admin can specify zip_code in request
@@ -2664,20 +3031,209 @@ def toggle_top_story():
     if not zip_code:
         return jsonify({'success': False, 'error': 'Zip code required'}), 400
     
-    conn = get_db_legacy()
-    cursor = conn.cursor()
+    if not article_id:
+        return jsonify({'success': False, 'error': 'Article ID required'}), 400
     
-    cursor.execute('''
-        INSERT OR REPLACE INTO article_management (article_id, enabled, display_order, is_top_article, is_top_story, zip_code)
-        VALUES (?, COALESCE((SELECT enabled FROM article_management WHERE article_id = ? AND zip_code = ?), 1), 
-                COALESCE((SELECT display_order FROM article_management WHERE article_id = ? AND zip_code = ?), ?),
-                COALESCE((SELECT is_top_article FROM article_management WHERE article_id = ? AND zip_code = ?), 0), ?, ?)
-    ''', (article_id, article_id, zip_code, article_id, zip_code, article_id, article_id, zip_code, 1 if is_top_story else 0, zip_code))
+    try:
+        from admin.utils import toggle_top_story as toggle_top_story_func
+        result = toggle_top_story_func(article_id, zip_code, is_top_story)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error toggling top story: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/toggle-top-article', methods=['POST', 'OPTIONS'])
+@login_required
+def toggle_top_article():
+    """Toggle top article status for an article (exclusive - only one per zip)"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    data = request.json or {}
+    article_id = data.get('article_id') or data.get('id')
     
-    conn.commit()
-    conn.close()
+    # Get zip_code from session or request
+    zip_code = data.get('zip_code') or session.get('zip_code')
+    is_main_admin = session.get('is_main_admin', False)
     
-    return jsonify({'success': True})
+    if is_main_admin and data.get('zip_code'):
+        zip_code = data.get('zip_code')
+    
+    if not zip_code:
+        return jsonify({'success': False, 'error': 'Zip code required'}), 400
+    
+    if not article_id:
+        return jsonify({'success': False, 'error': 'Article ID required'}), 400
+    
+    # Determine if we're setting or unsetting (if is_top_article not specified, toggle)
+    is_top_article = data.get('is_top_article')
+    if is_top_article is None:
+        # Check current state
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT is_top_article FROM article_management 
+            WHERE article_id = ? AND zip_code = ? 
+            ORDER BY ROWID DESC LIMIT 1
+        ''', (article_id, zip_code))
+        row = cursor.fetchone()
+        conn.close()
+        is_top_article = not (row and row[0] == 1)  # Toggle: if currently set, unset it
+    else:
+        is_top_article = bool(is_top_article)
+    
+    try:
+        from admin.utils import toggle_top_article as toggle_top_article_func
+        result = toggle_top_article_func(article_id, zip_code, is_top_article)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error toggling top article: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/toggle-alert', methods=['POST', 'OPTIONS'])
+@login_required
+def toggle_alert():
+    """Toggle alert status for an article (for urgent notifications)"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    data = request.json or {}
+    article_id = data.get('article_id') or data.get('id')
+    
+    # Get zip_code from session or request
+    zip_code = data.get('zip_code') or session.get('zip_code')
+    is_main_admin = session.get('is_main_admin', False)
+    
+    if is_main_admin and data.get('zip_code'):
+        zip_code = data.get('zip_code')
+    
+    if not zip_code:
+        return jsonify({'success': False, 'error': 'Zip code required'}), 400
+    
+    if not article_id:
+        return jsonify({'success': False, 'error': 'Article ID required'}), 400
+    
+    # Determine if we're setting or unsetting (if is_alert not specified, toggle)
+    is_alert = data.get('is_alert')
+    if is_alert is None:
+        # Check current state
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT is_alert FROM article_management 
+            WHERE article_id = ? AND zip_code = ? 
+            ORDER BY ROWID DESC LIMIT 1
+        ''', (article_id, zip_code))
+        row = cursor.fetchone()
+        conn.close()
+        is_alert = not (row and row[0] == 1)  # Toggle: if currently set, unset it
+    else:
+        is_alert = bool(is_alert)
+    
+    try:
+        from admin.utils import toggle_alert as toggle_alert_func
+        result = toggle_alert_func(article_id, zip_code, is_alert)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error toggling alert: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/analyze-target', methods=['POST', 'OPTIONS'])
+@login_required
+def analyze_target():
+    """Analyze an article to identify why it's relevant and suggest keywords"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    data = request.json or {}
+    article_id = data.get('article_id') or data.get('id')
+    
+    # Get zip_code from session or request
+    zip_code = data.get('zip_code') or session.get('zip_code')
+    is_main_admin = session.get('is_main_admin', False)
+    
+    if is_main_admin and data.get('zip_code'):
+        zip_code = data.get('zip_code')
+    
+    if not zip_code:
+        return jsonify({'success': False, 'error': 'Zip code required'}), 400
+    
+    if not article_id:
+        return jsonify({'success': False, 'error': 'Article ID required'}), 400
+    
+    try:
+        from admin.utils import analyze_article_target
+        result = analyze_article_target(article_id, zip_code)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error analyzing article target: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/api/add-target-keywords', methods=['POST', 'OPTIONS'])
+@login_required
+def add_target_keywords():
+    """Add suggested keywords to relevance config"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    data = request.json or {}
+    article_id = data.get('article_id')
+    zip_code = data.get('zip_code') or session.get('zip_code')
+    keywords = data.get('keywords', [])  # Array of {keyword, category, points}
+    
+    if not zip_code:
+        return jsonify({'success': False, 'error': 'Zip code required'}), 400
+    
+    if not keywords:
+        return jsonify({'success': False, 'error': 'No keywords provided'}), 400
+    
+    try:
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        
+        added_count = 0
+        skipped_count = 0
+        
+        for kw_data in keywords:
+            keyword = kw_data.get('keyword', '').strip().lower()
+            category = kw_data.get('category', 'high_relevance')
+            points = kw_data.get('points')  # Optional points for topic_keywords
+            
+            if not keyword:
+                continue
+            
+            # Check if keyword already exists in this category for this zip
+            cursor.execute('''
+                SELECT id FROM relevance_config 
+                WHERE category = ? AND item = ? AND zip_code = ?
+            ''', (category, keyword, zip_code))
+            
+            if cursor.fetchone():
+                skipped_count += 1
+                continue
+            
+            # Insert keyword
+            cursor.execute('''
+                INSERT INTO relevance_config (category, item, points, zip_code)
+                VALUES (?, ?, ?, ?)
+            ''', (category, keyword, points, zip_code))
+            added_count += 1
+        
+        conn.commit()
+        conn.close()
+        
+        # Clear relevance config cache
+        try:
+            from utils.relevance_calculator import load_relevance_config
+            load_relevance_config(force_reload=True, zip_code=zip_code)
+        except:
+            pass
+        
+        return jsonify({
+            'success': True,
+            'added_count': added_count,
+            'skipped_count': skipped_count,
+            'message': f'Added {added_count} keyword(s), skipped {skipped_count} duplicate(s)'
+        })
+    except Exception as e:
+        logger.error(f"Error adding target keywords: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/admin/api/edit-article', methods=['POST', 'OPTIONS'])
 def edit_article():
@@ -3211,6 +3767,62 @@ def save_admin_setting():
     
     return jsonify({'success': True})
 
+@app.route('/admin/api/save-weather-api-key', methods=['POST', 'OPTIONS'])
+@login_required
+def save_weather_api_key():
+    """Save weather API key for a specific zip code"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    data = request.json or {}
+    zip_code = data.get('zip_code')
+    api_key = data.get('api_key', '').strip()
+    
+    if not zip_code:
+        return jsonify({'success': False, 'message': 'Zip code is required'}), 400
+    
+    conn = get_db_legacy()
+    cursor = conn.cursor()
+    
+    # Save to zip-specific settings
+    cursor.execute('''
+        INSERT OR REPLACE INTO admin_settings_zip (zip_code, key, value)
+        VALUES (?, 'weather_api_key', ?)
+    ''', (zip_code, api_key))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'Weather API key saved'})
+
+@app.route('/admin/api/save-weather-station-url', methods=['POST', 'OPTIONS'])
+@login_required
+def save_weather_station_url():
+    """Save weather station URL for a specific zip code"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    data = request.json or {}
+    zip_code = data.get('zip_code')
+    url = data.get('url', '').strip()
+    
+    if not zip_code:
+        return jsonify({'success': False, 'message': 'Zip code is required'}), 400
+    
+    conn = get_db_legacy()
+    cursor = conn.cursor()
+    
+    # Save to zip-specific settings
+    cursor.execute('''
+        INSERT OR REPLACE INTO admin_settings_zip (zip_code, key, value)
+        VALUES (?, 'weather_station_url', ?)
+    ''', (zip_code, url))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'Weather station URL saved'})
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -3289,7 +3901,8 @@ def get_relevance_config():
         'local_places': [],
         'topic_keywords': {},
         'source_credibility': {},
-        'clickbait_patterns': []
+        'clickbait_patterns': [],
+        'excluded_towns': []
     }
     
     for row in rows:
@@ -3297,7 +3910,7 @@ def get_relevance_config():
         item = row[1]
         points = row[2]
         
-        if category in ['high_relevance', 'medium_relevance', 'local_places', 'clickbait_patterns']:
+        if category in ['high_relevance', 'medium_relevance', 'local_places', 'clickbait_patterns', 'excluded_towns']:
             config[category].append(item)
         elif category == 'topic_keywords':
             config[category][item] = points if points is not None else 0.0
@@ -3646,6 +4259,176 @@ def recalculate_relevance_scores():
         return jsonify({'success': True, 'message': message})
     except Exception as e:
         logger.error(f"Error recalculating relevance scores: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/admin/api/rerun-relevance-scoring', methods=['POST', 'OPTIONS'])
+@login_required
+def rerun_relevance_scoring():
+    """Rerun relevance scoring on all existing articles and move failing articles to trash"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    data = request.json or {}
+    zip_code = data.get('zip_code') or session.get('zip_code')
+    
+    if not zip_code:
+        return jsonify({'success': False, 'message': 'Zip code required'}), 400
+    
+    try:
+        import sqlite3
+        from config import DATABASE_CONFIG
+        from utils.relevance_calculator import calculate_relevance_score_with_tags, load_relevance_config
+        from utils.bayesian_learner import BayesianLearner
+        
+        conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+        cursor = conn.cursor()
+        
+        # Get relevance threshold
+        cursor.execute('SELECT value FROM admin_settings_zip WHERE zip_code = ? AND key = ?', (zip_code, 'relevance_threshold'))
+        row = cursor.fetchone()
+        relevance_threshold = float(row[0]) if row and row[0] else 10.0
+        
+        # Get all articles for this zip code
+        cursor.execute('''
+            SELECT id, title, url, published, summary, content, source, source_type, ingested_at
+            FROM articles
+            WHERE zip_code = ? OR zip_code IS NULL
+            ORDER BY id
+        ''', (zip_code,))
+        
+        articles = []
+        for row in cursor.fetchall():
+            articles.append({
+                'id': row[0],
+                'title': row[1] or '',
+                'url': row[2] or '',
+                'published': row[3] or '',
+                'summary': row[4] or '',
+                'content': row[5] or '',
+                'source': row[6] or '',
+                'source_type': row[7] or '',
+                'ingested_at': row[8] or '',
+                'zip_code': zip_code
+            })
+        
+        conn.close()
+        
+        # Load relevance config
+        relevance_config = load_relevance_config(zip_code=zip_code)
+        
+        # Initialize Bayesian learner
+        bayesian_learner = BayesianLearner()
+        
+        processed_count = 0
+        auto_rejected_count = 0
+        kept_count = 0
+        
+        # Process each article
+        for article in articles:
+            processed_count += 1
+            
+            # Calculate relevance score with tags
+            try:
+                relevance_score, tag_info = calculate_relevance_score_with_tags(
+                    article, 
+                    config=relevance_config, 
+                    zip_code=zip_code
+                )
+            except Exception as e:
+                logger.warning(f"Error calculating relevance for article {article['id']}: {e}")
+                relevance_score = 0.0
+                tag_info = {'matched': {}, 'missing': []}
+            
+            # Check if article should be auto-rejected
+            should_reject = False
+            reject_reason = None
+            
+            # Check relevance threshold
+            if relevance_score < relevance_threshold:
+                should_reject = True
+                # tag_info['matched'] is a list of strings, not a dict
+                matched_tags = tag_info.get('matched', [])
+                missing_tags = tag_info.get('missing', [])
+                matched_tags_str = ", ".join(matched_tags) if matched_tags else ""
+                missing_tags_str = ", ".join(missing_tags) if missing_tags else ""
+                
+                reason_parts = [f"Relevance score {relevance_score:.1f} below threshold {relevance_threshold}"]
+                if matched_tags_str:
+                    reason_parts.append(f"Matched: {matched_tags_str}")
+                if missing_tags_str:
+                    reason_parts.append(f"Missing: {missing_tags_str}")
+                reject_reason = " | ".join(reason_parts)
+            
+            # Check Bayesian filtering if relevance threshold passed
+            if not should_reject:
+                try:
+                    should_filter, probability, reasons = bayesian_learner.should_filter(article, threshold=0.7)
+                    if should_filter:
+                        should_reject = True
+                        reason_str = "; ".join(reasons[:3]) if reasons else "High similarity to previously rejected articles"
+                        reject_reason = f"Bayesian filter: {probability:.1%} probability - {reason_str}"
+                except Exception as e:
+                    logger.warning(f"Error in Bayesian filtering for article {article['id']}: {e}")
+            
+            # Update article_management
+            conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+            cursor = conn.cursor()
+            
+            # First, get existing values to preserve them
+            cursor.execute('''
+                SELECT is_top_story, is_good_fit, display_order, is_stellar
+                FROM article_management
+                WHERE article_id = ? AND zip_code = ?
+                ORDER BY ROWID DESC
+                LIMIT 1
+            ''', (article['id'], zip_code))
+            existing = cursor.fetchone()
+            
+            # Preserve existing values or use defaults
+            existing_top_story = existing[0] if existing and existing[0] is not None else 0
+            existing_good_fit = existing[1] if existing and existing[1] is not None else 0
+            existing_display_order = existing[2] if existing and existing[2] is not None else article['id']
+            existing_stellar = existing[3] if existing and existing[3] is not None else 0
+            
+            if should_reject:
+                # Mark as auto-rejected - preserve other fields
+                cursor.execute('''
+                    INSERT OR REPLACE INTO article_management 
+                    (article_id, enabled, is_rejected, is_auto_rejected, auto_reject_reason, zip_code,
+                     is_top_story, is_good_fit, display_order, is_stellar)
+                    VALUES (?, 0, 1, 1, ?, ?, ?, ?, ?, ?)
+                ''', (article['id'], reject_reason, zip_code, 
+                      existing_top_story, existing_good_fit, existing_display_order, existing_stellar))
+                auto_rejected_count += 1
+            else:
+                # Keep article - preserve existing fields, just update enabled/rejected status
+                cursor.execute('''
+                    INSERT OR REPLACE INTO article_management 
+                    (article_id, enabled, is_rejected, is_auto_rejected, zip_code,
+                     is_top_story, is_good_fit, display_order, is_stellar)
+                    VALUES (?, 1, 0, 0, ?, ?, ?, ?, ?)
+                ''', (article['id'], zip_code,
+                      existing_top_story, existing_good_fit, existing_display_order, existing_stellar))
+                kept_count += 1
+            
+            # Update relevance_score in articles table
+            cursor.execute('UPDATE articles SET relevance_score = ? WHERE id = ?', (relevance_score, article['id']))
+            
+            conn.commit()
+            conn.close()
+        
+        logger.info(f"Reran relevance scoring: {processed_count} processed, {auto_rejected_count} auto-rejected, {kept_count} kept")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Relevance scoring completed',
+            'processed_count': processed_count,
+            'auto_rejected_count': auto_rejected_count,
+            'kept_count': kept_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error rerunning relevance scoring: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/admin/api/predict-category', methods=['POST', 'OPTIONS'])
@@ -5777,6 +6560,67 @@ ADMIN_TEMPLATE = """
                 </div>
                 
                 <div class="settings-section" style="margin-top: 2rem;">
+                    <h3>Weather API Configuration</h3>
+                    <div style="background: #fff3cd; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #ffc107;">
+                        <p style="margin: 0; color: #856404; font-size: 0.9rem; line-height: 1.6;">
+                            <strong>Get your free API key:</strong> Visit <a href="https://openweathermap.org/api" target="_blank" style="color: #0066cc;">https://openweathermap.org/api</a> and sign up for a free account. 
+                            The free tier provides 1000 calls/day, which is more than enough for weather updates.
+                        </p>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <label for="weatherApiKey" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">OpenWeatherMap API Key:</label>
+                        <input type="password" id="weatherApiKey" 
+                               value="{{ settings.get('weather_api_key', '') }}" 
+                               placeholder="Enter your OpenWeatherMap API key"
+                               style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100%; max-width: 500px; font-family: monospace;">
+                        <button onclick="saveWeatherApiKey()" 
+                                style="margin-top: 0.5rem; padding: 0.5rem 1.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                            💾 Save API Key
+                        </button>
+                        <p style="color: #666; margin-top: 0.5rem; font-size: 0.85rem;">
+                            This API key will be used to fetch weather data for zip code <strong>{{ zip_code or '02720' }}</strong>. 
+                            After saving, regenerate the website to apply the changes.
+                        </p>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #f5f5f5; border-radius: 6px; border: 1px solid #ddd;">
+                        <label for="weatherStationUrl" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">Weather Station URL:</label>
+                        <input type="url" id="weatherStationUrl" 
+                               value="{{ settings.get('weather_station_url', 'https://www.wunderground.com/weather/us/ma/fall-river') }}" 
+                               placeholder="https://www.wunderground.com/weather/us/ma/fall-river"
+                               style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100%; max-width: 500px; font-family: monospace; background: white;">
+                        <button onclick="saveWeatherStationUrl()" 
+                                style="margin-top: 0.5rem; padding: 0.5rem 1.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                            💾 Save Weather URL
+                        </button>
+                        <p style="color: #666; margin-top: 0.5rem; font-size: 0.85rem;">
+                            This URL will be used as the click target for the weather pill on the website. 
+                            Default is Weather Underground for Fall River, MA. After saving, regenerate the website to apply the changes.
+                        </p>
+                    </div>
+                </div>
+                
+                <script>
+                    // Debug: Verify settings field is loaded after page loads
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const field = document.getElementById('weatherStationUrl');
+                        if (field) {
+                            console.log('✓ Weather Station URL field found. Value:', field.value);
+                        } else {
+                            console.error('✗ Weather Station URL field NOT FOUND in DOM');
+                            // Try to find it after a short delay in case of timing issues
+                            setTimeout(function() {
+                                const field2 = document.getElementById('weatherStationUrl');
+                                if (field2) {
+                                    console.log('✓ Weather Station URL field found on retry. Value:', field2.value);
+                                } else {
+                                    console.error('✗ Weather Station URL field still NOT FOUND after retry');
+                                }
+                            }, 500);
+                        }
+                    });
+                </script>
+                
+                <div class="settings-section" style="margin-top: 2rem;">
                     <h3>AI Filtering</h3>
                     <div style="background: #e3f2fd; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #2196f3;">
                         <p style="margin: 0; color: #1565c0; font-size: 0.9rem; line-height: 1.6;">
@@ -5948,22 +6792,21 @@ ADMIN_TEMPLATE = """
                     </div>
                 </div>
                 
-                <!-- Medium Relevance Keywords (now treated as ignore keywords) -->
+                <!-- Excluded Towns (Auto-Filtered) -->
                 <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">Ignore Keywords (Nearby Towns)</h3>
-                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem; padding: 0.75rem; background: #fff3cd; border-left: 4px solid #ff9800; border-radius: 4px;">
-                        <strong>Note:</strong> Articles mentioning these nearby towns will be heavily penalized (-15 points) unless Fall River is also mentioned. 
-                        If Fall River is mentioned, they get a small bonus (+1 point). This helps filter out articles about nearby towns that aren't relevant to Fall River.
+                    <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">Excluded Towns (Auto-Filtered)</h3>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem; padding: 0.75rem; background: #ffebee; border-left: 4px solid #f44336; border-radius: 4px;">
+                        <strong>Note:</strong> Articles mentioning these nearby towns without a Fall River connection are automatically filtered out. They still appear under the Auto-Filtered tab for review.
                     </p>
                     <div style="margin-bottom: 1rem;">
-                        <input type="text" id="mediumRelevanceInput" placeholder="Add keyword (e.g., 'somerset')" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
-                        <button onclick="addRelevanceItem('medium_relevance', document.getElementById('mediumRelevanceInput').value)" style="padding: 0.5rem 1rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                        <input type="text" id="excludedTownsInput" placeholder="Add town (e.g., 'somerset')" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
+                        <button onclick="addRelevanceItem('excluded_towns', document.getElementById('excludedTownsInput').value)" style="padding: 0.5rem 1rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
                     </div>
-                    <div class="relevance-items" id="mediumRelevanceItems">
-                        {% for item in relevance_config.get('medium_relevance', []) %}
-                        <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #fff3e0; border-radius: 4px;">
+                    <div class="relevance-items" id="excludedTownsItems">
+                        {% for item in relevance_config.get('excluded_towns', []) %}
+                        <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #ffebee; border-radius: 4px;">
                             <span>{{ item }}</span>
-                            <button class="remove-relevance-btn" data-category="medium_relevance" data-item="{{ item|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">🗑️</button>
+                            <button class="remove-relevance-btn" data-category="excluded_towns" data-item="{{ item|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">🗑️</button>
                         </div>
                         {% endfor %}
                     </div>
@@ -9025,6 +9868,67 @@ ADMIN_TEMPLATE = """
             editArticle: typeof window.editArticle,
             loadTrash: typeof window.loadTrash
         });
+        
+        // Save weather API key function
+        function saveWeatherApiKey() {
+            const apiKey = document.getElementById('weatherApiKey').value.trim();
+            const zipCode = '{{ zip_code or "02720" }}';
+            
+            fetch('/admin/api/save-weather-api-key', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    zip_code: zipCode,
+                    api_key: apiKey
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✓ Weather API key saved successfully! Regenerate the website to apply changes.');
+                } else {
+                    alert('✗ Error saving API key: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(e => {
+                console.error('Error saving weather API key:', e);
+                alert('✗ Error saving API key. Check console for details.');
+            });
+        }
+        
+        // Save weather station URL function
+        function saveWeatherStationUrl() {
+            const url = document.getElementById('weatherStationUrl').value.trim();
+            const zipCode = '{{ zip_code or "02720" }}';
+            
+            if (!url) {
+                alert('✗ Please enter a valid URL');
+                return;
+            }
+            
+            fetch('/admin/api/save-weather-station-url', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    zip_code: zipCode,
+                    url: url
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✓ Weather station URL saved successfully! Regenerate the website to apply changes.');
+                } else {
+                    alert('✗ Error saving URL: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(e => {
+                console.error('Error saving weather station URL:', e);
+                alert('✗ Error saving URL. Check console for details.');
+            });
+        }
         
     </script>
     <div style="position: fixed; bottom: 10px; right: 10px; background: #252525; padding: 0.5rem 1rem; border-radius: 4px; border: 1px solid #404040; font-size: 0.75rem; color: #888;">

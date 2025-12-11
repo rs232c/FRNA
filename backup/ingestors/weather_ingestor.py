@@ -175,9 +175,8 @@ class WeatherIngestor:
         Returns:
             URL to Weather Underground Fall River page
         """
-        # Use the general Fall River weather page
+        # Use Weather Underground for Fall River, MA
         return "https://www.wunderground.com/weather/us/ma/fall-river"
-        return "category/weather.html"
     
     # Weather Underground Personal Weather Station (PWS) configuration
     WEATHER_STATIONS = [

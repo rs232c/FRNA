@@ -5,12 +5,13 @@ MSN-style layout with grid, weather, and widgets
 import os
 import sqlite3
 import re
+import shutil
 from jinja2 import Template, Environment, FileSystemLoader
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 from pathlib import Path
 import logging
-from config import WEBSITE_CONFIG, LOCALE, DATABASE_CONFIG, CATEGORY_SLUGS, CATEGORY_MAPPING
+from config import WEBSITE_CONFIG, LOCALE, DATABASE_CONFIG, CATEGORY_SLUGS, CATEGORY_MAPPING, WEATHER_CONFIG
 from ingestors.weather_ingestor import WeatherIngestor
 # Import from new modular structure
 try:
@@ -61,17 +62,44 @@ class WebsiteGenerator:
         os.makedirs(os.path.join(self.output_dir, "category"), exist_ok=True)
         self.images_dir.mkdir(parents=True, exist_ok=True)
     
-    def generate(self, articles: List[Dict], zip_code: Optional[str] = None):
+    def generate(self, articles: List[Dict], zip_code: Optional[str] = None, city_state: Optional[str] = None):
         """Generate complete website with incremental updates
+        Phase 6: Now supports city_state for city-based generation
         
         Args:
             articles: List of articles to generate
             zip_code: Optional zip code for zip-specific generation
+            city_state: Optional city_state (e.g., "Fall River, MA") for city-based generation
         """
+        # #region agent log
+        with open('c:\\FRNA\\.cursor\\debug.log', 'a', encoding='utf-8') as f:
+            import json
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"website_generator.py:65","message":"generate method called","data":{"zip_code":zip_code,"zip_code_type":type(zip_code).__name__ if zip_code else "NoneType","articles_count":len(articles)},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
+        # #endregion
         try:
-            # Set output directory based on zip_code
+            # Phase 6: Resolve city_state if not provided
+            if not city_state and zip_code:
+                try:
+                    from zip_resolver import get_city_state_for_zip
+                    city_state = get_city_state_for_zip(zip_code)
+                except Exception as e:
+                    logger.warning(f"Error resolving city_state for zip {zip_code}: {e}")
+            
+            # Phase 6: Set output directory based on city_state (city-based) or zip_code (fallback)
             original_output_dir = self.output_dir
-            if zip_code:
+            if city_state:
+                # Generate city-based path (e.g., "city_fall-river-ma")
+                city_slug = city_state.lower().replace(", ", "-").replace(" ", "-")
+                self.output_dir = os.path.join(original_output_dir, f"city_{city_slug}")
+                os.makedirs(self.output_dir, exist_ok=True)
+                # Also create subdirectories
+                os.makedirs(os.path.join(self.output_dir, "css"), exist_ok=True)
+                os.makedirs(os.path.join(self.output_dir, "js"), exist_ok=True)
+                os.makedirs(os.path.join(self.output_dir, "images"), exist_ok=True)
+                os.makedirs(os.path.join(self.output_dir, "category"), exist_ok=True)
+                logger.info(f"Generating website for {city_state} (zip {zip_code}) with {len(articles)} articles...")
+            elif zip_code:
+                # Fallback: use zip_code path (for backward compatibility)
                 self.output_dir = os.path.join(original_output_dir, f"zip_{zip_code}")
                 os.makedirs(self.output_dir, exist_ok=True)
                 # Also create subdirectories
@@ -87,9 +115,19 @@ class WebsiteGenerator:
             last_article_id = self._get_last_generated_article_id()
             new_articles = self._get_new_articles(articles, last_article_id)
             
+            # Auto-expire old flags before generation
+            if zip_code:
+                try:
+                    from admin.utils import expire_old_flags
+                    expire_result = expire_old_flags(zip_code)
+                    if expire_result.get('expired_count', 0) > 0:
+                        logger.info(f"Auto-expired {expire_result['expired_count']} flags for zip {zip_code}")
+                except Exception as e:
+                    logger.warning(f"Could not expire old flags: {e}")
+            
             # FORCE FULL REGENERATION - Always do full regen to ensure JS updates
             logger.info("Full regeneration: forcing complete rebuild")
-            self._generate_full(articles, zip_code)
+            self._generate_full(articles, zip_code, city_state)
             
             # Update last article ID
             if articles:
@@ -104,7 +142,7 @@ class WebsiteGenerator:
             logger.error(f"Error generating website: {e}", exc_info=True)
             # Fallback to full generation on error
             try:
-                self._generate_full(articles, zip_code)
+                self._generate_full(articles, zip_code, city_state)
             except Exception as e2:
                 logger.error(f"Full generation also failed: {e2}", exc_info=True)
                 raise
@@ -112,28 +150,36 @@ class WebsiteGenerator:
                 # Always restore original output directory
                 self.output_dir = original_output_dir
     
-    def _generate_full(self, articles: List[Dict], zip_code: Optional[str] = None):
+    def _generate_full(self, articles: List[Dict], zip_code: Optional[str] = None, city_state: Optional[str] = None):
         """Generate complete website from scratch
+        Phase 6: Now supports city_state for city-based generation
         
         Args:
             articles: List of articles
             zip_code: Optional zip code for zip-specific generation
+            city_state: Optional city_state (e.g., "Fall River, MA") for city-based generation
         """
+        # #region agent log
+        with open('c:\\FRNA\\.cursor\\debug.log', 'a', encoding='utf-8') as f:
+            import json
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"website_generator.py:116","message":"_generate_full called","data":{"zip_code":zip_code,"zip_code_type":type(zip_code).__name__ if zip_code else "NoneType"},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
+        # #endregion
         admin_settings = self._get_admin_settings()
-        enabled_articles = self._get_enabled_articles(articles, admin_settings, zip_code=zip_code)
+        enabled_articles = self._get_enabled_articles(articles, admin_settings, zip_code=zip_code, city_state=city_state)
         weather = self.weather_ingestor.fetch_weather()
         
-        self._generate_index(enabled_articles, weather, admin_settings, zip_code)
+        self._generate_index(enabled_articles, weather, admin_settings, zip_code, city_state)
         
         # Generate category pages for all navigation categories (in order)
         # This ensures all nav links have working pages, even if empty
         category_order = ["local-news", "crime", "sports", "events", "business", "schools", "food", "obituaries"]
         for category_slug in category_order:
             if category_slug in CATEGORY_SLUGS:
-                self._generate_category_page(category_slug, enabled_articles, weather, admin_settings, zip_code)
+                self._generate_category_page(category_slug, enabled_articles, weather, admin_settings, zip_code, city_state)
         
         self._generate_css()
         self._generate_js()
+        self._copy_static_js_files()
         
         logger.info(f"Website fully regenerated in {self.output_dir}")
     
@@ -165,6 +211,9 @@ class WebsiteGenerator:
         if not js_path.exists():
             self._generate_js()
             logger.info("Regenerated JS")
+        
+        # Always copy static JS files in incremental updates to ensure weather.js is current
+        self._copy_static_js_files()
         
         logger.info(f"Incremental update complete in {self.output_dir}")
     
@@ -217,13 +266,15 @@ class WebsiteGenerator:
             logger.warning(f"Could not load admin settings: {e}")
             return {'show_images': '1'}
     
-    def _get_enabled_articles(self, articles: List[Dict], settings: Dict, zip_code: Optional[str] = None) -> List[Dict]:
+    def _get_enabled_articles(self, articles: List[Dict], settings: Dict, zip_code: Optional[str] = None, city_state: Optional[str] = None) -> List[Dict]:
         """Filter and order articles based on admin settings and zip-specific threshold
+        Phase 2: Now supports city_state for city-based filtering
         
         Args:
             articles: List of article dicts
             settings: Admin settings dict
             zip_code: Optional zip code for zip-specific filtering
+            city_state: Optional city_state for city-based filtering
         """
         try:
             conn = self._get_db_connection()
@@ -271,30 +322,40 @@ class WebsiteGenerator:
         
         placeholders = ','.join('?' * len(article_ids))
         cursor.execute(f'''
-            SELECT article_id, enabled, display_order, 
+            SELECT article_id, enabled, display_order,
                    COALESCE(is_top_article, 0) as is_top_article,
                    COALESCE(is_top_story, 0) as is_top_story,
-                   COALESCE(is_rejected, 0) as is_rejected
+                   COALESCE(is_alert, 0) as is_alert,
+                   COALESCE(is_rejected, 0) as is_rejected,
+                   ROWID as management_rowid,
+                   COALESCE(updated_at, '1970-01-01T00:00:00') as updated_at
             FROM article_management
             WHERE article_id IN ({placeholders}) AND zip_code = ?
             AND ROWID IN (
-                SELECT MAX(ROWID) 
-                FROM article_management 
+                SELECT MAX(ROWID)
+                FROM article_management
                 WHERE article_id IN ({placeholders}) AND zip_code = ?
                 GROUP BY article_id
             )
         ''', tuple(article_ids) + (zip_code,) + tuple(article_ids) + (zip_code,))
         
-        return {
-            row['article_id']: {
-                'enabled': bool(row['enabled']),
-                'order': row['display_order'],
-                'is_top': row['is_top_article'],
-                'is_top_story': row['is_top_story'],
-                'is_rejected': bool(row['is_rejected'])
+        rows = cursor.fetchall()
+
+        management_data = {}
+        for row in rows:
+            article_id = row[0]  # article_id
+            management_data[article_id] = {
+                'enabled': bool(row[1]),  # enabled
+                'order': row[2],  # display_order
+                'is_top': row[3],  # is_top_article
+                'is_top_story': row[4],  # is_top_story
+                'is_alert': row[5],  # is_alert
+                'is_rejected': bool(row[6]),  # is_rejected
+                'management_rowid': row[7],  # management_rowid
+                'updated_at': row[8]  # updated_at
             }
-            for row in cursor.fetchall()
-        }
+
+        return management_data
     
     def _get_article_management(self, cursor, article_ids: List[int]) -> Dict:
         """Get article management data from database - get only one entry per article"""
@@ -305,15 +366,18 @@ class WebsiteGenerator:
         # Get only one management entry per article - use the MOST RECENT one (MAX ROWID)
         # This ensures we get the latest enabled/disabled state
         cursor.execute(f'''
-            SELECT article_id, enabled, display_order, 
+            SELECT article_id, enabled, display_order,
                    COALESCE(is_top_article, 0) as is_top_article,
                    COALESCE(is_top_story, 0) as is_top_story,
-                   COALESCE(is_rejected, 0) as is_rejected
+                   COALESCE(is_alert, 0) as is_alert,
+                   COALESCE(is_rejected, 0) as is_rejected,
+                   ROWID as management_rowid,
+                   COALESCE(updated_at, '1970-01-01T00:00:00') as updated_at
             FROM article_management
             WHERE article_id IN ({placeholders})
             AND ROWID IN (
-                SELECT MAX(ROWID) 
-                FROM article_management 
+                SELECT MAX(ROWID)
+                FROM article_management
                 WHERE article_id IN ({placeholders})
                 GROUP BY article_id
             )
@@ -325,7 +389,10 @@ class WebsiteGenerator:
                 'order': row['display_order'],
                 'is_top': row['is_top_article'],
                 'is_top_story': row['is_top_story'],
-                'is_rejected': bool(row['is_rejected'])
+                'is_alert': row['is_alert'],
+                'is_rejected': bool(row['is_rejected']),
+                'management_rowid': row['management_rowid'],
+                'updated_at': row['updated_at']
             }
             for row in cursor.fetchall()
         }
@@ -344,6 +411,9 @@ class WebsiteGenerator:
                     article['_display_order'] = management[article_id]['order']
                     article['_is_top'] = management[article_id].get('is_top', 0)
                     article['_is_top_story'] = management[article_id].get('is_top_story', 0)
+                    article['_is_alert'] = management[article_id].get('is_alert', 0)
+                    article['_management_rowid'] = management[article_id].get('management_rowid', 0)
+                    article['_top_story_updated_at'] = management[article_id].get('updated_at', '1970-01-01T00:00:00')
                     enabled.append(article)
                 # If disabled, skip it (don't add to enabled list)
             else:
@@ -351,6 +421,8 @@ class WebsiteGenerator:
                 article['_display_order'] = article_id or 0
                 article['_is_top'] = 0
                 article['_is_top_story'] = 0
+                article['_is_alert'] = 0
+                article['_management_rowid'] = 0
                 enabled.append(article)
         
         # Sort by: 1) is_top_story, 2) created_at (ingestion date - newest first), 3) display_order
@@ -429,32 +501,41 @@ class WebsiteGenerator:
             article_source_display = (article.get('source_display', '') or '').lower()
             already_added = False
             
-            # For obituaries: STRICT filtering - exclude news/crime articles
+            # For obituaries: STRICT filtering - exclude news/crime/articles and informational content
             if category_slug == "obituaries":
+                # EXCLUDE informational/educational articles about obituaries FIRST
+                title_lower = (article.get('title', '') or '').lower()
+                informational_patterns = [
+                    "how to write", "how to", "coping with", "guide to", "tips for",
+                    "what is", "understanding", "explaining", "about obituaries",
+                    "writing an obituary", "obituary writing", "obituary guide",
+                    "learn about", "everything you need to know"
+                ]
+                if any(pattern in title_lower for pattern in informational_patterns):
+                    continue  # Skip informational articles
+                
                 # Check if source is a funeral home FIRST (most reliable) - these are ALWAYS obituaries
                 source_matches = False
                 for funeral_source in funeral_home_sources:
                     if funeral_source and (funeral_source in article_source or funeral_source in article_source_display):
+                        # For funeral home sources, still check it's an actual obituary (not a general page)
+                        # But be more lenient - if it's from a funeral home, it's likely an obituary
+                        combined = f"{(article.get('title', '') or '').lower()} {(article.get('content', '') or article.get('summary', '') or '').lower()}"
+                        if any(keyword in combined for keyword in ["obituary", "passed away", "died", "survived by", "memorial", "funeral"]):
+                            filtered.append(article)
+                            already_added = True
+                            break
+                
+                if not already_added:
+                    # If article is explicitly categorized as obituaries, include it
+                    if article_category in ["obituaries", "obituary"]:
                         filtered.append(article)
                         already_added = True
-                        break
-                if already_added:
-                    continue
-                
-                # If article is explicitly categorized as obituaries, include it
-                if article_category in ["obituaries", "obituary"]:
-                    filtered.append(article)
-                    already_added = True
-                    continue
-                
-                # EXCLUDE articles that are explicitly categorized as news, crime, or other non-obituary categories
-                # But allow articles with no category or empty category (they might be obituaries)
-                if article_category and article_category not in ["obituaries", "obituary", "", None]:
-                    # Only exclude if it's explicitly categorized as something non-obituary
-                    # Allow through to keyword matching if category is empty/None
-                    if article_category in ["news", "crime", "sports", "entertainment", "business", "schools", "food"]:
-                        # This article is explicitly categorized as non-obituary - skip it
-                        continue
+                    
+                    # EXCLUDE articles that are explicitly categorized as news, crime, sports, or other non-obituary categories
+                    if article_category and article_category not in ["obituaries", "obituary", "", None]:
+                        if article_category in ["news", "crime", "sports", "entertainment", "business", "schools", "food", "local-news"]:
+                            continue  # Explicitly categorized as non-obituary - skip it
             
             # First, try direct category mapping
             mapped_slug = CATEGORY_MAPPING.get(article_category, '')
@@ -477,43 +558,37 @@ class WebsiteGenerator:
                 content = (article.get('content', '') or article.get('summary', '') or '').lower()
                 combined = f"{title} {content}"
                 
-                # For obituaries, require stronger keyword matches AND exclude news articles
-                if category_slug == "obituaries":
-                    # EXCLUDE articles that are clearly news/accidents (these should NOT be obituaries)
-                    # But be careful - only exclude if it's clearly a news report, not an obituary
+                # For obituaries, require STRONG obituary indicators
+                if category_slug == "obituaries" and not already_added:
+                    # EXCLUDE articles that are clearly news/accidents
                     news_exclusion_patterns = [
                         "fire", "accident", "crash", "injured", "killed in", "died in", "dead in", 
                         "fatal crash", "fatal accident", "fatal fire", "police", "arrest", "investigation",
-                        "condo fire", "house fire", "car crash", "motor vehicle", "middleboro", "middleborough"
+                        "condo fire", "house fire", "car crash", "motor vehicle"
                     ]
-                    # Only exclude if it has news keywords AND lacks obituary context
                     has_news_keywords = any(keyword in combined for keyword in news_exclusion_patterns)
                     has_obituary_context = any(keyword in combined for keyword in ["obituary", "survived by", "memorial service", "funeral service", "visitation", "wake", "calling hours", "funeral home"])
                     
                     if has_news_keywords and not has_obituary_context:
-                        # This is a news article, not an obituary - skip it
-                        continue
+                        continue  # News article, not obituary
                     
-                    # Include articles with obituary-specific keywords
-                    # These keywords indicate a formal obituary notice
-                    strong_keywords = ["obituary", "passed away", "memorial service", "funeral service", "survived by", "predeceased", "visitation", "wake", "calling hours", "funeral home", "memorial visitation"]
+                    # Require STRONG obituary indicators - not just mentioning "obituary" in passing
+                    strong_keywords = ["passed away", "survived by", "predeceased", "memorial service", "funeral service", "visitation", "wake", "calling hours", "funeral home", "memorial visitation"]
                     
                     # Check if title is just a name (common obituary format: "John Smith" or "John Smith, 85")
                     title_words = title.split()
                     is_name_only = len(title_words) <= 4 and not has_news_keywords
                     
-                    # Also allow articles that mention "died" or "passed" if they have obituary context
-                    if "died" in combined or "passed" in combined:
-                        # Include if it has obituary context OR if it's just a name + "died" (likely an obituary)
-                        if has_obituary_context or is_name_only or (len(title_words) <= 5 and "died" in title.lower()):
-                            # Likely an obituary (short title with just name + "died")
-                            filtered.append(article)
-                    elif any(keyword in combined for keyword in strong_keywords):
+                    # Only include if it has strong obituary keywords OR is just a name
+                    if any(keyword in combined for keyword in strong_keywords):
                         filtered.append(article)
-                    # Also allow articles that are just names (common obituary format)
                     elif is_name_only:
                         # Short title with just a name - likely an obituary
                         filtered.append(article)
+                    elif ("died" in combined or "passed" in combined) and (has_obituary_context or is_name_only or (len(title_words) <= 5 and "died" in title.lower())):
+                        # Include if it has obituary context OR if it's just a name + "died"
+                        filtered.append(article)
+                    # Don't include articles that just mention "obituary" without strong indicators
                 elif category_slug == "crime":
                     # For crime, require crime-specific keywords (not just "police" which could be in many contexts)
                     crime_keywords = ["arrest", "crime", "charges", "suspect", "investigation", "court", "trial", "criminal", "murder", "robbery", "theft", "assault"]
@@ -533,27 +608,33 @@ class WebsiteGenerator:
         
         return filtered
     
-    def _generate_index(self, articles: List[Dict], weather: Dict, settings: Dict, zip_code: Optional[str] = None):
+    def _generate_index(self, articles: List[Dict], weather: Dict, settings: Dict, zip_code: Optional[str] = None, city_state: Optional[str] = None):
         """Generate main index page
+        Phase 6: Now supports city_state for dynamic city names
         
         Args:
             articles: List of articles
             weather: Weather data
             settings: Admin settings
             zip_code: Optional zip code for zip-specific generation
+            city_state: Optional city_state (e.g., "Fall River, MA") for dynamic titles
         """
         show_images = settings.get('show_images', '1') == '1'
         template = self._get_index_template(zip_code)
         
-        # Resolve zip code to city/state if provided
-        locale_name = LOCALE
-        if zip_code:
+        # Phase 6: Resolve city name for dynamic title
+        locale_name = LOCALE  # Default to "Fall River, MA"
+        if city_state:
+            # Use provided city_state directly
+            locale_name = city_state
+        elif zip_code:
+            # Resolve zip code to city/state if city_state not provided
             from zip_resolver import resolve_zip
             zip_data = resolve_zip(zip_code)
             if zip_data:
                 city = zip_data.get("city", "")
                 state = zip_data.get("state_abbrev", "")
-                locale_name = f"{city}, {state}" if city and state else zip_code
+                locale_name = f"{city}, {state}" if city and state else f"Zip {zip_code}"
             else:
                 locale_name = f"Zip {zip_code}"
         
@@ -577,10 +658,19 @@ class WebsiteGenerator:
         
         # Get top stories (articles marked as top stories)
         top_stories = [a for a in articles if a.get('_is_top_story', 0)]
-        # Sort by publication date (newest first) - CRITICAL FIX for hero slider
+        # Sort by updated_at DESC (newest top hat clicks first), then by display_order
+        # This ensures articles marked most recently by admin appear first
+        def parse_timestamp(ts_str):
+            try:
+                from datetime import datetime
+                return datetime.fromisoformat(ts_str.replace('Z', '+00:00').split('+')[0]).timestamp()
+            except:
+                return 0  # Default to oldest if parsing fails
+
         top_stories.sort(key=lambda x: (
-            x.get("published") or x.get("date_sort") or x.get("created_at") or "1970-01-01"
-        ), reverse=True)
+            -parse_timestamp(x.get('_top_story_updated_at', '1970-01-01T00:00:00')),  # Newest clicked first (negative for descending)
+            x.get('_display_order', 0)  # Then by display_order
+        ))
         if not top_stories:
             # Fallback to first 5 news articles if no top stories marked
             top_stories = news_articles[:5] if news_articles else articles[:5]
@@ -608,32 +698,42 @@ class WebsiteGenerator:
             related = aggregator._find_related_articles(article, all_articles, limit=3)
             article['_related_articles'] = related[:3]  # Limit to 3 related articles
         
-        # Enrich articles with source initials and gradients
+        # Enrich articles with source initials, gradients, and glow colors
         for article in all_articles:
             if 'source_initials' not in article:
                 article['source_initials'] = self._get_source_initials(article.get('source_display', article.get('source', '')))
             if 'source_gradient' not in article:
                 article['source_gradient'] = self._get_source_gradient(article.get('source_display', article.get('source', '')))
+            if 'source_glow_color' not in article:
+                article['source_glow_color'] = self._get_source_glow_color(article.get('source_display', article.get('source', '')))
         for article in top_stories:
             if 'source_initials' not in article:
                 article['source_initials'] = self._get_source_initials(article.get('source_display', article.get('source', '')))
             if 'source_gradient' not in article:
                 article['source_gradient'] = self._get_source_gradient(article.get('source_display', article.get('source', '')))
+            if 'source_glow_color' not in article:
+                article['source_glow_color'] = self._get_source_glow_color(article.get('source_display', article.get('source', '')))
         for article in trending_articles:
             if 'source_initials' not in article:
                 article['source_initials'] = self._get_source_initials(article.get('source_display', article.get('source', '')))
             if 'source_gradient' not in article:
                 article['source_gradient'] = self._get_source_gradient(article.get('source_display', article.get('source', '')))
+            if 'source_glow_color' not in article:
+                article['source_glow_color'] = self._get_source_glow_color(article.get('source_display', article.get('source', '')))
         for article in latest_stories:
             if 'source_initials' not in article:
                 article['source_initials'] = self._get_source_initials(article.get('source_display', article.get('source', '')))
             if 'source_gradient' not in article:
                 article['source_gradient'] = self._get_source_gradient(article.get('source_display', article.get('source', '')))
+            if 'source_glow_color' not in article:
+                article['source_glow_color'] = self._get_source_glow_color(article.get('source_display', article.get('source', '')))
         for article in entertainment_articles:
             if 'source_initials' not in article:
                 article['source_initials'] = self._get_source_initials(article.get('source_display', article.get('source', '')))
             if 'source_gradient' not in article:
                 article['source_gradient'] = self._get_source_gradient(article.get('source_display', article.get('source', '')))
+            if 'source_glow_color' not in article:
+                article['source_glow_color'] = self._get_source_glow_color(article.get('source_display', article.get('source', '')))
         
         # Optimize images for articles
         if show_images:
@@ -643,6 +743,21 @@ class WebsiteGenerator:
         
         # Get hero articles (top 3 stories for carousel)
         hero_articles = top_stories[:3] if len(top_stories) >= 3 else (top_stories if top_stories else [])
+
+        # Get top article (single featured article)
+        top_article = None
+        for article in all_articles:
+            if article.get('_is_top', 0):
+                top_article = article
+                break
+        
+        # Get alert articles (urgent notifications)
+        alert_articles = [a for a in all_articles if a.get('_is_alert', 0)]
+        # Sort alerts by updated_at DESC (newest first)
+        alert_articles.sort(key=lambda x: (
+            -parse_timestamp(x.get('_top_story_updated_at', '1970-01-01T00:00:00')),
+            x.get('_display_order', 0)
+        ))
         
         # DEBUG: Log hero articles for troubleshooting slider
         logger.info(f"HERO ARTICLES COUNT: {len(hero_articles)}")
@@ -700,19 +815,100 @@ class WebsiteGenerator:
                 location_badge_text = f"{city} · {zip_code}"
             else:
                 location_badge_text = f"Fall River · {zip_code}"
+
+        # Phase 9: Zip pin editability flag (from admin_settings)
+        zip_pin_editable = False
+        try:
+            # Prefer settings dict if present
+            if 'zip_pin_editable' in settings:
+                zip_pin_editable = str(settings.get('zip_pin_editable')) == '1'
+            else:
+                conn = self._get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('zip_pin_editable',))
+                row = cursor.fetchone()
+                conn.close()
+                zip_pin_editable = row[0] == '1' if row else False
+        except Exception as e:
+            logger.warning(f"Could not determine zip pin editability: {e}")
+            zip_pin_editable = False
         
-        # Update title and description for zip-specific pages
-        title = f"{locale_name} News" if zip_code else self.title
-        description = f"Latest news from {locale_name}" if zip_code else self.description
+        # Phase 6: Update title and description with dynamic city name
+        title = f"{locale_name} News Aggregator" if (zip_code or city_state) else self.title
+        description = f"Latest news from {locale_name}" if (zip_code or city_state) else self.description
         
-        # Get weather station URL (link to actual weather station page if available)
-        weather_station_url = self.weather_ingestor.get_primary_weather_station_url()
+        # Get weather API key - check database first, then fall back to config
+        # Default to "02720" (Fall River) if zip_code is not provided
+        lookup_zip = zip_code or "02720"
+        
+        # Get weather station URL - check database first, then fall back to weather_ingestor
+        weather_station_url = ""
+        if lookup_zip:
+            try:
+                conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+                cursor = conn.cursor()
+                cursor.execute('SELECT value FROM admin_settings_zip WHERE zip_code = ? AND key = ?', (lookup_zip, 'weather_station_url'))
+                row = cursor.fetchone()
+                if row and row[0]:
+                    weather_station_url = row[0]
+                conn.close()
+            except Exception as e:
+                logger.warning(f"Could not load weather station URL from database: {e}")
+        
+        # Fall back to weather_ingestor method if not in database
+        if not weather_station_url:
+            weather_station_url = self.weather_ingestor.get_primary_weather_station_url()
+        
+        # Get weather icon based on condition
+        weather_icon = self._get_weather_icon(weather.get('current', {}).get('condition', ''))
+        weather_api_key = ""
+        # #region agent log
+        with open('c:\\FRNA\\.cursor\\debug.log', 'a', encoding='utf-8') as f:
+            import json
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"website_generator.py:740","message":"_generate_index called","data":{"zip_code":zip_code,"lookup_zip":lookup_zip,"zip_code_type":type(zip_code).__name__},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
+        # #endregion
+        if lookup_zip:
+            try:
+                conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+                cursor = conn.cursor()
+                # #region agent log
+                with open('c:\\FRNA\\.cursor\\debug.log', 'a', encoding='utf-8') as f:
+                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"website_generator.py:746","message":"Executing database query","data":{"lookup_zip":lookup_zip,"query":"SELECT value FROM admin_settings_zip WHERE zip_code = ? AND key = ?"},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
+                # #endregion
+                cursor.execute('SELECT value FROM admin_settings_zip WHERE zip_code = ? AND key = ?', (lookup_zip, 'weather_api_key'))
+                row = cursor.fetchone()
+                # #region agent log
+                with open('c:\\FRNA\\.cursor\\debug.log', 'a', encoding='utf-8') as f:
+                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"website_generator.py:748","message":"Database query result","data":{"row":row,"has_value":bool(row and row[0]),"value_length":len(row[0]) if row and row[0] else 0},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
+                # #endregion
+                if row and row[0]:
+                    weather_api_key = row[0]
+                conn.close()
+            except Exception as e:
+                logger.warning(f"Could not load weather API key from database: {e}")
+                # #region agent log
+                with open('c:\\FRNA\\.cursor\\debug.log', 'a', encoding='utf-8') as f:
+                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"website_generator.py:752","message":"Database query exception","data":{"error":str(e),"error_type":type(e).__name__},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
+                # #endregion
+        
+        # Fall back to config if not in database
+        if not weather_api_key:
+            weather_api_key = WEATHER_CONFIG.get("openweathermap_api_key", "")
+        # #region agent log
+        with open('c:\\FRNA\\.cursor\\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"website_generator.py:756","message":"Final weather_api_key before template","data":{"weather_api_key_length":len(weather_api_key),"has_key":bool(weather_api_key),"from_config":weather_api_key == WEATHER_CONFIG.get("openweathermap_api_key", "")},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
+        # #endregion
         
         current_time = datetime.now().strftime("%I:%M %p")
+        # #region agent log
+        with open('c:\\FRNA\\.cursor\\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"website_generator.py:789","message":"Before template.render","data":{"weather_api_key":weather_api_key,"weather_api_key_length":len(weather_api_key),"weather_api_key_type":type(weather_api_key).__name__},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
+        # #endregion
         html = template.render(
             title=title,
             description=description,
             locale=locale_name,
+            zip_pin_editable=zip_pin_editable,
             articles=grid_articles,  # Articles for main grid (excluding featured)
             all_articles=all_articles,  # All articles for reference
             news_articles=news_articles,  # News articles for filtering
@@ -721,9 +917,12 @@ class WebsiteGenerator:
             sports_articles=sports_articles,  # Sports articles for filtering
             top_stories=top_stories[:5],
             hero_articles=hero_articles,  # Hero articles for carousel (up to 3)
+            top_article=top_article,  # Single featured top article
+            alert_articles=alert_articles,  # Alert articles (urgent notifications)
             latest_stories=latest_stories,  # Latest stories by date
             weather=weather,
             weather_condition=weather_condition,
+            weather_icon=weather_icon,  # Dynamic weather icon
             show_images=show_images,
             current_year=datetime.now().year,
             current_time=current_time,  # Add timestamp for visible change
@@ -731,14 +930,24 @@ class WebsiteGenerator:
             sources=unique_sources,  # Sources for filter dropdown
             location_badge_text=location_badge_text,  # Location badge text
             zip_code=zip_code or "02720",  # Zip code for badge
-            weather_station_url=weather_station_url  # Weather station page URL
+            weather_station_url=weather_station_url,  # Weather station page URL
+            weather_api_key=weather_api_key  # Weather API key for frontend (from database or config)
         )
+        # #region agent log
+        import re
+        api_key_in_html = re.search(r"window\.WEATHER_API_KEY = '([^']*)'", html)
+        with open('c:\\FRNA\\.cursor\\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"website_generator.py:815","message":"After template.render","data":{"api_key_in_html":api_key_in_html.group(1) if api_key_in_html else "NOT_FOUND","api_key_length_in_html":len(api_key_in_html.group(1)) if api_key_in_html else 0},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
+        # #endregion
         
         with open(os.path.join(self.output_dir, "index.html"), "w", encoding="utf-8", errors='replace') as f:
             f.write(html)
     
     def _get_nav_tabs(self, active_page: str = "home", zip_code: Optional[str] = None, is_category_page: bool = False) -> str:
-        """Generate consistent navigation tabs across all pages
+        """Generate two-row navigation structure for top local news site
+        
+        Top row (big, bold): Home • Local • Police & Fire • Sports • Obituaries • Food & Drink
+        Second row (smaller, lighter): Media • Scanner • Weather • Submit Tip • Lost & Found • Events
         
         Args:
             active_page: Current page identifier
@@ -746,33 +955,161 @@ class WebsiteGenerator:
             is_category_page: If True, paths are relative from category/ subdirectory
         """
         # Use relative paths for navigation
-        # If we're on a category page, we need to go up one level
         if is_category_page:
             home_href = "../index.html"
-            category_prefix = ""  # Same directory
+            category_prefix = ""
         else:
             home_href = "index.html"
             category_prefix = "category/"
         
-        tabs = [
+        # Top row: Primary navigation (big, bold)
+        top_row_tabs = [
             ("Home", home_href, "all", "home"),
+            ("Local", f"{category_prefix}local-news.html" if category_prefix else "local-news.html", None, "category-local-news"),
+            ("Police & Fire", f"{category_prefix}crime.html" if category_prefix else "crime.html", None, "category-crime"),
+            ("Sports", f"{category_prefix}sports.html" if category_prefix else "sports.html", None, "category-sports"),
+            ("Obituaries", f"{category_prefix}obituaries.html" if category_prefix else "obituaries.html", None, "category-obituaries"),
+            ("Food & Drink", f"{category_prefix}food.html" if category_prefix else "food.html", None, "category-food"),
         ]
         
-        # Add category tabs
-        category_order = ["local-news", "crime", "sports", "events", "business", "schools", "food", "obituaries"]
-        for slug in category_order:
-            if slug in CATEGORY_SLUGS:
-                name = CATEGORY_SLUGS[slug]
-                page_key = f"category-{slug}"
-                href = f"{category_prefix}{slug}.html" if category_prefix else f"{slug}.html"
-                tabs.append((name, href, None, page_key))
+        # Second row: Secondary navigation (slightly smaller, lighter)
+        second_row_tabs = [
+            ("Media", f"{category_prefix}media.html" if category_prefix else "media.html", None, "category-media"),
+            ("Scanner", f"{category_prefix}scanner.html" if category_prefix else "scanner.html", None, "category-scanner"),
+            ("Weather", f"{category_prefix}weather.html" if category_prefix else "weather.html", None, "category-weather"),
+            ("Submit Tip", "#", None, "submit-tip"),  # Placeholder - implement later
+            ("Lost & Found", "#", None, "lost-found"),  # Placeholder - implement later
+            ("Events", f"{category_prefix}events.html" if category_prefix else "events.html", None, "category-events"),
+        ]
         
-        nav_html = '<div class="flex flex-wrap gap-2">\n'
-        for label, href, data_tab, page_key in tabs:
-            active_class = 'bg-[#161616] text-blue-400' if active_page == page_key else 'text-gray-300 hover:bg-[#161616]/50 hover:text-gray-100'
+        # Build navigation HTML with two-row structure
+        nav_html = '''
+    <!-- Desktop Navigation: Two Rows -->
+    <div class="hidden lg:flex flex-col gap-2 w-full">
+        <!-- Top Row: Primary Navigation (Big, Bold) -->
+        <div class="flex flex-wrap items-center gap-3 lg:gap-4">
+'''
+        
+        # Top row links
+        for i, (label, href, data_tab, page_key) in enumerate(top_row_tabs):
+            # Check if this is the active page
+            is_active = (active_page == page_key) or (page_key == "home" and (active_page == "home" or active_page == "all"))
+            if is_active:
+                active_class = 'text-blue-400 font-bold'
+                active_style = ' style="background: rgba(59, 130, 246, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3);"'
+            else:
+                active_class = 'text-gray-200 hover:text-white font-bold'
+                active_style = ' onmouseover="this.style.background=\'rgba(16, 16, 16, 0.3)\';" onmouseout="this.style.background=\'transparent\';"'
+            
             data_attr = f' data-tab="{data_tab}"' if data_tab else ''
-            nav_html += f'                    <a href="{href}" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {active_class}"{data_attr}>{label}</a>\n'
-        nav_html += '                </div>'
+            separator = ' <span class="text-gray-500 mx-1">•</span> ' if i < len(top_row_tabs) - 1 else ''
+            nav_html += f'            <a href="{href}" class="px-3 py-2 rounded-lg text-base lg:text-lg font-bold transition-all duration-200 {active_class}"{active_style}{data_attr}>{label}</a>{separator}\n'
+        
+        nav_html += '''        </div>
+        
+        <!-- Second Row: Secondary Navigation (Smaller, Lighter) -->
+        <div class="flex flex-wrap items-center gap-2 lg:gap-3">
+'''
+        
+        # Second row links
+        for i, (label, href, data_tab, page_key) in enumerate(second_row_tabs):
+            is_active = active_page == page_key
+            if is_active:
+                active_class = 'text-blue-300 font-semibold'
+                active_style = ' style="background: rgba(59, 130, 246, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.2);"'
+            else:
+                active_class = 'text-gray-400 hover:text-gray-200 font-medium'
+                active_style = ' onmouseover="this.style.background=\'rgba(16, 16, 16, 0.2)\';" onmouseout="this.style.background=\'transparent\';"'
+            
+            data_attr = f' data-tab="{data_tab}"' if data_tab else ''
+            separator = ' <span class="text-gray-600 mx-1">•</span> ' if i < len(second_row_tabs) - 1 else ''
+            nav_html += f'            <a href="{href}" class="px-2 py-1.5 rounded-lg text-sm lg:text-base transition-all duration-200 {active_class}"{active_style}{data_attr}>{label}</a>{separator}\n'
+        
+        nav_html += '''        </div>
+    </div>
+    
+    <!-- Mobile Navigation: Hamburger Menu -->
+    <div class="lg:hidden w-full">
+        <button id="mobileNavToggle" class="flex items-center gap-2 text-gray-200 hover:text-white px-3 py-2 rounded-lg hover:bg-[#161616]/50 transition-colors" aria-label="Toggle navigation menu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+            <span class="font-semibold">Menu</span>
+        </button>
+        
+        <div id="mobileNavMenu" class="hidden mt-4 space-y-3 bg-[#161616]/90 backdrop-blur-md rounded-lg p-4 border border-gray-800/30">
+            <!-- Mobile: Primary Row -->
+            <div class="space-y-2 pb-3 border-b border-gray-800/30">
+                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Primary</div>
+'''
+        
+        # Mobile top row
+        for label, href, data_tab, page_key in top_row_tabs:
+            # Check if this is the active page
+            is_active = (active_page == page_key) or (page_key == "home" and (active_page == "home" or active_page == "all"))
+            if is_active:
+                active_class = 'text-blue-400 bg-blue-500/10 border-blue-500/30'
+            else:
+                active_class = 'text-gray-200 hover:text-white hover:bg-[#1a1a1a]'
+            
+            data_attr = f' data-tab="{data_tab}"' if data_tab else ''
+            nav_html += f'                <a href="{href}" class="block px-4 py-2.5 rounded-lg text-base font-bold transition-colors border {active_class}"{data_attr}>{label}</a>\n'
+        
+        nav_html += '''            </div>
+            
+            <!-- Mobile: Secondary Row -->
+            <div class="space-y-2">
+                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">More</div>
+'''
+        
+        # Mobile second row
+        for label, href, data_tab, page_key in second_row_tabs:
+            is_active = active_page == page_key
+            if is_active:
+                active_class = 'text-blue-300 bg-blue-500/10 border-blue-500/20'
+            else:
+                active_class = 'text-gray-300 hover:text-gray-100 hover:bg-[#1a1a1a]'
+            
+            data_attr = f' data-tab="{data_tab}"' if data_tab else ''
+            nav_html += f'                <a href="{href}" class="block px-4 py-2 rounded-lg text-sm font-medium transition-colors border {active_class}"{data_attr}>{label}</a>\n'
+        
+        nav_html += '''            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Mobile menu toggle
+        (function() {
+            const toggle = document.getElementById('mobileNavToggle');
+            const menu = document.getElementById('mobileNavMenu');
+            if (toggle && menu) {
+                toggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    menu.classList.toggle('hidden');
+                    const isOpen = !menu.classList.contains('hidden');
+                    toggle.setAttribute('aria-expanded', isOpen);
+                });
+                
+                // Close menu when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+                        menu.classList.add('hidden');
+                        toggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                
+                // Close menu when clicking a link
+                menu.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', function() {
+                        menu.classList.add('hidden');
+                        toggle.setAttribute('aria-expanded', 'false');
+                    });
+                });
+            }
+        })();
+    </script>
+'''
+        
         return nav_html
     
     def _get_index_template(self, zip_code: Optional[str] = None) -> Template:
@@ -881,9 +1218,9 @@ class WebsiteGenerator:
     </div>
     
     <!-- Navigation -->
-    <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
+    <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-3 lg:py-4 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div class="text-xl font-semibold text-blue-400">FRNA</div>
                 {{ nav_tabs }}
             </div>
@@ -911,9 +1248,9 @@ class WebsiteGenerator:
             <!-- Massive Hero Carousel (65% - 8 columns) -->
             <div class="lg:col-span-8">
                 {% if hero_articles and hero_articles|length > 0 %}
-                <div class="relative rounded-xl overflow-hidden shadow-2xl h-[400px] lg:h-[600px]" style="overflow: hidden;">
+                <div class="relative overflow-hidden shadow-2xl h-[420px] hero-carousel-container" style="overflow: hidden; border-radius: 12px;">
                     <!-- Carousel Container -->
-                    <div class="top-stories-track relative h-full" style="display: flex; transition: transform 0.5s ease-in-out; width: {% if hero_articles %}{{ hero_articles|length * 100 }}{% else %}100{% endif %}%;">
+                    <div class="top-stories-track h-full" style="display: flex; transition: transform 0.5s ease-in-out;">
                         {% for hero_article in hero_articles %}
                         <div class="story-slide flex-shrink-0 h-full relative" style="width: calc(100% / {% if hero_articles %}{{ hero_articles|length }}{% else %}1{% endif %});">
                             <a href="{{ hero_article.url }}" target="_blank" rel="noopener" class="group block relative w-full h-full">
@@ -933,31 +1270,26 @@ class WebsiteGenerator:
                                     </div>
                                     {% endif %}
                                     <!-- Content overlay at bottom -->
-                                    <div class="absolute bottom-0 left-0 right-0 p-8 lg:p-10">
-                                        <h2 class="text-3xl lg:text-5xl font-bold text-white mb-4 line-clamp-3 group-hover:text-blue-300 transition-colors" style="font-size: 3rem; line-height: 1.2;">
+                                    <div class="absolute bottom-0 left-0 right-0 p-4">
+                                        <h2 class="text-3xl lg:text-4xl font-bold text-white mb-3 line-clamp-3 leading-[1.15]">
                                             {{ hero_article.title }}
                                         </h2>
-                                        <div class="flex items-center gap-3 text-sm text-gray-200">
-                                            <span class="font-medium">{{ hero_article.source_display }}</span>
-                                            <span>•</span>
-                                            <span>{{ hero_article.formatted_date.split(' at ')[0] if ' at ' in hero_article.formatted_date else 'Recently' }}</span>
-                                            {% if hero_article.reading_time %}
-                                            <span>•</span>
-                                            <span>{{ hero_article.reading_time }}</span>
-                                            {% endif %}
+                                        <div class="flex items-center justify-between">
+                                            <!-- Source badge -->
+                                            <div class="bg-gradient-to-br {{ hero_article.source_gradient }} px-3 py-1 rounded-full text-xs font-bold text-white">
+                                                {{ hero_article.source_initials }}
+                                            </div>
+                                            <!-- Time + read time -->
+                                            <div class="text-sm text-gray-300">
+                                                {{ hero_article.formatted_date.split(' at ')[0] if ' at ' in hero_article.formatted_date else 'Recently' }}{% if hero_article.reading_time %} • {{ hero_article.reading_time }}{% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                                 {% else %}
-                                <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient }}">
-                                    <!-- Subtle pattern overlay -->
-                                    <div class="absolute inset-0 opacity-5" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
-                                    <!-- City skyline silhouette -->
-                                    <div class="absolute bottom-0 left-0 right-0 h-32 opacity-3">
-                                        <svg viewBox="0 0 400 100" class="w-full h-full" preserveAspectRatio="none">
-                                            <path d="M0,100 L0,85 L15,82 L30,78 L45,75 L60,72 L75,70 L90,68 L105,66 L120,64 L135,62 L150,60 L165,58 L180,56 L195,54 L210,52 L225,50 L240,52 L255,54 L270,56 L285,58 L300,60 L315,62 L330,64 L345,66 L360,68 L375,70 L385,72 L400,75 L400,100 Z" fill="white"/>
-                                        </svg>
-                                    </div>
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient }}" style="border-radius: 12px;">
+                                    <!-- Dark gradient overlay bottom 40% -->
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
                                     <!-- Video play icon if video -->
                                     {% if hero_article._is_video %}
                                     <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
@@ -969,18 +1301,19 @@ class WebsiteGenerator:
                                     </div>
                                     {% endif %}
                                     <!-- Content overlay at bottom -->
-                                    <div class="absolute bottom-0 left-0 right-0 p-8 lg:p-10 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
-                                        <h2 class="text-3xl lg:text-5xl font-bold text-white mb-4 line-clamp-3 group-hover:text-blue-300 transition-colors" style="font-size: 3rem; line-height: 1.2;">
+                                    <div class="absolute bottom-0 left-0 right-0 p-4">
+                                        <h2 class="text-3xl lg:text-4xl font-bold text-white mb-3 line-clamp-3 leading-[1.15]">
                                             {{ hero_article.title }}
                                         </h2>
-                                        <div class="flex items-center gap-3 text-sm text-gray-200">
-                                            <span class="font-medium">{{ hero_article.source_display }}</span>
-                                            <span>•</span>
-                                            <span>{{ hero_article.formatted_date.split(' at ')[0] if ' at ' in hero_article.formatted_date else 'Recently' }}</span>
-                                            {% if hero_article.reading_time %}
-                                            <span>•</span>
-                                            <span>{{ hero_article.reading_time }}</span>
-                                            {% endif %}
+                                        <div class="flex items-center justify-between">
+                                            <!-- Source badge -->
+                                            <div class="bg-gradient-to-br {{ hero_article.source_gradient }} px-3 py-1 rounded-full text-xs font-bold text-white">
+                                                {{ hero_article.source_initials }}
+                                            </div>
+                                            <!-- Time + read time -->
+                                            <div class="text-sm text-gray-300">
+                                                {{ hero_article.formatted_date.split(' at ')[0] if ' at ' in hero_article.formatted_date else 'Recently' }}{% if hero_article.reading_time %} • {{ hero_article.reading_time }}{% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -990,11 +1323,25 @@ class WebsiteGenerator:
                         {% endfor %}
                     </div>
                     
+                    <!-- Navigation Arrows -->
+                    {% if hero_articles|length > 1 %}
+                    <button data-slider="prev" class="absolute left-4 top-1/2 transform -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-3 transition-all duration-300 hover:scale-110" aria-label="Previous article">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+                    <button data-slider="next" class="absolute right-4 top-1/2 transform -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-3 transition-all duration-300 hover:scale-110" aria-label="Next article">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    {% endif %}
+                    
                     <!-- Navigation Dots -->
                     {% if hero_articles|length > 1 %}
                     <div class="slider-dots absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-30">
                         {% for i in range(hero_articles|length) %}
-                        <button onclick="goToTopStory({{ i }})" class="dot w-3 h-3 rounded-full {% if loop.first %}bg-white{% else %}bg-white/40{% endif %} hover:bg-white/60 transition-colors cursor-pointer" data-index="{{ i }}"></button>
+                        <button data-slider-dot="{{ i }}" class="dot w-3 h-3 rounded-full {% if loop.first %}bg-white{% else %}bg-white/40{% endif %} hover:bg-white/60 transition-colors cursor-pointer"></button>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -1013,21 +1360,21 @@ class WebsiteGenerator:
                         {% if trending_articles %}
                             {% for article in trending_articles[:8] %}
                             <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-4 border-b border-gray-800/30 last:border-0 hover:bg-[#1a1a1a] -mx-2 px-2 rounded-lg transition-colors">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 hover:bg-[#1a1a1a] -mx-2 px-2 rounded-lg transition-colors">
                                     {% if show_images and article.image_url %}
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f]">
                                         <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 lazy-image">
                                     </div>
                                     {% else %}
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden">
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden shadow-inner" style="box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
                                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">{{ article.source_initials }}</div>
+                                        <div class="text-xl font-black text-white drop-shadow-lg relative z-10">{{ article.source_initials }}</div>
                                     </div>
                                     {% endif %}
                                     <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-1 mb-1">
+                                        <div class="flex items-center gap-1 mb-0.5">
                                             <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">{{ article.title }}</h4>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2 leading-[1.15]">{{ article.title }}</h4>
                                         </div>
                                         <div class="text-xs text-gray-500">{{ article.source_display }} • {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}</div>
                                     </div>
@@ -1043,55 +1390,60 @@ class WebsiteGenerator:
         </div>
         
         <!-- Perfect Masonry Grid Below Hero (3-4 columns) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="articlesGrid">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="articlesGrid">
             {% if articles and articles|length > 0 %}
                 {% for article in articles[:30] %}
-            <article class="bg-[#161616] rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.03] border border-gray-800/30 flex flex-col h-full" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}">
-                <!-- Large Thumbnail Top -->
+            <article class="bg-[#161616] rounded-xl overflow-hidden shadow-lg hover:shadow-xl hover:scale-[1.03] transition-all duration-300" style="border-radius: 12px;" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}">
+                <!-- Full-width image with 16:9 ratio -->
                 {% if show_images and article.image_url %}
-                <div class="relative h-48 overflow-hidden bg-gradient-to-br from-gray-700 to-gray-900">
-                    <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500 lazy-image">
-                    <!-- Source pill bottom-left -->
-                    <div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-white">
-                        {{ article.source_display }}
+                <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
+                    <div class="relative overflow-hidden" style="border-radius: 12px 12px 0 0; height: 300px;">
+                        <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover lazy-image">
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                {{ article.title }}
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Source badge -->
+                                <div class="bg-gradient-to-br {{ article.source_gradient }} px-3 py-1 rounded-full text-xs font-bold text-white">
+                                    {{ article.source_initials }}
+                                </div>
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}{% if article.reading_time %} • {{ article.reading_time }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </a>
                 {% else %}
-                <div class="relative h-48 overflow-hidden bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center">
-                    <!-- Subtle pattern overlay -->
-                    <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px);"></div>
-                    <!-- City skyline silhouette -->
-                    <div class="absolute bottom-0 left-0 right-0 h-16 opacity-5">
-                        <svg viewBox="0 0 400 100" class="w-full h-full" preserveAspectRatio="none">
-                            <path d="M0,100 L0,80 L20,75 L40,70 L60,65 L80,60 L100,55 L120,50 L140,45 L160,50 L180,55 L200,60 L220,65 L240,70 L260,75 L280,80 L300,75 L320,70 L340,65 L360,60 L380,55 L400,50 L400,100 Z" fill="white"/>
-                        </svg>
+                <!-- Placeholder with same structure -->
+                <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
+                    <div class="relative overflow-hidden bg-gradient-to-br {{ article.source_gradient }}" style="border-radius: 12px; height: 300px;">
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                {{ article.title }}
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Source badge -->
+                                <div class="bg-gradient-to-br {{ article.source_gradient }} px-3 py-1 rounded-full text-xs font-bold text-white">
+                                    {{ article.source_initials }}
+                                </div>
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}{% if article.reading_time %} • {{ article.reading_time }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <!-- Source initials -->
-                    <div class="text-center relative z-10">
-                        <div class="text-6xl font-black text-white/90 drop-shadow-2xl tracking-tight" style="text-shadow: 0 4px 12px rgba(0,0,0,0.3);">{{ article.source_initials }}</div>
-                    </div>
-                    <!-- Source pill bottom-left -->
-                    <div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-white">
-                        {{ article.source_display }}
-                    </div>
-                </div>
+                </a>
                 {% endif %}
-                
-                <!-- Content -->
-                <div class="p-4 flex-1 flex flex-col">
-                    <h3 class="text-base font-bold mb-2 line-clamp-2 text-gray-100 hover:text-blue-400 transition-colors">
-                        <a href="{{ article.url }}" target="_blank" rel="noopener">{{ article.title }}</a>
-                    </h3>
-                    
-                    <!-- Exactly 2-line snippet -->
-                    <p class="text-xs text-gray-300 mb-3 line-clamp-2 flex-1">{{ article.summary[:100] if article.summary else '' }}{% if article.summary and article.summary|length > 100 %}...{% endif %}</p>
-                    
-                    <div class="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-800/30">
-                        <span>{{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}</span>
-                        {% if article.reading_time %}
-                        <span>{{ article.reading_time }}</span>
-                        {% endif %}
-                    </div>
                     
                     {% if article._related_articles %}
                     <div class="mt-4 pt-4 border-t border-gray-800/30">
@@ -1162,6 +1514,7 @@ class WebsiteGenerator:
     <!-- Back to Top Button -->
     <button class="fixed bottom-20 right-6 bg-blue-500 hover:bg-blue-600 text-white w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 hidden lg:block z-40" id="backToTop" onclick="scrollToTop()" title="Back to top">↑</button>
     
+    <script src="{{ home_path }}js/weather.js"></script>
     <script src="js/main.js"></script>
     <script>
         // Lazy image loading
@@ -1180,6 +1533,52 @@ class WebsiteGenerator:
             images.forEach(img => imageObserver.observe(img));
         });
     </script>
+    {% if zip_pin_editable %}
+    <script>
+        // Phase 9: Zip Pin Change Functionality
+        function showZipChangeModal() {
+            document.getElementById('zipChangeModal').classList.remove('hidden');
+            document.getElementById('newZipInput').focus();
+        }
+        
+        function hideZipChangeModal() {
+            document.getElementById('zipChangeModal').classList.add('hidden');
+            document.getElementById('newZipInput').value = '';
+        }
+        
+        function changeZipCode() {
+            const newZip = document.getElementById('newZipInput').value.trim();
+            if (!/^\\d{5}$/.test(newZip)) {
+                alert('Please enter a valid 5-digit zip code');
+                return;
+            }
+            
+            // Use zip-router.js if available, otherwise redirect
+            if (window.ZipRouter && window.ZipRouter.setZip) {
+                window.ZipRouter.setZip(newZip);
+            } else {
+                // Fallback: redirect to zip-specific page
+                window.location.href = `/?z=${newZip}`;
+            }
+            
+            hideZipChangeModal();
+        }
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideZipChangeModal();
+            }
+        });
+        
+        // Close modal on background click
+        document.getElementById('zipChangeModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideZipChangeModal();
+            }
+        });
+    </script>
+    {% endif %}
 </body>
 </html>"""
         return Template(template_str)
@@ -1257,17 +1656,21 @@ class WebsiteGenerator:
             return source[:2].upper() if len(source) >= 2 else "FR"
     
     def _get_source_gradient(self, source: str) -> str:
-        """Get gradient colors for source"""
+        """Get exact 2025 Edge/MSN branded gradient colors for source badges"""
         if not source:
-            return "from-blue-600 to-purple-700"
+            return "from-gray-700 to-gray-900"
         
         source_lower = source.lower()
-        if "fall river reporter" in source_lower or "fallriverreporter" in source_lower:
-            return "from-blue-600 to-indigo-700"
-        elif "herald news" in source_lower:
-            return "from-indigo-600 to-purple-700"
+        
+        # Exact 2025 Edge/MSN branded gradients
+        if "fall river reporter" in source_lower or "fallriver reporter" in source_lower or "fallriverreporter" in source_lower:
+            return "from-violet-700 to-purple-300"  # #6b46c1 → #a78bfa
         elif "wpri" in source_lower:
-            return "from-cyan-600 to-blue-700"
+            return "from-sky-500 to-sky-300"  # #0ea5e9 → #7dd3fc
+        elif "herald news" in source_lower or "herald" in source_lower:
+            return "from-indigo-600 to-indigo-400"  # Indigo gradient for HN
+        elif "google news" in source_lower:
+            return "from-emerald-500 to-emerald-300"  # #10b981 → #6ee7b7
         elif "taunton gazette" in source_lower:
             return "from-emerald-600 to-teal-700"
         elif "fun107" in source_lower or "fun 107" in source_lower:
@@ -1277,18 +1680,118 @@ class WebsiteGenerator:
         elif "masslive" in source_lower:
             return "from-orange-600 to-red-700"
         else:
-            # Default gradient based on hash of source name for consistency
-            import hashlib
-            hash_val = int(hashlib.md5(source.encode()).hexdigest()[:8], 16)
-            gradients = [
-                "from-blue-600 to-indigo-700",
-                "from-indigo-600 to-purple-700",
-                "from-purple-600 to-pink-700",
-                "from-cyan-600 to-blue-700",
-                "from-emerald-600 to-teal-700",
-                "from-violet-600 to-purple-700"
-            ]
-            return gradients[hash_val % len(gradients)]
+            # Default tasteful dark gradient for all other sources
+            return "from-gray-700 to-gray-900"
+    
+    def _get_weather_icon(self, condition: str) -> str:
+        """Get weather emoji icon based on condition
+        
+        Handles OpenWeatherMap condition values like 'Clear', 'Clouds', 'Rain', etc.
+        """
+        if not condition:
+            return "🌤️"  # Default
+        
+        condition_lower = condition.lower().strip()
+        
+        # OpenWeatherMap main condition values (exact matches first)
+        if condition_lower == "clear":
+            return "☀️"
+        elif condition_lower == "clouds":
+            return "☁️"
+        elif condition_lower in ["rain", "drizzle"]:
+            return "🌧️"
+        elif condition_lower == "thunderstorm":
+            return "⛈️"
+        elif condition_lower == "snow":
+            return "❄️"
+        elif condition_lower in ["mist", "fog", "haze"]:
+            return "🌫️"
+        
+        # Partial matches for more descriptive conditions
+        # Clear/Sunny
+        if any(word in condition_lower for word in ["clear", "sunny", "sun"]):
+            return "☀️"
+        # Partly cloudy
+        elif any(word in condition_lower for word in ["partly", "partially", "few clouds", "scattered"]):
+            return "⛅"
+        # Cloudy
+        elif any(word in condition_lower for word in ["cloudy", "clouds", "overcast", "broken"]):
+            return "☁️"
+        # Rain
+        elif any(word in condition_lower for word in ["rain", "drizzle", "shower", "precipitation"]):
+            return "🌧️"
+        # Thunderstorm
+        elif any(word in condition_lower for word in ["thunder", "storm", "lightning"]):
+            return "⛈️"
+        # Snow
+        elif any(word in condition_lower for word in ["snow", "sleet", "blizzard", "flurries"]):
+            return "❄️"
+        # Fog/Mist
+        elif any(word in condition_lower for word in ["fog", "mist", "haze"]):
+            return "🌫️"
+        # Wind
+        elif any(word in condition_lower for word in ["wind", "windy"]):
+            return "💨"
+        # Default
+        else:
+            return "🌤️"
+    
+    def _get_source_glow_color(self, source: str) -> str:
+        """Get glow color RGB values for source badges with glassmorphism"""
+        if not source:
+            return "rgba(107, 114, 128, 0.3)"  # Gray
+        
+        source_lower = source.lower()
+        
+        # Glow colors by source for glassmorphism badges
+        if "fall river reporter" in source_lower or "fallriver reporter" in source_lower or "fallriverreporter" in source_lower:
+            return "rgba(139, 92, 246, 0.3)"  # Purple
+        elif "wpri" in source_lower:
+            return "rgba(6, 182, 212, 0.3)"  # Cyan
+        elif "herald news" in source_lower or "herald" in source_lower:
+            return "rgba(99, 102, 241, 0.3)"  # Indigo
+        elif "google news" in source_lower:
+            return "rgba(16, 185, 129, 0.3)"  # Green
+        elif "taunton gazette" in source_lower:
+            return "rgba(20, 184, 166, 0.3)"  # Teal
+        elif "fun107" in source_lower or "fun 107" in source_lower:
+            return "rgba(225, 29, 72, 0.3)"  # Rose
+        elif "frcmedia" in source_lower or "fall river community media" in source_lower:
+            return "rgba(139, 92, 246, 0.3)"  # Purple
+        elif "masslive" in source_lower:
+            return "rgba(234, 88, 12, 0.3)"  # Orange
+        else:
+            return "rgba(107, 114, 128, 0.3)"  # Gray
+    
+    def _get_obituaries_source_gradient(self, source: str) -> str:
+        """Get soft, muted gradients for obituaries page - no red, no orange, respectful"""
+        if not source:
+            return "from-gray-600 to-gray-400"  # Soft charcoal-gray → light-gray
+        
+        source_lower = source.lower()
+        
+        # Herald News: soft charcoal-gray → light-gray (NO RED - respectful)
+        if "herald news" in source_lower or "herald" in source_lower:
+            return "from-gray-600 to-gray-400"  # Soft, respectful
+        
+        # All other sources: soft, muted gradients (no red, no orange)
+        if "fall river reporter" in source_lower or "fallriver reporter" in source_lower or "fallriverreporter" in source_lower:
+            return "from-slate-600 to-slate-400"  # Soft slate
+        elif "wpri" in source_lower:
+            return "from-slate-500 to-slate-300"  # Soft slate
+        elif "google news" in source_lower:
+            return "from-slate-500 to-slate-300"  # Soft slate
+        elif "taunton gazette" in source_lower:
+            return "from-slate-600 to-slate-400"  # Soft slate
+        elif "fun107" in source_lower or "fun 107" in source_lower:
+            return "from-slate-500 to-slate-300"  # Soft slate (no pink)
+        elif "frcmedia" in source_lower or "fall river community media" in source_lower:
+            return "from-slate-600 to-slate-400"  # Soft slate
+        elif "masslive" in source_lower:
+            return "from-slate-600 to-slate-400"  # Soft slate (no orange)
+        else:
+            # Default soft gradient for all other sources
+            return "from-gray-600 to-gray-400"  # Soft charcoal-gray → light-gray
     
     def _is_video_article(self, article: Dict) -> bool:
         """Detect if article is a video
@@ -1346,6 +1849,7 @@ class WebsiteGenerator:
         enriched["source_display"] = source_display
         enriched["source_initials"] = self._get_source_initials(source_display)
         enriched["source_gradient"] = self._get_source_gradient(source_display)
+        enriched["source_glow_color"] = self._get_source_glow_color(source_display)
         
         return enriched
     
@@ -1514,9 +2018,9 @@ class WebsiteGenerator:
     </div>
     
     <!-- Navigation -->
-    <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
+    <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-3 lg:py-4 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div class="text-xl font-semibold text-blue-400">FRNA</div>
                 {{ nav_tabs }}
             </div>
@@ -1531,11 +2035,11 @@ class WebsiteGenerator:
         </div>
         
         <!-- Fixed Weather Pill (Top-Right) -->
-        <a href="{{ weather_station_url }}" target="_blank" rel="noopener" class="fixed top-4 right-4 z-50 flex items-center gap-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <span class="text-xl">🌤️</span>
+        <a href="{{ weather_station_url }}" target="_blank" rel="noopener" id="weatherPill" class="fixed top-4 right-4 z-50 flex items-center gap-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <span id="weatherIcon" class="text-xl">🌤️</span>
             <div class="text-white">
-                <div class="font-bold text-sm leading-tight">{{ weather.current.temperature }}{{ weather.current.unit }}</div>
-                <div class="text-blue-100 text-xs">{{ weather.current.condition }}</div>
+                <div id="weatherTemp" class="font-bold text-sm leading-tight">--°F</div>
+                <div id="weatherCondition" class="text-blue-100 text-xs">Loading...</div>
             </div>
         </a>
         
@@ -1549,7 +2053,7 @@ class WebsiteGenerator:
             <div class="lg:col-span-8">
                 <a href="{{ hero_article.url }}" target="_blank" rel="noopener" class="group block relative rounded-xl overflow-hidden shadow-2xl hover:shadow-blue-500/20 transition-all duration-300">
                     {% if show_images and hero_article.image_url %}
-                    <div class="relative h-[400px] lg:h-[600px] overflow-hidden">
+                    <div class="relative h-[420px] overflow-hidden">
                         <img data-src="{{ hero_article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ hero_article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 lazy-image">
                         <!-- Dark gradient overlay bottom 40% -->
                         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" style="background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, transparent 100%);"></div>
@@ -1564,31 +2068,26 @@ class WebsiteGenerator:
                         </div>
                         {% endif %}
                         <!-- Content overlay at bottom -->
-                        <div class="absolute bottom-0 left-0 right-0 p-8 lg:p-10">
-                            <h2 class="text-3xl lg:text-5xl font-bold text-white mb-4 line-clamp-3 group-hover:text-blue-300 transition-colors" style="font-size: 3rem; line-height: 1.2;">
+                        <div class="absolute bottom-0 left-0 right-0 p-4">
+                            <h2 class="text-3xl lg:text-4xl font-bold text-white mb-3 line-clamp-3 leading-[1.15]">
                                 {{ hero_article.title }}
                             </h2>
-                            <div class="flex items-center gap-3 text-sm text-gray-200">
-                                <span class="font-medium">{{ hero_article.source_display }}</span>
-                                <span>•</span>
-                                <span>{{ hero_article.formatted_date.split(' at ')[0] if ' at ' in hero_article.formatted_date else 'Recently' }}</span>
-                                {% if hero_article.reading_time %}
-                                <span>•</span>
-                                <span>{{ hero_article.reading_time }}</span>
-                                {% endif %}
+                            <div class="flex items-center justify-between">
+                                <!-- Source badge -->
+                                <div class="bg-gradient-to-br {{ hero_article.source_gradient }} px-3 py-1 rounded-full text-xs font-bold text-white">
+                                    {{ hero_article.source_initials }}
+                                </div>
+                                <!-- Time + read time -->
+                                <div class="text-sm text-gray-300">
+                                    {{ hero_article.formatted_date.split(' at ')[0] if ' at ' in hero_article.formatted_date else 'Recently' }}{% if hero_article.reading_time %} • {{ hero_article.reading_time }}{% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
                     {% else %}
-                    <div class="relative h-[400px] lg:h-[600px] overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient }}">
-                        <!-- Subtle pattern overlay -->
-                        <div class="absolute inset-0 opacity-5" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
-                        <!-- City skyline silhouette -->
-                        <div class="absolute bottom-0 left-0 right-0 h-32 opacity-3">
-                            <svg viewBox="0 0 400 100" class="w-full h-full" preserveAspectRatio="none">
-                                <path d="M0,100 L0,85 L15,82 L30,78 L45,75 L60,72 L75,70 L90,68 L105,66 L120,64 L135,62 L150,60 L165,58 L180,56 L195,54 L210,52 L225,50 L240,52 L255,54 L270,56 L285,58 L300,60 L315,62 L330,64 L345,66 L360,68 L375,70 L385,72 L400,75 L400,100 Z" fill="white"/>
-                            </svg>
-                        </div>
+                    <div class="relative h-[420px] overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient }} rounded-xl">
+                        <!-- Dark gradient overlay bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
                         <!-- Video play icon if video -->
                         {% if hero_article._is_video %}
                         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
@@ -1600,18 +2099,19 @@ class WebsiteGenerator:
                         </div>
                         {% endif %}
                         <!-- Content overlay at bottom -->
-                        <div class="absolute bottom-0 left-0 right-0 p-8 lg:p-10 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
-                            <h2 class="text-3xl lg:text-5xl font-bold text-white mb-4 line-clamp-3 group-hover:text-blue-300 transition-colors" style="font-size: 3rem; line-height: 1.2;">
+                        <div class="absolute bottom-0 left-0 right-0 p-4">
+                            <h2 class="text-3xl lg:text-4xl font-bold text-white mb-3 line-clamp-3 leading-[1.15]">
                                 {{ hero_article.title }}
                             </h2>
-                            <div class="flex items-center gap-3 text-sm text-gray-200">
-                                <span class="font-medium">{{ hero_article.source_display }}</span>
-                                <span>•</span>
-                                <span>{{ hero_article.formatted_date.split(' at ')[0] if ' at ' in hero_article.formatted_date else 'Recently' }}</span>
-                                {% if hero_article.reading_time %}
-                                <span>•</span>
-                                <span>{{ hero_article.reading_time }}</span>
-                                {% endif %}
+                            <div class="flex items-center justify-between">
+                                <!-- Source badge -->
+                                <div class="bg-gradient-to-br {{ hero_article.source_gradient }} px-3 py-1 rounded-full text-xs font-bold text-white">
+                                    {{ hero_article.source_initials }}
+                                </div>
+                                <!-- Time + read time -->
+                                <div class="text-sm text-gray-300">
+                                    {{ hero_article.formatted_date.split(' at ')[0] if ' at ' in hero_article.formatted_date else 'Recently' }}{% if hero_article.reading_time %} • {{ hero_article.reading_time }}{% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1630,21 +2130,21 @@ class WebsiteGenerator:
                         {% if trending_articles %}
                             {% for article in trending_articles[:8] %}
                             <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-4 border-b border-gray-800/30 last:border-0 hover:bg-[#1a1a1a] -mx-2 px-2 rounded-lg transition-colors">
+                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 hover:bg-[#1a1a1a] -mx-2 px-2 rounded-lg transition-colors">
                                     {% if show_images and article.image_url %}
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f]">
                                         <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 lazy-image">
                                     </div>
                                     {% else %}
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden">
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden shadow-inner" style="box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
                                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                        <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">{{ article.source_initials }}</div>
+                                        <div class="text-xl font-black text-white drop-shadow-lg relative z-10">{{ article.source_initials }}</div>
                                     </div>
                                     {% endif %}
                                     <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-1 mb-1">
+                                        <div class="flex items-center gap-1 mb-0.5">
                                             <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">{{ article.title }}</h4>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2 leading-[1.15]">{{ article.title }}</h4>
                                         </div>
                                         <div class="text-xs text-gray-500">{{ article.source_display }} • {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}</div>
                                     </div>
@@ -1664,53 +2164,57 @@ class WebsiteGenerator:
         {% if articles %}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="articlesGrid">
             {% for article in articles %}
-            <article class="bg-[#161616] rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.03] border border-gray-800/30 flex flex-col h-full" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}">
-                <!-- Square Thumbnail Top -->
+            <article class="bg-[#161616] rounded-xl overflow-hidden shadow-lg hover:shadow-xl hover:scale-[1.03] transition-all duration-300" style="border-radius: 12px;" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}">
+                <!-- Full-width image with 16:9 ratio -->
                 {% if show_images and article.image_url %}
-                <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-700 to-gray-900">
-                    <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover hover:scale-110 transition-transform duration-500 lazy-image">
-                    <!-- Source pill bottom-left -->
-                    <div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-white">
-                        {{ article.source_display }}
+                <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
+                    <div class="relative overflow-hidden" style="border-radius: 12px 12px 0 0; height: 300px;">
+                        <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover lazy-image">
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                {{ article.title }}
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Source badge -->
+                                <div class="bg-gradient-to-br {{ article.source_gradient }} px-3 py-1 rounded-full text-xs font-bold text-white">
+                                    {{ article.source_initials }}
+                                </div>
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}{% if article.reading_time %} • {{ article.reading_time }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </a>
                 {% else %}
-                <div class="relative aspect-square overflow-hidden bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center">
-                    <!-- Subtle pattern overlay -->
-                    <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px);"></div>
-                    <!-- City skyline silhouette -->
-                    <div class="absolute bottom-0 left-0 right-0 h-16 opacity-5">
-                        <svg viewBox="0 0 400 100" class="w-full h-full" preserveAspectRatio="none">
-                            <path d="M0,100 L0,80 L20,75 L40,70 L60,65 L80,60 L100,55 L120,50 L140,45 L160,50 L180,55 L200,60 L220,65 L240,70 L260,75 L280,80 L300,75 L320,70 L340,65 L360,60 L380,55 L400,50 L400,100 Z" fill="white"/>
-                        </svg>
+                <!-- Placeholder with same structure -->
+                <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
+                    <div class="relative overflow-hidden bg-gradient-to-br {{ article.source_gradient }}" style="border-radius: 12px; height: 300px;">
+                        <!-- Dark overlay gradient bottom 40% -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                        <!-- Title overlay bottom-left -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                                {{ article.title }}
+                            </h2>
+                            <div class="flex items-center justify-between">
+                                <!-- Source badge -->
+                                <div class="bg-gradient-to-br {{ article.source_gradient }} px-3 py-1 rounded-full text-xs font-bold text-white">
+                                    {{ article.source_initials }}
+                                </div>
+                                <!-- Time + read time -->
+                                <div class="text-xs text-gray-300">
+                                    {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}{% if article.reading_time %} • {{ article.reading_time }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <!-- Source initials -->
-                    <div class="text-center relative z-10">
-                        <div class="text-6xl font-black text-white/90 drop-shadow-2xl tracking-tight" style="text-shadow: 0 4px 12px rgba(0,0,0,0.3);">{{ article.source_initials }}</div>
-                    </div>
-                    <!-- Source pill bottom-left -->
-                    <div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-white">
-                        {{ article.source_display }}
-                    </div>
-                </div>
+                </a>
                 {% endif %}
-                
-                <!-- Content -->
-                <div class="p-4 flex-1 flex flex-col">
-                    <h2 class="text-base font-bold mb-2 line-clamp-2 text-gray-100 hover:text-blue-400 transition-colors">
-                        <a href="{{ article.url }}" target="_blank" rel="noopener">{{ article.title }}</a>
-                    </h2>
-                    
-                    <!-- Exactly 2-line snippet -->
-                    <p class="text-xs text-gray-300 mb-3 line-clamp-2 flex-1">{{ article.summary[:100] if article.summary else '' }}{% if article.summary and article.summary|length > 100 %}...{% endif %}</p>
-                    
-                    <div class="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-800/30">
-                        <span>{{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}</span>
-                        {% if article.reading_time %}
-                        <span>{{ article.reading_time }}</span>
-                        {% endif %}
-                    </div>
-                </div>
             </article>
             {% endfor %}
         </div>
@@ -1755,7 +2259,7 @@ class WebsiteGenerator:
 </html>"""
         return Template(template_str)
     
-    def _generate_category_page(self, category_slug: str, articles: List[Dict], weather: Dict, settings: Dict, zip_code: Optional[str] = None):
+    def _generate_category_page(self, category_slug: str, articles: List[Dict], weather: Dict, settings: Dict, zip_code: Optional[str] = None, city_state: Optional[str] = None):
         """Generate a category page
         
         Args:
@@ -1764,6 +2268,7 @@ class WebsiteGenerator:
             weather: Weather data
             settings: Admin settings
             zip_code: Optional zip code for zip-specific generation
+            city_state: Optional city_state for city-based generation
         """
         if category_slug not in CATEGORY_SLUGS:
             logger.warning(f"Invalid category slug: {category_slug}")
@@ -1781,15 +2286,19 @@ class WebsiteGenerator:
         # Filter articles by category
         filtered_articles = self._filter_articles_by_category(articles, category_slug)
         
-        # Resolve zip code to city/state if provided
-        locale_name = LOCALE
-        if zip_code:
+        # Phase 6: Resolve city name for dynamic title
+        locale_name = LOCALE  # Default to "Fall River, MA"
+        if city_state:
+            # Use provided city_state directly
+            locale_name = city_state
+        elif zip_code:
+            # Resolve zip code to city/state if city_state not provided
             from zip_resolver import resolve_zip
             zip_data = resolve_zip(zip_code)
             if zip_data:
                 city = zip_data.get("city", "")
                 state = zip_data.get("state_abbrev", "")
-                locale_name = f"{city}, {state}" if city and state else zip_code
+                locale_name = f"{city}, {state}" if city and state else f"Zip {zip_code}"
             else:
                 locale_name = f"Zip {zip_code}"
         
@@ -1815,7 +2324,11 @@ class WebsiteGenerator:
             if 'source_initials' not in formatted:
                 formatted['source_initials'] = self._get_source_initials(formatted.get('source_display', formatted.get('source', '')))
             if 'source_gradient' not in formatted:
-                formatted['source_gradient'] = self._get_source_gradient(formatted.get('source_display', formatted.get('source', '')))
+                # Use obituaries-specific gradients for obituaries page
+                if category_slug == "obituaries":
+                    formatted['source_gradient'] = self._get_obituaries_source_gradient(formatted.get('source_display', formatted.get('source', '')))
+                else:
+                    formatted['source_gradient'] = self._get_source_gradient(formatted.get('source_display', formatted.get('source', '')))
             formatted['_is_video'] = self._is_video_article(formatted)
             formatted_articles.append(formatted)
         
@@ -1843,7 +2356,11 @@ class WebsiteGenerator:
                 if 'source_initials' not in formatted:
                     formatted['source_initials'] = self._get_source_initials(formatted.get('source_display', formatted.get('source', '')))
                 if 'source_gradient' not in formatted:
-                    formatted['source_gradient'] = self._get_source_gradient(formatted.get('source_display', formatted.get('source', '')))
+                    # Use obituaries-specific gradients for obituaries page
+                    if category_slug == "obituaries":
+                        formatted['source_gradient'] = self._get_obituaries_source_gradient(formatted.get('source_display', formatted.get('source', '')))
+                    else:
+                        formatted['source_gradient'] = self._get_source_gradient(formatted.get('source_display', formatted.get('source', '')))
                 formatted['_is_video'] = self._is_video_article(formatted)
                 formatted_top_stories.append(formatted)
             
@@ -1892,7 +2409,11 @@ class WebsiteGenerator:
             if 'source_initials' not in formatted:
                 formatted['source_initials'] = self._get_source_initials(formatted.get('source_display', formatted.get('source', '')))
             if 'source_gradient' not in formatted:
-                formatted['source_gradient'] = self._get_source_gradient(formatted.get('source_display', formatted.get('source', '')))
+                # Use obituaries-specific gradients for obituaries page
+                if category_slug == "obituaries":
+                    formatted['source_gradient'] = self._get_obituaries_source_gradient(formatted.get('source_display', formatted.get('source', '')))
+                else:
+                    formatted['source_gradient'] = self._get_source_gradient(formatted.get('source_display', formatted.get('source', '')))
             formatted['_is_video'] = self._is_video_article(formatted)
             trending_articles.append(formatted)
         
@@ -1913,8 +2434,25 @@ class WebsiteGenerator:
         # Update title
         title = f"{locale_name} News" if zip_code else self.title
         
-        # Get weather station URL (link to actual weather station page if available)
-        weather_station_url = self.weather_ingestor.get_primary_weather_station_url()
+        # Get weather station URL - check database first, then fall back to weather_ingestor
+        # Default to "02720" (Fall River) if zip_code is not provided
+        lookup_zip = zip_code or "02720"
+        weather_station_url = ""
+        if lookup_zip:
+            try:
+                conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+                cursor = conn.cursor()
+                cursor.execute('SELECT value FROM admin_settings_zip WHERE zip_code = ? AND key = ?', (lookup_zip, 'weather_station_url'))
+                row = cursor.fetchone()
+                if row and row[0]:
+                    weather_station_url = row[0]
+                conn.close()
+            except Exception as e:
+                logger.warning(f"Could not load weather station URL from database: {e}")
+        
+        # Fall back to weather_ingestor method if not in database
+        if not weather_station_url:
+            weather_station_url = self.weather_ingestor.get_primary_weather_station_url()
         # Adjust URL for category page context (if it's a relative path, make it relative to category/)
         if weather_station_url.startswith("category/"):
             # Already relative, keep as is
@@ -1923,6 +2461,9 @@ class WebsiteGenerator:
             # Relative path, adjust for category subdirectory
             weather_station_url = f"../{weather_station_url}"
         # If it's an absolute URL (http/https), use as-is
+        
+        # Get weather icon based on condition
+        weather_icon = self._get_weather_icon(weather.get('current', {}).get('condition', ''))
         
         # Extract funeral home names for obituaries filter
         funeral_homes = set()
@@ -1960,7 +2501,8 @@ class WebsiteGenerator:
             "css_path": css_path,
             "location_badge_text": location_badge_text,
             "zip_code": zip_code or "02720",
-            "weather_station_url": weather_station_url
+            "weather_station_url": weather_station_url,
+            "weather_icon": weather_icon  # Dynamic weather icon
         }
         
         # Add funeral homes for obituaries template
@@ -2019,6 +2561,37 @@ class WebsiteGenerator:
     def _get_js_content(self) -> str:
         """Get JavaScript content with progressive loading"""
         return get_js_content()
+    
+    def _copy_static_js_files(self):
+        """Copy static JavaScript files from public/js/ to website_output/js/
+        
+        This ensures files like weather.js are always up to date during regeneration.
+        """
+        public_js_dir = Path("public") / "js"
+        output_js_dir = Path(self.output_dir) / "js"
+        
+        if not public_js_dir.exists():
+            logger.warning(f"Public JS directory not found: {public_js_dir}")
+            return
+        
+        # Ensure output directory exists
+        output_js_dir.mkdir(parents=True, exist_ok=True)
+        
+        # List of static JS files to copy (files that aren't generated from Python)
+        static_files = ["weather.js"]
+        
+        for filename in static_files:
+            source_file = public_js_dir / filename
+            dest_file = output_js_dir / filename
+            
+            if source_file.exists():
+                try:
+                    shutil.copy2(source_file, dest_file)
+                    logger.info(f"Copied {filename} from {source_file} to {dest_file}")
+                except Exception as e:
+                    logger.warning(f"Could not copy {filename}: {e}")
+            else:
+                logger.warning(f"Source file not found: {source_file}")
     
     def _optimize_article_images(self, articles: List[Dict]) -> List[Dict]:
         """Optimize images for a list of articles"""

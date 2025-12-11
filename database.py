@@ -66,6 +66,26 @@ class ArticleDatabase:
         except:
             pass  # Column already exists
         
+        # Add city columns for city-based consolidation (Phase 1)
+        try:
+            cursor.execute('ALTER TABLE articles ADD COLUMN city_name TEXT')
+        except:
+            pass  # Column already exists
+        try:
+            cursor.execute('ALTER TABLE articles ADD COLUMN state_abbrev TEXT')
+        except:
+            pass  # Column already exists
+        try:
+            cursor.execute('ALTER TABLE articles ADD COLUMN city_state TEXT')
+        except:
+            pass  # Column already exists
+        
+        # Create index on city_state for fast lookups
+        try:
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_articles_city_state ON articles(city_state)')
+        except:
+            pass
+        
         # Add category classification columns if they don't exist
         try:
             cursor.execute('ALTER TABLE articles ADD COLUMN primary_category TEXT')
@@ -122,9 +142,16 @@ class ArticleDatabase:
                 points REAL,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 zip_code TEXT,
-                UNIQUE(category, item, zip_code)
+                city_state TEXT,
+                UNIQUE(category, item, zip_code, city_state)
             )
         ''')
+        
+        # Add city_state column if it doesn't exist (for existing databases)
+        try:
+            cursor.execute('ALTER TABLE relevance_config ADD COLUMN city_state TEXT')
+        except:
+            pass  # Column already exists
         
         # Category keywords table (for fast keyword-based categorization)
         cursor.execute('''
@@ -174,15 +201,15 @@ class ArticleDatabase:
                     VALUES (?, ?, ?)
                 ''', ('high_relevance', keyword, 10.0))
             
-            # Medium relevance keywords (5 points each)
-            medium_relevance = ["somerset", "swansea", "westport", "freetown", "taunton", "new bedford", 
-                               "bristol county", "massachusetts state police", "bristol county sheriff",
-                               "dighton", "rehoboth", "seekonk", "warren ri", "tiverton ri"]
-            for keyword in medium_relevance:
+            # Excluded towns (auto-filtered nearby towns)
+            excluded_towns = ["somerset", "swansea", "westport", "freetown", "taunton", "new bedford",
+                              "bristol county", "massachusetts state police", "bristol county sheriff",
+                              "dighton", "rehoboth", "seekonk", "warren ri", "tiverton ri"]
+            for town in excluded_towns:
                 cursor.execute('''
                     INSERT OR IGNORE INTO relevance_config (category, item, points)
                     VALUES (?, ?, ?)
-                ''', ('medium_relevance', keyword, 5.0))
+                ''', ('excluded_towns', town, 0.0))
             
             # Local places (3 points each)
             local_places = [
@@ -318,6 +345,58 @@ class ArticleDatabase:
             )
         ''')
         
+        # Create training_data table for Bayesian relevance learning
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS training_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                article_id INTEGER,
+                zip_code TEXT NOT NULL,
+                good_fit INTEGER DEFAULT 0,
+                click_type TEXT,
+                clicked_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (article_id) REFERENCES articles(id)
+            )
+        ''')
+        
+        # Create zip_hard_filters table for zip-specific hard filtering
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS zip_hard_filters (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                zip_code TEXT NOT NULL,
+                keyword TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(zip_code, keyword)
+            )
+        ''')
+        
+        # Create indexes for training_data
+        try:
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_training_data_zip_code ON training_data(zip_code)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_training_data_article_id ON training_data(article_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_training_data_good_fit ON training_data(good_fit)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_training_data_clicked_at ON training_data(clicked_at DESC)')
+        except:
+            pass
+        
+        # Create indexes for zip_hard_filters
+        try:
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_zip_hard_filters_zip_code ON zip_hard_filters(zip_code)')
+        except:
+            pass
+        
+        # Seed Fall River (02720) hard filter keywords
+        fall_river_keywords = [
+            "Fall River", "02720", "02721", "02723", "02724", "02726",
+            "Durfee", "BMC", "Battleship Cove", "Quequechan", "Flint",
+            "Highlands", "SouthCoast", "Globe", "North End", "South End",
+            "Cork", "Lower Highlands"
+        ]
+        for keyword in fall_river_keywords:
+            cursor.execute('''
+                INSERT OR IGNORE INTO zip_hard_filters (zip_code, keyword)
+                VALUES (?, ?)
+            ''', ('02720', keyword.lower()))
+        
         # Create article_management table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS article_management (
@@ -360,6 +439,14 @@ class ArticleDatabase:
             cursor.execute('ALTER TABLE article_management ADD COLUMN auto_reject_reason TEXT')
         except:
             pass
+        try:
+            cursor.execute('ALTER TABLE article_management ADD COLUMN updated_at TEXT')
+        except:
+            pass
+        try:
+            cursor.execute('ALTER TABLE article_management ADD COLUMN is_alert INTEGER DEFAULT 0')
+        except:
+            pass
         
         # Initialize default settings
         cursor.execute('''
@@ -385,6 +472,62 @@ class ArticleDatabase:
         cursor.execute('''
             INSERT OR IGNORE INTO admin_settings (key, value) 
             VALUES ('admin_version', '0')
+        ''')
+        
+        # Create city_zip_mapping table for city-based consolidation (Phase 1)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS city_zip_mapping (
+                zip_code TEXT PRIMARY KEY,
+                city_name TEXT NOT NULL,
+                state_abbrev TEXT NOT NULL,
+                city_state TEXT NOT NULL,
+                resolved_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Create index on city_state for fast lookups
+        try:
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_city_zip_mapping_city_state ON city_zip_mapping(city_state)')
+        except:
+            pass
+        
+        # Migrate existing NULL zip_code data to 02720 (Fall River)
+        # Migrate article_management NULL zip_code
+        cursor.execute('SELECT COUNT(*) FROM article_management WHERE zip_code IS NULL')
+        null_mgmt_count = cursor.fetchone()[0]
+        if null_mgmt_count > 0:
+            cursor.execute("UPDATE article_management SET zip_code = '02720' WHERE zip_code IS NULL")
+            logger.info(f"Migrated {null_mgmt_count} article_management entries with NULL zip_code to '02720'")
+        
+        # Migrate articles NULL zip_code and populate city columns
+        cursor.execute('SELECT COUNT(*) FROM articles WHERE zip_code IS NULL OR city_state IS NULL')
+        null_articles_count = cursor.fetchone()[0]
+        if null_articles_count > 0:
+            # Set default zip_code for existing articles
+            cursor.execute("UPDATE articles SET zip_code = '02720' WHERE zip_code IS NULL")
+            # Populate city columns for existing articles (default: Fall River, MA)
+            cursor.execute("""
+                UPDATE articles 
+                SET city_name = 'Fall River', 
+                    state_abbrev = 'MA', 
+                    city_state = 'Fall River, MA'
+                WHERE city_state IS NULL OR city_name IS NULL
+            """)
+            logger.info(f"Migrated {null_articles_count} articles with NULL zip_code/city_state to '02720' (Fall River, MA)")
+        
+        # Initialize city_zip_mapping for 02720 (Fall River) if not exists
+        cursor.execute('SELECT COUNT(*) FROM city_zip_mapping WHERE zip_code = ?', ('02720',))
+        if cursor.fetchone()[0] == 0:
+            cursor.execute('''
+                INSERT INTO city_zip_mapping (zip_code, city_name, state_abbrev, city_state)
+                VALUES (?, ?, ?, ?)
+            ''', ('02720', 'Fall River', 'MA', 'Fall River, MA'))
+            logger.info("Initialized city_zip_mapping for 02720 (Fall River, MA)")
+        
+        # Add zip_pin_editable setting (Phase 9 - Purple Zip Pin)
+        cursor.execute('''
+            INSERT OR IGNORE INTO admin_settings (key, value) 
+            VALUES ('zip_pin_editable', '0')
         ''')
         
         conn.commit()
@@ -524,7 +667,29 @@ class ArticleDatabase:
                         article_zip = article.get("zip_code") or zip_code
                         relevance_score = calculate_relevance_score(article, zip_code=article_zip)
                     
-                    # Get relevance threshold for zip-specific filtering
+                    # Calculate local focus score
+                    local_focus_score = None
+                    try:
+                        from admin.utils import calculate_local_focus_score
+                        article_zip = article.get("zip_code") or zip_code
+                        local_focus_score = calculate_local_focus_score(article, zip_code=article_zip)
+                    except Exception as e:
+                        logger.warning(f"Error calculating local focus score: {e}")
+                        local_focus_score = 0.0
+                    
+                    # Auto-reject threshold: score < 40 (hard-coded production threshold)
+                    # Auto-candidate hero: score > 85
+                    is_auto_rejected = (relevance_score < 40)
+                    is_hero_candidate = (relevance_score > 85)
+                    auto_reject_reason = None
+                    
+                    if is_auto_rejected:
+                        auto_reject_reason = "Relevance score below threshold (<40)"
+                        logger.info(f"Auto-rejected article (score {relevance_score:.1f} < 40): {title[:50]}")
+                    elif is_hero_candidate:
+                        logger.debug(f"Hero candidate article (score {relevance_score:.1f} > 85): {title[:50]}")
+                    
+                    # Also check admin-configured relevance threshold (for backward compatibility)
                     article_zip = article.get("zip_code") or zip_code
                     relevance_threshold = None
                     if article_zip:
@@ -537,17 +702,40 @@ class ArticleDatabase:
                             except (ValueError, TypeError):
                                 pass
                     
-                    # Auto-filter: Articles below threshold will be marked as disabled
-                    is_auto_filtered = (relevance_threshold is not None and relevance_score < relevance_threshold)
-                    if is_auto_filtered:
+                    # Auto-filter: Articles below admin threshold OR below 40 will be marked as disabled
+                    is_auto_filtered = is_auto_rejected or (relevance_threshold is not None and relevance_score < relevance_threshold)
+                    if is_auto_filtered and not is_auto_rejected:
                         logger.info(f"Auto-filtered article (score {relevance_score:.1f} < threshold {relevance_threshold:.1f}): {title[:50]}")
                     
                     # Set zip_code on article if not already set
                     if not article.get("zip_code") and zip_code:
                         article["zip_code"] = zip_code
                     
-                    # Predict categories using category classifier
+                    # Resolve city_state for article (Phase 1 & 3)
                     article_zip = article.get("zip_code") or zip_code
+                    city_name = article.get("city_name")
+                    state_abbrev = article.get("state_abbrev")
+                    city_state = article.get("city_state")
+                    
+                    if not city_state and article_zip:
+                        try:
+                            from zip_resolver import get_city_state_for_zip
+                            city_state = get_city_state_for_zip(article_zip)
+                            if city_state:
+                                # Parse city_state to get city_name and state_abbrev
+                                parts = city_state.split(", ")
+                                if len(parts) == 2:
+                                    city_name = parts[0]
+                                    state_abbrev = parts[1]
+                        except Exception as e:
+                            logger.warning(f"Error resolving city_state for zip {article_zip}: {e}")
+                            # Default to Fall River, MA if resolution fails
+                            if article_zip == "02720" or not city_state:
+                                city_name = "Fall River"
+                                state_abbrev = "MA"
+                                city_state = "Fall River, MA"
+                    
+                    # Predict categories using category classifier
                     primary_category = article.get("primary_category")
                     secondary_category = article.get("secondary_category")
                     category_confidence = article.get("category_confidence")
@@ -565,13 +753,14 @@ class ArticleDatabase:
                             secondary_category = "News"
                             category_confidence = 0.5
                     
-                    # Insert new article
+                    # Insert new article with city_state (Phase 1)
                     cursor.execute('''
                         INSERT INTO articles 
                         (title, url, published, summary, content, source, source_type, 
-                         image_url, post_id, ingested_at, relevance_score, zip_code,
+                         image_url, post_id, ingested_at, relevance_score, local_score, zip_code,
+                         city_name, state_abbrev, city_state,
                          primary_category, secondary_category, category_confidence, category_override)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         title,
                         url,
@@ -584,7 +773,11 @@ class ArticleDatabase:
                         article.get("post_id"),
                         article.get("ingested_at", datetime.now().isoformat()),
                         relevance_score,
+                        local_focus_score,
                         article.get("zip_code") or zip_code,
+                        city_name,
+                        state_abbrev,
+                        city_state,
                         primary_category or "News",
                         secondary_category or "News",
                         category_confidence or 0.5,
@@ -596,15 +789,24 @@ class ArticleDatabase:
                     
                     # Create article_management entry with zip_code
                     # If below threshold, mark as disabled (auto-filtered)
+                    # Ensure is_auto_rejected column exists
+                    try:
+                        cursor.execute('ALTER TABLE article_management ADD COLUMN is_auto_rejected INTEGER DEFAULT 0')
+                        cursor.execute('ALTER TABLE article_management ADD COLUMN auto_reject_reason TEXT')
+                    except:
+                        pass  # Columns already exist
+                    
                     cursor.execute('''
                         INSERT INTO article_management 
-                        (article_id, enabled, display_order, is_rejected, zip_code)
-                        VALUES (?, ?, ?, ?, ?)
+                        (article_id, enabled, display_order, is_rejected, is_auto_rejected, auto_reject_reason, zip_code)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         article_id,
                         0 if is_auto_filtered else 1,  # Disabled if auto-filtered
                         article_id,
                         0,
+                        1 if is_auto_rejected else 0,
+                        auto_reject_reason,
                         article.get("zip_code") or zip_code
                     ))
                 
@@ -707,13 +909,15 @@ class ArticleDatabase:
         logger.info(f"Removed {removed} duplicate articles")
         return removed
     
-    def get_recent_articles(self, hours: int = 24, limit: int = 100, zip_code: Optional[str] = None) -> List[Dict]:
+    def get_recent_articles(self, hours: int = 24, limit: int = 100, zip_code: Optional[str] = None, city_state: Optional[str] = None) -> List[Dict]:
         """Get articles from the last N hours, sorted by publication date (newest first)
+        Phase 2: Now supports city_state for city-based consolidation
         
         Args:
             hours: Number of hours to look back
             limit: Maximum number of articles to return
-            zip_code: Optional zip code to filter by
+            zip_code: Optional zip code to filter by (resolves to city_state)
+            city_state: Optional city_state to filter by (e.g., "Fall River, MA")
         """
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -721,16 +925,36 @@ class ArticleDatabase:
         
         cutoff_time = (datetime.now() - timedelta(hours=hours)).isoformat()
         
-        # Build query with optional zip_code filter
-        if zip_code:
+        # Resolve zip_code to city_state if provided (Phase 2)
+        if zip_code and not city_state:
+            try:
+                from zip_resolver import get_city_state_for_zip
+                city_state = get_city_state_for_zip(zip_code)
+            except Exception as e:
+                logger.warning(f"Error resolving city_state for zip {zip_code}: {e}")
+        
+        # Build query with city_state filter (Phase 2: city-based consolidation)
+        if city_state:
+            # Filter by city_state (articles shared across zips in same city)
             cursor.execute('''
                 SELECT * FROM articles 
-                WHERE zip_code = ? AND (published >= ? OR ingested_at >= ? OR published IS NULL)
+                WHERE city_state = ? AND (published >= ? OR ingested_at >= ? OR published IS NULL)
                 ORDER BY 
                     CASE WHEN published IS NOT NULL AND published != '' THEN published ELSE '1970-01-01' END DESC,
                     ingested_at DESC
                 LIMIT ?
-            ''', (zip_code, cutoff_time, cutoff_time, limit))
+            ''', (city_state, cutoff_time, cutoff_time, limit))
+        elif zip_code:
+            # Fallback: filter by zip_code if city_state resolution failed
+            cursor.execute('''
+                SELECT * FROM articles 
+                WHERE (city_state = (SELECT city_state FROM city_zip_mapping WHERE zip_code = ?) OR zip_code = ?)
+                AND (published >= ? OR ingested_at >= ? OR published IS NULL)
+                ORDER BY 
+                    CASE WHEN published IS NOT NULL AND published != '' THEN published ELSE '1970-01-01' END DESC,
+                    ingested_at DESC
+                LIMIT ?
+            ''', (zip_code, zip_code, cutoff_time, cutoff_time, limit))
         else:
             # Get all articles, sorted by published date (newest first) - publication date is primary
             # This ensures newest articles appear first regardless of when they were ingested
@@ -749,20 +973,40 @@ class ArticleDatabase:
         conn.close()
         return articles
     
-    def get_all_articles(self, limit: int = 500, zip_code: Optional[str] = None) -> List[Dict]:
+    def get_all_articles(self, limit: int = 500, zip_code: Optional[str] = None, city_state: Optional[str] = None) -> List[Dict]:
         """Get all articles sorted by publication date (newest first), excluding auto-rejected articles
+        Phase 2: Now supports city_state for city-based consolidation
         
         Args:
             limit: Maximum number of articles to return
-            zip_code: Optional zip code to filter by
+            zip_code: Optional zip code to filter by (resolves to city_state)
+            city_state: Optional city_state to filter by (e.g., "Fall River, MA")
         """
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        # Build zip_code filter condition
-        zip_filter = "AND a.zip_code = ?" if zip_code else ""
-        zip_params = [zip_code] if zip_code else []
+        # Resolve zip_code to city_state if provided (Phase 2)
+        if zip_code and not city_state:
+            try:
+                from zip_resolver import get_city_state_for_zip
+                city_state = get_city_state_for_zip(zip_code)
+            except Exception as e:
+                logger.warning(f"Error resolving city_state for zip {zip_code}: {e}")
+        
+        # Build city_state filter condition (Phase 2: city-based consolidation)
+        if city_state:
+            # Filter by city_state (articles shared across zips in same city)
+            city_filter = "AND a.city_state = ?"
+            filter_params = [city_state]
+        elif zip_code:
+            # Fallback: filter by zip_code if city_state resolution failed
+            city_filter = "AND (a.city_state = (SELECT city_state FROM city_zip_mapping WHERE zip_code = ?) OR a.zip_code = ?)"
+            filter_params = [zip_code, zip_code]
+        else:
+            # No filter - get all articles
+            city_filter = ""
+            filter_params = []
         
         # Exclude auto-rejected articles (is_auto_rejected = 1) but keep manually rejected ones
         # Get articles with published date, excluding auto-rejected
@@ -779,10 +1023,10 @@ class ArticleDatabase:
             ) am ON a.id = am.article_id
             WHERE a.published IS NOT NULL AND a.published != ''
             AND (am.is_auto_rejected IS NULL OR am.is_auto_rejected = 0)
-            {zip_filter}
+            {city_filter}
             ORDER BY a.published DESC
             LIMIT ?
-        ''', zip_params + [limit])
+        ''', filter_params + [limit])
         
         rows_with_published = cursor.fetchall()
         
@@ -800,10 +1044,10 @@ class ArticleDatabase:
             ) am ON a.id = am.article_id
             WHERE (a.published IS NULL OR a.published = '')
             AND (am.is_auto_rejected IS NULL OR am.is_auto_rejected = 0)
-            {zip_filter}
+            {city_filter}
             ORDER BY a.created_at DESC
             LIMIT ?
-        ''', zip_params + [limit])
+        ''', filter_params + [limit])
         
         rows_without_published = cursor.fetchall()
         

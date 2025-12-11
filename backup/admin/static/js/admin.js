@@ -436,10 +436,37 @@ document.addEventListener('click', async (e) => {
     
     // Handle trash button
     if (btn.classList.contains('trash-btn') || btn.getAttribute('data-action') === 'trash-article') {
+        // Also train relevance model when trashing
+        const articleId = btn.getAttribute('data-id');
+        const zipCode = getZipCodeFromUrl();
+        if (articleId && zipCode) {
+            fetch('/admin/api/train-relevance', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    article_id: articleId,
+                    zip_code: zipCode,
+                    click_type: 'trash'
+                })
+            })
+            .catch(e => console.error('Error training model:', e));
+        }
         if (typeof window.rejectArticle === 'function') {
             window.rejectArticle(articleId);
         } else {
             alert('Error: rejectArticle function not available. Please refresh the page.');
+        }
+        return;
+    }
+    
+    // Handle add tags button
+    if (btn.classList.contains('add-tags-btn')) {
+        const articleId = btn.getAttribute('data-id');
+        if (typeof window.showRejectionTagsModal === 'function') {
+            window.showRejectionTagsModal(articleId);
+        } else {
+            alert('Error: showRejectionTagsModal function not available. Please refresh the page.');
         }
         return;
     }
@@ -465,7 +492,318 @@ document.addEventListener('click', async (e) => {
         return;
     }
     
-    // Handle good fit button
+    
+    if (btn.classList.contains('thumbs-up-btn') || btn.getAttribute('data-action') === 'thumbs-up') {
+        const articleId = btn.getAttribute('data-id');
+        const zipCode = getZipCodeFromUrl();
+        if (articleId && zipCode) {
+            // Train relevance model with positive feedback
+            fetch('/admin/api/train-relevance', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    article_id: articleId,
+                    zip_code: zipCode,
+                    click_type: 'thumbs_up'
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    // Also toggle good fit state (UI update)
+                    const currentState = btn.getAttribute('data-state') === 'on';
+                    const newState = !currentState;
+
+                    // Update UI
+                    if (newState) {
+                        btn.style.background = '#4caf50';
+                        btn.style.opacity = '1';
+                        btn.setAttribute('data-state', 'on');
+                    } else {
+                        btn.style.background = 'transparent';
+                        btn.style.opacity = '0.5';
+                        btn.setAttribute('data-state', 'off');
+                    }
+
+                    // Also call the good fit API to persist the state
+                    const requestBody = {id: articleId, is_good_fit: newState};
+                    if (zipCode) {
+                        requestBody.zip_code = zipCode;
+                    }
+
+                    return fetch('/admin/api/good-fit', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        credentials: 'same-origin',
+                        body: JSON.stringify(requestBody)
+                    })
+                    .then(r => r.json())
+                    .then(goodFitData => {
+                        if (!goodFitData.success) {
+                            console.warn('Good fit state save failed:', goodFitData.message);
+                        }
+                    });
+                }
+            })
+            .catch(e => console.error('Error with thumbs up:', e));
+        }
+        return;
+    }
+    
+    if (btn.classList.contains('thumbs-down-btn') || btn.getAttribute('data-action') === 'thumbs-down') {
+        const articleId = btn.getAttribute('data-id');
+        const zipCode = getZipCodeFromUrl();
+        if (articleId && zipCode) {
+            // First, train the relevance model with negative feedback (don't wait for it)
+            fetch('/admin/api/train-relevance', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    article_id: articleId,
+                    zip_code: zipCode,
+                    click_type: 'thumbs_down'
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    console.warn('Training failed but continuing with reject:', data.message);
+                }
+            })
+            .catch(e => {
+                console.warn('Training error (continuing with reject):', e);
+            });
+            
+            // Then, trash/reject the article directly (no confirmation for thumbs down)
+            const requestBody = {
+                article_id: articleId,
+                rejected: true
+            };
+            
+            if (zipCode) {
+                requestBody.zip_code = zipCode;
+            }
+            
+            fetch('/admin/api/reject-article', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'same-origin',
+                body: JSON.stringify(requestBody)
+            })
+            .then(r => {
+                if (!r.ok) {
+                    if (r.status === 401) {
+                        throw new Error('Not authenticated. Please log in again.');
+                    }
+                    throw new Error('HTTP ' + r.status + ': ' + r.statusText);
+                }
+                return r.json();
+            })
+            .then(result => {
+                if (result && result.success) {
+                    // Update UI - mark article as rejected
+                    const articleItem = btn.closest('.article-item');
+                    if (articleItem) {
+                        articleItem.classList.add('rejected');
+                        articleItem.style.opacity = '0.5';
+                    }
+                    btn.style.opacity = '1';
+                    btn.style.background = '#d32f2f';
+                    // Reload to show updated state
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    alert('Error rejecting article: ' + (result ? result.message : 'Unknown error'));
+                }
+            })
+            .catch(e => {
+                console.error('Error rejecting article:', e);
+                alert('Error: ' + (e.message || 'Failed to reject article. Please try again.'));
+            });
+        }
+        return;
+    }
+
+    if (btn.classList.contains('top-story-btn') || btn.getAttribute('data-action') === 'toggle-top-story') {
+        const articleId = btn.getAttribute('data-id');
+        if (articleId && typeof window.toggleTopStory === 'function') {
+            window.toggleTopStory(articleId);
+        } else {
+            alert('Error: toggleTopStory function not available. Please refresh the page.');
+        }
+        return;
+    }
+
+    if (btn.classList.contains('top-article-btn') || btn.getAttribute('data-action') === 'toggle-top-article') {
+        const articleId = btn.getAttribute('data-id');
+        const zipCode = getZipCodeFromUrl();
+        if (articleId && zipCode) {
+            // First, check if this article is currently the top article
+            const currentState = btn.getAttribute('data-state') === 'on';
+
+            fetch('/admin/api/toggle-top-article', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    article_id: articleId,
+                    zip_code: zipCode
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    // Update all top article buttons to reflect the new state
+                    document.querySelectorAll('.top-article-btn').forEach(otherBtn => {
+                        const btnArticleId = otherBtn.getAttribute('data-id');
+                        if (btnArticleId == articleId) {
+                            // This is the button we clicked
+                            otherBtn.style.background = '#ffd700';
+                            otherBtn.style.opacity = '1';
+                            otherBtn.setAttribute('data-state', 'on');
+                        } else {
+                            // Other buttons should be off
+                            otherBtn.style.background = 'transparent';
+                            otherBtn.style.opacity = '0.5';
+                            otherBtn.setAttribute('data-state', 'off');
+                        }
+                    });
+
+                    // State updated in-place; no full reload
+                } else {
+                    alert('Error toggling top article: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(e => {
+                console.error('Error toggling top article:', e);
+                alert('Error: ' + (e.message || 'Failed to toggle top article. Please try again.'));
+            });
+        }
+        return;
+    }
+
+    if (btn.classList.contains('alert-btn') || btn.getAttribute('data-action') === 'toggle-alert') {
+        const articleId = btn.getAttribute('data-id');
+        const zipCode = getZipCodeFromUrl();
+        if (articleId && zipCode) {
+            const isCurrentlyAlert = btn.getAttribute('data-state') === 'on' || (btn.style.background && btn.style.background.includes('#ff4444'));
+            const newState = !isCurrentlyAlert;
+
+            fetch('/admin/api/toggle-alert', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    article_id: articleId,
+                    zip_code: zipCode,
+                    is_alert: newState
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    // Update all alert buttons
+                    document.querySelectorAll('.alert-btn').forEach(otherBtn => {
+                        if (otherBtn.getAttribute('data-id') == articleId) {
+                            otherBtn.style.background = newState ? '#ff4444' : 'transparent';
+                            otherBtn.style.opacity = newState ? '1' : '0.5';
+                            otherBtn.setAttribute('data-state', newState ? 'on' : 'off');
+                        }
+                    });
+                    // State updated in-place; no full reload
+                } else {
+                    alert('Error toggling alert: ' + (data.message || data.error || 'Unknown error'));
+                }
+            })
+            .catch(e => {
+                console.error('Error toggling alert:', e);
+                alert('Error: ' + (e.message || 'Failed to toggle alert. Please try again.'));
+            });
+        }
+        return;
+    }
+
+    if (btn.classList.contains('relevance-breakdown-btn') || btn.getAttribute('data-action') === 'show-breakdown') {
+        const articleId = btn.getAttribute('data-id');
+        const modal = document.getElementById('relevanceBreakdownModal');
+        const body = document.getElementById('relevanceBreakdownBody');
+        if (!articleId || !modal || !body) return;
+
+        body.innerHTML = '<div style="padding: 1rem;">Loading breakdown...</div>';
+        modal.style.display = 'flex';
+
+        fetch(`/admin/api/get-relevance-breakdown?id=${articleId}`, {
+            method: 'GET',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'same-origin'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const parts = [];
+                parts.push(`<div style="margin-bottom: 0.5rem;"><strong>Relevance:</strong> ${data.relevance_score ?? 'N/A'}</div>`);
+                parts.push(`<div style="margin-bottom: 0.5rem;"><strong>Local power:</strong> ${data.local_score ?? 'N/A'}</div>`);
+                parts.push(`<div style="margin-bottom: 0.5rem;"><strong>Category:</strong> ${data.category || 'N/A'}${data.category_confidence ? ' (' + Math.round(data.category_confidence) + '%)' : ''}</div>`);
+                parts.push('<div style="margin: 0.75rem 0; font-weight: 600;">Details:</div>');
+                if (data.breakdown && data.breakdown.length) {
+                    parts.push('<ul style="margin: 0; padding-left: 1.2rem;">' + data.breakdown.map(item => `<li style="margin-bottom: 0.35rem;">${escapeHtml(item)}</li>`).join('') + '</ul>');
+                } else {
+                    parts.push('<div>No relevance factors found.</div>');
+                }
+                body.innerHTML = parts.join('');
+            } else {
+                body.innerHTML = `<div style="color: #d32f2f; padding: 1rem;">Error: ${escapeHtml(data.error || 'Failed to load breakdown')}</div>`;
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching relevance breakdown:', err);
+            body.innerHTML = `<div style="color: #d32f2f; padding: 1rem;">Error: ${escapeHtml(err.message || 'Failed to load breakdown')}</div>`;
+        });
+
+        return;
+    }
+
+    if (btn.classList.contains('target-btn') || btn.getAttribute('data-action') === 'analyze-target') {
+        const articleId = btn.getAttribute('data-id');
+        const zipCode = getZipCodeFromUrl();
+        console.log('Target button clicked:', { articleId, zipCode });
+        
+        // Check if button is greyed out (no suggestions available)
+        if (btn.getAttribute('data-no-suggestions') === 'true') {
+            // Still allow click to show stats, but don't show error
+            // The modal will show "no keywords" message
+        }
+        
+        // Remove active state from all target buttons
+        document.querySelectorAll('.target-btn').forEach(b => b.classList.remove('active'));
+        
+        // Add active state to clicked button
+        btn.classList.add('active');
+        
+        if (!articleId) {
+            alert('Error: Article ID is missing');
+            btn.classList.remove('active');
+            return;
+        }
+        
+        if (!zipCode) {
+            alert('Error: Zip code not found. Please ensure you are on a zip-specific admin page.');
+            btn.classList.remove('active');
+            return;
+        }
+        
+        // Check if function exists
+        if (typeof showTargetAnalysis === 'function') {
+            showTargetAnalysis(articleId, zipCode);
+        } else {
+            console.error('showTargetAnalysis function not found');
+            alert('Error: Analysis function not loaded. Please refresh the page.');
+            btn.classList.remove('active');
+        }
+        return;
+    }
+
     if (btn.classList.contains('good-fit-btn') || btn.getAttribute('data-action') === 'toggle-good-fit') {
         if (typeof window.toggleGoodFit === 'function') {
             window.toggleGoodFit(articleId);
@@ -679,6 +1017,21 @@ function filterTrashArticles(filter, searchTerm) {
                 '</div>';
         }
         
+        // Build tags display
+        let tagsHtml = '';
+        if (article.rejection_tags) {
+            const tags = article.rejection_tags.split(',').map(t => t.trim()).filter(t => t);
+            if (tags.length > 0) {
+                tagsHtml = '<div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #404040;">' +
+                    '<strong style="color: #667eea; font-size: 0.8rem;">🏷️ Rejection Tags:</strong>' +
+                    '<div style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem;">';
+                tags.forEach(tag => {
+                    tagsHtml += `<span style="background: rgba(102, 126, 234, 0.2); color: #667eea; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; border: 1px solid rgba(102, 126, 234, 0.3);">${escapeHtml(tag)}</span>`;
+                });
+                tagsHtml += '</div></div>';
+            }
+        }
+        
         let cardHtml = '<div style="padding: 1.5rem; border-bottom: 1px solid #404040;">' +
             '<div style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 0.5rem;">' +
             '<div style="flex: 1;">' +
@@ -689,8 +1042,12 @@ function filterTrashArticles(filter, searchTerm) {
             '<div style="font-size: 0.85rem; color: #888;">' + safeSource + ' - ' + safePublished + '</div>' +
             '<div style="font-size: 0.85rem; color: #888; margin-top: 0.25rem;">Relevance: <strong style="color: ' + relevanceColor + ';">' + relevanceScore + '</strong></div>' +
             rejectionReasonHtml +
+            tagsHtml +
             '</div>' +
+            '<div style="display: flex; gap: 0.75rem; margin-top: 1rem;">' +
+            '<button class="add-tags-btn" data-id="' + escapeAttr(safeArticleId) + '" style="background: #667eea; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">🏷️ Add Tags</button>' +
             '<button class="restore-trash-btn" data-id="' + escapeAttr(safeArticleId) + '" data-rejection-type="' + escapeAttr(rejectionType) + '" style="background: #4caf50; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">↩️ Restore</button>' +
+            '</div>' +
             '</div>' +
             '</div>';
         
@@ -733,6 +1090,238 @@ function clearTrashSearch() {
     }
 }
 window.clearTrashSearch = clearTrashSearch;
+
+// Rejection tags management
+let currentModalTags = [];
+
+function showRejectionTagsModal(articleId) {
+    // Get current tags first
+    const article = allTrashArticles.find(a => a.id == articleId);
+    const currentTags = article?.rejection_tags ? article.rejection_tags.split(',').map(t => t.trim()).filter(t => t) : [];
+    currentModalTags = [...currentTags];
+    
+    // Get suggestions
+    const zipCode = getZipCodeFromUrl();
+    let url = `/admin/api/get-rejection-tag-suggestions?article_id=${encodeURIComponent(articleId)}`;
+    if (zipCode) {
+        url += `&zip_code=${encodeURIComponent(zipCode)}`;
+    }
+    
+    fetch(url, {
+        credentials: "same-origin",
+        headers: {"Accept": "application/json"}
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) {
+            alert('Error loading suggestions: ' + (data.message || 'Unknown error'));
+            return;
+        }
+        
+        const suggestions = data.suggestions;
+        
+        // Create modal
+        let modal = document.getElementById('rejectionTagsModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'rejectionTagsModal';
+            modal.className = 'modal';
+            modal.style.display = 'none';
+            document.body.appendChild(modal);
+        }
+        
+        // Build suggestions HTML
+        let suggestionsHtml = '';
+        
+        if (suggestions.towns && suggestions.towns.length > 0) {
+            suggestionsHtml += '<div style="margin-bottom: 1rem;"><strong style="color: #e0e0e0; font-size: 0.9rem;">📍 Nearby Towns (from article):</strong><div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">';
+            suggestions.towns.forEach(town => {
+                suggestionsHtml += `<button class="tag-suggestion-btn" data-tag="${escapeAttr(town)}" style="padding: 0.4rem 0.8rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">${escapeHtml(town)}</button>`;
+            });
+            suggestionsHtml += '</div></div>';
+        }
+        
+        if (suggestions.all_nearby_towns && suggestions.all_nearby_towns.length > 0) {
+            suggestionsHtml += '<div style="margin-bottom: 1rem;"><strong style="color: #e0e0e0; font-size: 0.9rem;">🗺️ All Nearby Towns:</strong><div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">';
+            suggestions.all_nearby_towns.forEach(town => {
+                if (!suggestions.towns || !suggestions.towns.includes(town)) {
+                    suggestionsHtml += `<button class="tag-suggestion-btn" data-tag="${escapeAttr(town)}" style="padding: 0.4rem 0.8rem; background: #555; color: #e0e0e0; border: 1px solid #777; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">${escapeHtml(town)}</button>`;
+                }
+            });
+            suggestionsHtml += '</div></div>';
+        }
+        
+        if (suggestions.common_reasons && suggestions.common_reasons.length > 0) {
+            suggestionsHtml += '<div style="margin-bottom: 1rem;"><strong style="color: #e0e0e0; font-size: 0.9rem;">📋 Common Reasons:</strong><div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">';
+            suggestions.common_reasons.forEach(reason => {
+                suggestionsHtml += `<button class="tag-suggestion-btn" data-tag="${escapeAttr(reason)}" style="padding: 0.4rem 0.8rem; background: #555; color: #e0e0e0; border: 1px solid #777; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">${escapeHtml(reason)}</button>`;
+            });
+            suggestionsHtml += '</div></div>';
+        }
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h2>Add Rejection Tags</h2>
+                    <span class="close-modal" onclick="closeRejectionTagsModal()">&times;</span>
+                </div>
+                <div style="padding: 1.5rem;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; color: #e0e0e0; margin-bottom: 0.5rem; font-weight: 600;">Current Tags:</label>
+                        <div id="currentTagsContainer" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; min-height: 2rem; padding: 0.5rem; background: #1a1a1a; border-radius: 4px; border: 1px solid #404040;">
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; color: #e0e0e0; margin-bottom: 0.5rem; font-weight: 600;">Suggestions:</label>
+                        <div style="background: #1a1a1a; padding: 1rem; border-radius: 4px; border: 1px solid #404040;">
+                            ${suggestionsHtml || '<p style="color: #888; font-style: italic;">No suggestions available</p>'}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; color: #e0e0e0; margin-bottom: 0.5rem; font-weight: 600;">Add Custom Tag:</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="text" id="customTagInput" placeholder="Enter custom tag..." style="flex: 1; padding: 0.5rem; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 0.9rem;" onkeypress="if(event.key==='Enter') addCustomTag()">
+                            <button onclick="addCustomTag()" style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Add</button>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                        <button type="button" onclick="closeRejectionTagsModal()" style="padding: 0.75rem 1.5rem; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Cancel</button>
+                        <button type="button" id="saveTagsBtn" style="padding: 0.75rem 1.5rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Save Tags</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modal.style.display = 'flex';
+        
+        // Store article ID
+        modal.dataset.articleId = articleId;
+        
+        // Update tags display
+        updateModalTagsDisplay();
+        
+        // Add event listeners
+        document.querySelectorAll('.tag-suggestion-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tag = this.dataset.tag;
+                addTagToModal(tag);
+            });
+        });
+        
+        document.getElementById('saveTagsBtn').addEventListener('click', function() {
+            saveRejectionTags(articleId);
+        });
+        
+        // Close on outside click
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeRejectionTagsModal();
+            }
+        });
+    })
+    .catch(e => {
+        console.error('Error loading suggestions:', e);
+        alert('Error loading tag suggestions: ' + e.message);
+    });
+}
+
+function addTagToModal(tag) {
+    if (tag && !currentModalTags.includes(tag)) {
+        currentModalTags.push(tag);
+        updateModalTagsDisplay();
+    }
+}
+
+function removeTag(tag) {
+    currentModalTags = currentModalTags.filter(t => t !== tag);
+    updateModalTagsDisplay();
+}
+
+function addCustomTag() {
+    const input = document.getElementById('customTagInput');
+    const tag = input.value.trim();
+    if (tag && !currentModalTags.includes(tag)) {
+        currentModalTags.push(tag);
+        input.value = '';
+        updateModalTagsDisplay();
+    }
+}
+
+function updateModalTagsDisplay() {
+    const container = document.getElementById('currentTagsContainer');
+    if (!container) return;
+    
+    if (currentModalTags.length > 0) {
+        container.innerHTML = currentModalTags.map(tag => `
+            <span style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.8rem; background: #667eea; color: white; border-radius: 4px; font-size: 0.85rem;">
+                ${escapeHtml(tag)}
+                <button onclick="removeTag('${escapeAttr(tag)}')" style="background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 1.2rem; height: 1.2rem; cursor: pointer; font-size: 0.7rem; padding: 0; line-height: 1;">×</button>
+            </span>
+        `).join('');
+        
+        // Re-attach remove handlers
+        container.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tagSpan = this.parentElement;
+                const tag = tagSpan.textContent.trim().replace('×', '').trim();
+                removeTag(tag);
+            });
+        });
+    } else {
+        container.innerHTML = '<span style="color: #888; font-style: italic;">No tags yet</span>';
+    }
+}
+
+function closeRejectionTagsModal() {
+    const modal = document.getElementById('rejectionTagsModal');
+    if (modal) {
+        modal.style.display = 'none';
+        currentModalTags = [];
+    }
+}
+
+function saveRejectionTags(articleId) {
+    const zipCode = getZipCodeFromUrl();
+    if (!zipCode) {
+        alert('Zip code not found');
+        return;
+    }
+    
+    fetch('/admin/api/update-rejection-tags', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            article_id: articleId,
+            tags: currentModalTags,
+            zip_code: zipCode
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            closeRejectionTagsModal();
+            // Reload trash to show updated tags
+            if (typeof window.loadTrash === 'function') {
+                window.loadTrash();
+            }
+        } else {
+            alert('Error saving tags: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(e => {
+        console.error('Error saving tags:', e);
+        alert('Error: ' + e.message);
+    });
+}
+
+window.showRejectionTagsModal = showRejectionTagsModal;
+window.closeRejectionTagsModal = closeRejectionTagsModal;
+window.removeTag = removeTag;
+window.addCustomTag = addCustomTag;
 
 // Load trash function
 window.loadTrash = function loadTrash() {
@@ -937,13 +1526,22 @@ document.addEventListener('DOMContentLoaded', function() {
                         pointer-events: none;
                     `;
                     
+                    // Header with scores
+                    const header = document.createElement('div');
+                    header.style.cssText = 'margin-bottom: 0.5rem; color: #fff;';
+                    header.innerHTML = `
+                        <div style="font-weight: 700; margin-bottom: 0.25rem;">Relevance: ${data.relevance_score ?? 'N/A'}</div>
+                        <div style="font-weight: 700; margin-bottom: 0.25rem;">Local power: ${data.local_score ?? 'N/A'}</div>
+                        <div style="font-weight: 700;">Category: ${data.category || 'N/A'}${data.category_confidence ? ' (' + Math.round(data.category_confidence) + '%)' : ''}</div>
+                    `;
+                    tooltipElement.appendChild(header);
+
                     // Create content
                     const title = document.createElement('div');
                     title.textContent = 'Relevance Breakdown:';
                     title.style.cssText = 'font-weight: 600; margin-bottom: 0.5rem; color: #fff;';
                     tooltipElement.appendChild(title);
                     
-                    const list = document.createElement('div');
                     data.breakdown.forEach(item => {
                         const itemDiv = document.createElement('div');
                         itemDiv.textContent = item;
@@ -976,6 +1574,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 200);
         }
     }, true);
+
+    // Modal close for relevance breakdown
+    const relevanceModal = document.getElementById('relevanceBreakdownModal');
+    const relevanceClose = document.getElementById('relevanceBreakdownClose');
+    if (relevanceClose) {
+        relevanceClose.addEventListener('click', () => {
+            if (relevanceModal) relevanceModal.style.display = 'none';
+        });
+    }
+    if (relevanceModal) {
+        relevanceModal.addEventListener('click', (e) => {
+            if (e.target === relevanceModal) {
+                relevanceModal.style.display = 'none';
+            }
+        });
+    }
 });
 
 // Source setting update
@@ -1435,10 +2049,11 @@ function regenerateWebsite() {
         return;
     }
     
-    fetch(`/admin/api/regenerate?zip=${encodeURIComponent(zipCode)}`, {
+    fetch('/admin/api/regenerate', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        credentials: 'same-origin'
+        credentials: 'same-origin',
+        body: JSON.stringify({ zip_code: zipCode, force_refresh: false })
     })
     .then(r => r.json())
     .then(data => {
@@ -1454,30 +2069,134 @@ function regenerateWebsite() {
 }
 window.regenerateWebsite = regenerateWebsite;
 
-// Regenerate all websites
+// Regenerate all websites (with fresh data)
 function regenerateAll() {
-    if (!confirm('Regenerate websites for all zip codes? This may take several minutes.')) {
+    const zipCode = getZipCodeFromUrl();
+    
+    // If we're on a zip-specific admin page, regenerate that zip with fresh data
+    if (zipCode) {
+        if (!confirm(`Regenerate website for zip code ${zipCode} with fresh data from all sources? This may take several minutes.`)) {
+            return;
+        }
+        
+        const btn = event?.target || document.querySelector('button[onclick*="regenerateAll"]');
+        const originalText = btn?.textContent || '🔄 Regenerate All (Fresh Data)';
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Fetching fresh data...';
+        }
+        
+        fetch('/admin/api/regenerate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'same-origin',
+            body: JSON.stringify({ force_refresh: true, zip_code: zipCode })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+            if (data.success) {
+                alert('Website regenerated with fresh data from all sources!');
+            } else {
+                alert('Error: ' + (data.message || 'Failed to regenerate website'));
+            }
+        })
+        .catch(e => {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+            alert('Error: ' + (e.message || 'Failed to regenerate website'));
+        });
+    } else {
+        // Main admin - regenerate all zip codes
+        if (!confirm('Regenerate websites for all zip codes? This may take several minutes.')) {
+            return;
+        }
+        
+        fetch('/admin/api/regenerate-all', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'same-origin'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Website regeneration started for all zip codes. This may take several minutes.');
+            } else {
+                alert('Error: ' + (data.message || 'Failed to regenerate websites'));
+            }
+        })
+        .catch(e => {
+            alert('Error: ' + e.message);
+        });
+    }
+}
+window.regenerateAll = regenerateAll;
+
+// Rerun relevance scoring on all articles
+function rerunRelevanceScoring() {
+    const zipCode = getZipCodeFromUrl();
+    if (!zipCode) {
+        alert('Zip code not found in URL');
         return;
     }
     
-    fetch('/admin/api/regenerate-all', {
+    if (!confirm(`This will recalculate relevance scores for ALL articles and move articles that fail relevance to trash. This may take several minutes. Continue?`)) {
+        return;
+    }
+    
+    const btn = document.getElementById('rerunRelevanceBtn');
+    const statusDiv = document.getElementById('rerunRelevanceStatus');
+    const originalText = btn.textContent;
+    
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+    statusDiv.style.display = 'block';
+    statusDiv.querySelector('p').textContent = 'Starting relevance recalculation...';
+    
+    fetch('/admin/api/rerun-relevance-scoring', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        credentials: 'same-origin'
+        credentials: 'same-origin',
+        body: JSON.stringify({ zip_code: zipCode })
     })
-    .then(r => r.json())
+    .then(async r => {
+        // Check if response is JSON
+        const contentType = r.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            // Response is not JSON - likely an HTML error page
+            const text = await r.text();
+            throw new Error(`Server returned ${r.status} ${r.statusText}. Response: ${text.substring(0, 200)}`);
+        }
+        return r.json();
+    })
     .then(data => {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        
         if (data.success) {
-            alert('Website regeneration started for all zip codes. This may take several minutes.');
+            statusDiv.querySelector('p').innerHTML = `
+                <strong style="color: #4caf50;">✓ Success!</strong><br>
+                Processed ${data.processed_count || 0} articles<br>
+                ${data.auto_rejected_count || 0} articles moved to trash<br>
+                ${data.kept_count || 0} articles kept
+            `;
         } else {
-            alert('Error: ' + (data.message || 'Failed to regenerate websites'));
+            statusDiv.querySelector('p').innerHTML = `<strong style="color: #f44336;">Error:</strong> ${data.message || 'Unknown error'}`;
         }
     })
     .catch(e => {
-        alert('Error: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = originalText;
+        statusDiv.querySelector('p').innerHTML = `<strong style="color: #f44336;">Error:</strong> ${e.message || 'Failed to rerun relevance scoring'}`;
+        console.error('Rerun relevance scoring error:', e);
     });
 }
-window.regenerateAll = regenerateAll;
+window.rerunRelevanceScoring = rerunRelevanceScoring;
 
 // Add new source
 function addNewSource() {
@@ -2168,6 +2887,337 @@ function saveRegenerateSettings() {
     });
 }
 window.saveRegenerateSettings = saveRegenerateSettings;
+
+// Target Analysis Functions
+function showTargetAnalysis(articleId, zipCode) {
+    const modal = document.getElementById('targetAnalysisModal');
+    const content = document.getElementById('targetAnalysisContent');
+    
+    if (!modal || !content) {
+        alert('Target analysis modal not found. Please refresh the page.');
+        return;
+    }
+    
+    // Show modal with loading state
+    modal.style.display = 'block';
+    content.innerHTML = `
+        <div style="text-align: center; padding: 2rem;">
+            <div class="spinner" style="border: 4px solid #404040; border-top: 4px solid #0078d4; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            <p style="margin-top: 1rem; color: #888;">Analyzing article...</p>
+        </div>
+    `;
+    
+    // Fetch analysis
+    fetch('/admin/api/analyze-target', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            article_id: articleId,
+            zip_code: zipCode
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            displayTargetAnalysis(data, articleId, zipCode);
+            // Update button state based on whether suggestions are available
+            updateTargetButtonState(articleId, data.breakdown && data.breakdown.has_suggestions);
+        } else {
+            content.innerHTML = `
+                <div style="padding: 2rem; text-align: center;">
+                    <p style="color: #d32f2f;">Error: ${data.error || 'Failed to analyze article'}</p>
+                    <button onclick="closeTargetModal()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+                </div>
+            `;
+        }
+    })
+    .catch(e => {
+        console.error('Error analyzing target:', e);
+        content.innerHTML = `
+            <div style="padding: 2rem; text-align: center;">
+                <p style="color: #d32f2f;">Error: ${e.message || 'Failed to analyze article'}</p>
+                <button onclick="closeTargetModal()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+            </div>
+        `;
+    });
+}
+
+function displayTargetAnalysis(data, articleId, zipCode) {
+    const content = document.getElementById('targetAnalysisContent');
+    const breakdown = data.breakdown || {};
+    const suggested = data.suggested_keywords || {};
+    const article = data.article || {};
+    
+    // Format published date
+    let publishedDate = 'N/A';
+    if (article.published) {
+        try {
+            const date = new Date(article.published);
+            publishedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        } catch(e) {
+            publishedDate = article.published;
+        }
+    }
+    
+    let html = `
+        <div style="margin-bottom: 2rem; background: #1a1a1a; padding: 1.5rem; border-radius: 8px; border: 1px solid #404040;">
+            <h3 style="color: #0078d4; margin-bottom: 1rem; border-bottom: 2px solid #404040; padding-bottom: 0.5rem;">📄 Article Information</h3>
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.75rem 1.5rem; margin-bottom: 1rem;">
+                <div style="font-weight: 600; color: #888;">Title:</div>
+                <div style="color: #e0e0e0;">${escapeHtml(article.title || 'N/A')}</div>
+                
+                <div style="font-weight: 600; color: #888;">Source:</div>
+                <div style="color: #e0e0e0;">${escapeHtml(article.source || 'N/A')}</div>
+                
+                <div style="font-weight: 600; color: #888;">Category:</div>
+                <div style="color: #e0e0e0;">
+                    ${article.display_category ? `
+                        <span style="background: #0078d4; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">${escapeHtml(article.display_category)}</span>
+                        ${article.category_confidence && article.category_confidence > 0 ? `<span style="color: #888; font-size: 0.85rem; margin-left: 0.5rem;">(${(article.category_confidence * 100).toFixed(0)}%)</span>` : ''}
+                        ${article.primary_category && article.primary_category !== article.display_category ? `<span style="background: #404040; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; margin-left: 0.5rem;">${escapeHtml(article.primary_category)}</span>` : ''}
+                    ` : '<span style="color: #888;">Not categorized</span>'}
+                </div>
+                
+                <div style="font-weight: 600; color: #888;">Published:</div>
+                <div style="color: #e0e0e0;">${publishedDate}</div>
+                
+                ${article.url ? `
+                <div style="font-weight: 600; color: #888;">URL:</div>
+                <div style="color: #0078d4;">
+                    <a href="${escapeAttr(article.url)}" target="_blank" rel="noopener" style="color: #0078d4; text-decoration: none; word-break: break-all;">
+                        ${escapeHtml(article.url.length > 60 ? article.url.substring(0, 60) + '...' : article.url)}
+                    </a>
+                </div>
+                ` : ''}
+                
+                ${article.summary ? `
+                <div style="font-weight: 600; color: #888;">Summary:</div>
+                <div style="color: #e0e0e0; font-size: 0.9rem; line-height: 1.5;">${escapeHtml(article.summary)}</div>
+                ` : ''}
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: #0078d4; margin-bottom: 1rem;">📊 Relevance Score Breakdown</h3>
+            <div style="background: #1a1a1a; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <div style="font-size: 2rem; font-weight: bold; color: ${breakdown.total_score >= 70 ? '#4caf50' : breakdown.total_score >= 40 ? '#ff9800' : '#d32f2f'};">
+                    ${breakdown.total_score ? breakdown.total_score.toFixed(1) : '0'}/100
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <h4 style="color: #e0e0e0; margin-bottom: 0.5rem;">✅ Matched Tags:</h4>
+                <div>
+                    ${breakdown.matched_tags && breakdown.matched_tags.length > 0 
+                        ? breakdown.matched_tags.map(tag => `<span class="matched-tag">${tag}</span>`).join('')
+                        : '<span style="color: #888;">No matches found</span>'}
+                </div>
+            </div>
+            
+            ${breakdown.missing_tags && breakdown.missing_tags.length > 0 ? `
+            <div style="margin-bottom: 1rem;">
+                <h4 style="color: #e0e0e0; margin-bottom: 0.5rem;">⚠️ Missing Tags:</h4>
+                <div>
+                    ${breakdown.missing_tags.map(tag => `<span class="missing-tag">${tag}</span>`).join('')}
+                </div>
+            </div>
+            ` : ''}
+        </div>
+        
+        <div style="margin-bottom: 2rem;">
+            <h3 style="color: #0078d4; margin-bottom: 1rem;">💡 Suggested Keywords</h3>
+            <p style="color: #888; margin-bottom: 1rem; font-size: 0.9rem;">Click keywords to select them (toggle on/off):</p>
+    `;
+    
+    // Add keyword sections
+    const categories = [
+        { key: 'high_relevance', label: 'High Relevance Keywords', icon: '📍', class: 'high-relevance' },
+        { key: 'local_places', label: 'Local Places', icon: '🏛️', class: 'local-places' },
+        { key: 'topic_keywords', label: 'Topic Keywords', icon: '📰', class: 'topic-keywords' }
+    ];
+    
+    let hasKeywords = false;
+    categories.forEach(cat => {
+        const keywords = suggested[cat.key] || [];
+        if (keywords.length > 0) {
+            hasKeywords = true;
+            html += `
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="color: #e0e0e0; margin-bottom: 1rem; font-size: 1rem;">${cat.icon} ${cat.label}</h4>
+                    <div id="keywords-${cat.key}" class="keyword-grid">
+            `;
+            
+            keywords.forEach((kw, idx) => {
+                const keywordId = `kw-${cat.key}-${idx}`;
+                html += `
+                    <button type="button" 
+                            class="keyword-toggle ${cat.class}" 
+                            id="${keywordId}"
+                            data-keyword="${escapeAttr(kw.keyword)}" 
+                            data-category="${escapeAttr(cat.key)}"
+                            data-confidence="${escapeAttr(kw.confidence)}"
+                            title="${escapeAttr(kw.reason)}">
+                        <span class="keyword-toggle-text">${escapeHtml(kw.keyword)}</span>
+                        <span class="keyword-confidence-badge confidence-${escapeAttr(kw.confidence)}">${escapeHtml(kw.confidence)}</span>
+                        <span class="keyword-reason">${escapeHtml(kw.reason.length > 40 ? kw.reason.substring(0, 40) + '...' : kw.reason)}</span>
+                    </button>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    if (!hasKeywords) {
+        html += `
+            <div style="padding: 2rem; text-align: center; background: #1a1a1a; border-radius: 8px; border: 1px solid #404040;">
+                <p style="color: #888; font-size: 1rem; margin-bottom: 0.5rem;">No new keywords found to suggest.</p>
+                <p style="color: #666; font-size: 0.85rem;">All relevant keywords from this article are already in your relevance configuration.</p>
+            </div>
+        `;
+    }
+    
+    html += `
+        </div>
+        
+        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #404040;">
+            <button onclick="closeTargetModal()" style="padding: 0.75rem 1.5rem; background: #404040; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+            ${hasKeywords ? `<button id="addKeywordsBtn" onclick="addSelectedKeywords(${articleId}, '${zipCode}')" style="padding: 0.75rem 1.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Add Selected Keywords (0)</button>` : ''}
+        </div>
+    `;
+    
+    content.innerHTML = html;
+    
+    // Add click handlers for toggle buttons
+    if (hasKeywords) {
+        categories.forEach(cat => {
+            const keywords = suggested[cat.key] || [];
+            keywords.forEach((kw, idx) => {
+                const keywordId = `kw-${cat.key}-${idx}`;
+                const btn = document.getElementById(keywordId);
+                if (btn) {
+                    btn.addEventListener('click', function() {
+                        this.classList.toggle('selected');
+                        updateAddButtonText();
+                    });
+                }
+            });
+        });
+        updateAddButtonText();
+    }
+}
+
+function updateAddButtonText() {
+    const selectedButtons = document.querySelectorAll('.keyword-toggle.selected');
+    const count = selectedButtons.length;
+    const addBtn = document.getElementById('addKeywordsBtn');
+    if (addBtn) {
+        addBtn.textContent = `Add Selected Keywords (${count})`;
+        addBtn.disabled = count === 0;
+        addBtn.style.opacity = count === 0 ? '0.5' : '1';
+        addBtn.style.cursor = count === 0 ? 'not-allowed' : 'pointer';
+    }
+}
+
+function addSelectedKeywords(articleId, zipCode) {
+    const selectedButtons = document.querySelectorAll('#targetAnalysisContent .keyword-toggle.selected');
+    const keywords = [];
+    
+    if (selectedButtons.length === 0) {
+        alert('Please select at least one keyword to add.');
+        return;
+    }
+    
+    selectedButtons.forEach(btn => {
+        const keyword = btn.getAttribute('data-keyword');
+        const category = btn.getAttribute('data-category');
+        if (keyword && category) {
+            keywords.push({ keyword, category });
+        }
+    });
+    
+    const button = event.target;
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Adding...';
+    
+    fetch('/admin/api/add-target-keywords', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            article_id: articleId,
+            zip_code: zipCode,
+            keywords: keywords
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Successfully added ${data.added_count} keyword(s)${data.skipped_count > 0 ? `, skipped ${data.skipped_count} duplicate(s)` : ''}.`);
+            closeTargetModal();
+            // Optionally reload the page to see updated relevance config
+            setTimeout(() => location.reload(), 500);
+        } else {
+            alert('Error adding keywords: ' + (data.error || 'Unknown error'));
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    })
+    .catch(e => {
+        console.error('Error adding keywords:', e);
+        alert('Error: ' + (e.message || 'Failed to add keywords'));
+        button.disabled = false;
+        button.textContent = originalText;
+    });
+}
+
+function updateTargetButtonState(articleId, hasSuggestions) {
+    // Update target button styling based on whether suggestions are available
+    document.querySelectorAll('.target-btn').forEach(btn => {
+        if (btn.getAttribute('data-id') == articleId) {
+            if (!hasSuggestions) {
+                // Grey out button if no suggestions
+                btn.style.opacity = '0.3';
+                btn.style.cursor = 'not-allowed';
+                btn.title = 'No new keywords available to add';
+                btn.setAttribute('data-no-suggestions', 'true');
+            } else {
+                // Reset to normal state
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'pointer';
+                btn.title = 'Analyze article and suggest keywords';
+                btn.removeAttribute('data-no-suggestions');
+            }
+        }
+    });
+}
+
+function closeTargetModal() {
+    const modal = document.getElementById('targetAnalysisModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    // Remove active state from all target buttons when modal closes
+    document.querySelectorAll('.target-btn').forEach(b => b.classList.remove('active'));
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('targetAnalysisModal');
+    if (event.target == modal) {
+        closeTargetModal();
+    }
+}
+
+window.showTargetAnalysis = showTargetAnalysis;
+window.closeTargetModal = closeTargetModal;
+window.addSelectedKeywords = addSelectedKeywords;
+window.updateTargetButtonState = updateTargetButtonState;
 
 console.log('Admin script loaded');
 

@@ -13,10 +13,10 @@ from config import DATABASE_CONFIG
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Fixed category list (11 categories)
+# Fixed category list (12 categories)
 CATEGORIES = [
     "News", "Crime", "Sports", "Entertainment", "Events", 
-    "Politics", "Schools", "Business", "Health", "Traffic", "Fire"
+    "Politics", "Schools", "Business", "Health", "Traffic", "Fire", "Obits"
 ]
 
 # Stop words to ignore in feature extraction
@@ -32,25 +32,29 @@ STOP_WORDS = {
 # These are hard-coded defaults that can be imported into the database
 DEFAULT_CATEGORY_KEYWORDS = {
     "Crime": [
-        "arrest", "police", "shooting", "stolen", "suspect", "warrant", "bail", "charged", 
-        "robbery", "investigation", "officer", "crime", "criminal", "victim", "assault", 
-        "theft", "burglary", "court", "judge", "trial", "detective", "arrested", "charges"
+        "arrest", "police", "shooting", "warrant", "blotter", "charged", 
+        "stolen", "suspect", "bail", "robbery", "investigation", "officer", 
+        "crime", "criminal", "victim", "assault", "theft", "burglary", 
+        "court", "judge", "trial", "detective", "arrested", "charges"
     ],
     "Sports": [
-        "durfee", "diman", "basketball", "football", "hockey", "playoffs", "trojans", 
-        "raiders", "bmc", "game", "team", "player", "coach", "athletic", "score", 
-        "win", "loss", "tournament", "championship", "season", "sports", "athlete", "coaching"
+        "durfee", "diman", "trojans", "raiders", "bmc", "playoffs",
+        "basketball", "football", "hockey", "game", "team", "player", 
+        "coach", "athletic", "score", "win", "loss", "tournament", 
+        "championship", "season", "sports", "athlete", "coaching"
     ],
     "Events": [
-        "festival", "parade", "concert", "tree lighting", "bazaar", "fundraiser", 
-        "celebration", "gathering", "meeting", "announcement", "event", "happening", 
-        "occasion", "ceremony", "opening", "show", "performance", "celebration"
+        "festival", "parade", "supper", "bazaar", "concert", "tree lighting",
+        "fundraiser", "celebration", "gathering", "meeting", "announcement", 
+        "event", "happening", "occasion", "ceremony", "opening", "show", 
+        "performance"
     ],
     "Schools": [
-        "durfee", "kuss", "morton", "bmc", "superintendent", "school committee", 
-        "student", "teacher", "education", "principal", "graduation", "classroom", 
-        "academic", "school board", "curriculum", "school", "elementary", "high school", 
-        "middle school", "district"
+        "school committee", "superintendent", "kuss", "resiliency",
+        "durfee", "morton", "bmc", "student", "teacher", "education", 
+        "principal", "graduation", "classroom", "academic", "school board", 
+        "curriculum", "school", "elementary", "high school", "middle school", 
+        "district"
     ],
     "Politics": [
         "mayor", "council", "politics", "election", "vote", "candidate", "government", 
@@ -84,6 +88,11 @@ DEFAULT_CATEGORY_KEYWORDS = {
         "fire station", "rescue", "emergency", "flames", "arson", "fire marshal", 
         "fire truck", "extinguish", "firehouse", "combustion", "inferno", "fire chief", 
         "fire prevention"
+    ],
+    "Obits": [
+        "passed away", "funeral", "obituary", "in loving memory", "died", "death",
+        "memorial", "survived by", "predeceased", "visitation", "wake", "burial",
+        "cemetery", "services", "remembrance"
     ],
     "News": []  # Default category - no specific keywords, catches everything else
 }

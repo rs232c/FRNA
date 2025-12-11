@@ -44,6 +44,20 @@ html {
     overflow: hidden;
 }
 
+.line-clamp-4 {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-5 {
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 /* Lazy image loading */
 .lazy-image {
     opacity: 0;
@@ -108,11 +122,20 @@ article:hover {
     box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.2);
 }
 
+/* Hero carousel container - parent of .top-stories-track */
+.hero-carousel-container {
+    position: relative;
+    overflow: hidden; /* Clip the track here, not on track itself */
+    width: 100%;
+}
+
 /* Hero carousel styles */
 .top-stories-track {
     display: flex;
     transition: transform 0.5s ease-in-out;
-    overflow: hidden;
+    /* REMOVE overflow: hidden - it belongs on parent */
+    /* Width will be calculated by JS: 100% * number_of_slides */
+    will-change: transform; /* Optimize for animations */
 }
 
 .story-slide {
@@ -120,6 +143,22 @@ article:hover {
     min-width: 100%;
     flex-shrink: 0;
     display: flex;
+    /* Ensure slides don't shrink */
+}
+
+/* Weather pill smooth updates */
+#weatherTemp,
+#weatherCondition,
+#weatherIcon {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.weather-updating {
+    opacity: 0.6;
+}
+
+.weather-updated {
+    opacity: 1;
 }
 
 /* Square card aspect ratio support */

@@ -80,12 +80,17 @@ class NewsAggregator:
             logger.warning(f"Could not load source overrides: {e}")
             return {}
     
-    def _setup_ingestors(self):
-        """Initialize news source ingestors"""
+    def _setup_ingestors(self, city_state: Optional[str] = None):
+        """Initialize news source ingestors
+        Phase 4: Now supports city_state for dynamic source setup
+        """
         # Load source overrides from database
         source_overrides = self._load_source_overrides()
         
-        for source_key, source_config in NEWS_SOURCES.items():
+        # Phase 4: Get sources for city (dynamic or Fall River default)
+        sources = self._get_sources_for_city(city_state, None)
+        
+        for source_key, source_config in sources.items():
             if not source_config.get("enabled", True):
                 continue
             
@@ -99,12 +104,106 @@ class NewsAggregator:
                 ingestor = FallRiverReporterIngestor(source_config)
             elif source_key == "fun107":
                 ingestor = Fun107Ingestor(source_config)
+            elif source_key == "google_news":
+                # Google News ingestor is created dynamically, skip here
+                continue
             else:
                 ingestor = NewsIngestor(source_config)
             
             # Store source key for retry logic
             ingestor._source_key = source_key
             self.news_ingestors[source_key] = ingestor
+    
+    def _get_sources_for_city(self, city_state: Optional[str], zip_code: Optional[str]) -> Dict:
+        """Get sources for a city (Phase 4: Dynamic Source Discovery)
+        
+        Args:
+            city_state: City state string (e.g., "Fall River, MA")
+            zip_code: Optional zip code
+        
+        Returns:
+            Dict of source_key -> source_config
+        """
+        # Phase 4: Use hardcoded Fall River sources for 02720 or "Fall River, MA"
+        if city_state == "Fall River, MA" or zip_code == "02720" or (not city_state and not zip_code):
+            # Use hardcoded Fall River sources (backward compat)
+            return NEWS_SOURCES
+        
+        # Phase 4: Dynamic sources for new cities
+        sources = {}
+        
+        # 1. Google News (always available for any city)
+        # Note: Google News ingestor is created dynamically in aggregate_async
+        
+        # 2. Load admin-configured sources from database
+        try:
+            admin_sources = self._load_admin_sources(zip_code, city_state)
+            sources.update(admin_sources)
+        except Exception as e:
+            logger.warning(f"Error loading admin sources: {e}")
+        
+        return sources
+    
+    def _load_admin_sources(self, zip_code: Optional[str], city_state: Optional[str]) -> Dict:
+        """Load admin-configured sources from database (Phase 4)
+        
+        Args:
+            zip_code: Optional zip code
+            city_state: Optional city_state
+        
+        Returns:
+            Dict of source_key -> source_config
+        """
+        sources = {}
+        try:
+            conn = sqlite3.connect(self.database.db_path)
+            cursor = conn.cursor()
+            
+            # Load sources from admin_settings_zip (per-zip) or admin_settings (global)
+            # For now, return empty - admin can add sources later via UI
+            # This is a placeholder for future admin source management
+            
+            conn.close()
+        except Exception as e:
+            logger.warning(f"Error loading admin sources: {e}")
+        
+        return sources
+    
+    async def _collect_from_sources_async(self, sources: Dict, force_refresh: bool = False) -> List[Dict]:
+        """Collect articles from a set of sources (Phase 4)
+        
+        Args:
+            sources: Dict of source_key -> source_config
+            force_refresh: Force refresh all sources
+        
+        Returns:
+            List of articles
+        """
+        all_articles = []
+        
+        # Setup ingestors for these sources
+        for source_key, source_config in sources.items():
+            if not source_config.get("enabled", True):
+                continue
+            
+            try:
+                if source_key == "herald_news":
+                    ingestor = HeraldNewsIngestor(source_config)
+                elif source_key == "fall_river_reporter":
+                    ingestor = FallRiverReporterIngestor(source_config)
+                elif source_key == "fun107":
+                    ingestor = Fun107Ingestor(source_config)
+                else:
+                    ingestor = NewsIngestor(source_config)
+                
+                ingestor._source_key = source_key
+                articles = await ingestor.fetch_articles_async()
+                all_articles.extend(articles)
+                logger.info(f"Fetched {len(articles)} articles from {source_key}")
+            except Exception as e:
+                logger.error(f"Error fetching from {source_key}: {e}")
+        
+        return all_articles
     
     def collect_all_articles(self) -> List[Dict]:
         """Collect articles from all sources (synchronous wrapper)"""
@@ -367,12 +466,13 @@ class NewsAggregator:
         
         return summary
     
-    def filter_relevant_articles(self, articles: List[Dict], zip_code: Optional[str] = None) -> List[Dict]:
-        """Filter and weight articles by Fall River relevance
+    def filter_relevant_articles(self, articles: List[Dict], zip_code: Optional[str] = None, city_state: Optional[str] = None) -> List[Dict]:
+        """Filter and weight articles by relevance (Phase 5: city-based relevance)
         
         Args:
             articles: List of articles to filter
             zip_code: Optional zip code for zip-specific filtering
+            city_state: Optional city_state for city-based relevance (e.g., "Fall River, MA")
         """
         from datetime import datetime, timedelta
         import sqlite3
@@ -448,10 +548,10 @@ class NewsAggregator:
             title_lower = article.get("title", "").lower()
             combined_text = f"{title_lower} {content_lower}"
             
-            # Calculate relevance score with tag tracking
+            # Calculate relevance score with tag tracking (Phase 5: city_state support)
             try:
                 from utils.relevance_calculator import calculate_relevance_score_with_tags
-                relevance_score, tag_info = calculate_relevance_score_with_tags(article, zip_code=zip_code)
+                relevance_score, tag_info = calculate_relevance_score_with_tags(article, zip_code=zip_code, city_state=city_state)
             except:
                 # Fallback to regular calculation if tag tracking fails
                 relevance_score = self.calculate_relevance_score(article)
@@ -554,6 +654,24 @@ class NewsAggregator:
             if exclude_keywords:
                 if any(keyword.lower() in combined_text for keyword in exclude_keywords):
                     continue
+            
+            # Check excluded towns list
+            if zip_code:
+                try:
+                    from utils.relevance_calculator import load_relevance_config
+                    relevance_config = load_relevance_config(zip_code=zip_code)
+                    excluded_towns = relevance_config.get('excluded_towns', [])
+                    
+                    if excluded_towns:
+                        # Check if article mentions any excluded town
+                        for excluded_town in excluded_towns:
+                            if excluded_town.lower() in combined_text:
+                                # Only exclude if Fall River is NOT mentioned
+                                if "fall river" not in combined_text and "fallriver" not in combined_text:
+                                    logger.info(f"Filtering out article '{title_lower[:50]}...' - mentions excluded town '{excluded_town}' without Fall River connection")
+                                    continue
+                except Exception as e:
+                    logger.warning(f"Error checking excluded towns: {e}")
             
             # AI-based relevance check: Use AI to verify article is truly about Fall River
             # Only run if enabled in admin settings
@@ -1104,54 +1222,72 @@ class NewsAggregator:
         
         return tags
     
-    def aggregate(self, force_refresh: bool = False, zip_code: Optional[str] = None) -> List[Dict]:
+    def aggregate(self, force_refresh: bool = False, zip_code: Optional[str] = None, city_state: Optional[str] = None) -> List[Dict]:
         """Main aggregation method (synchronous wrapper)
+        Phase 4: Now supports city_state for dynamic source discovery
         
         Args:
             force_refresh: Force refresh all sources
             zip_code: Optional zip code for zip-specific aggregation
+            city_state: Optional city_state (e.g., "Fall River, MA") for city-based sources
         """
-        return asyncio.run(self.aggregate_async(force_refresh, zip_code))
+        return asyncio.run(self.aggregate_async(force_refresh, zip_code, city_state))
     
-    async def aggregate_async(self, force_refresh: bool = False, zip_code: Optional[str] = None) -> List[Dict]:
+    async def aggregate_async(self, force_refresh: bool = False, zip_code: Optional[str] = None, city_state: Optional[str] = None) -> List[Dict]:
         """Main aggregation method (async)
+        Phase 4: Dynamic source discovery based on city_state
         
         Args:
             force_refresh: Force refresh all sources
             zip_code: Optional zip code for zip-specific aggregation
+            city_state: Optional city_state (e.g., "Fall River, MA") for city-based sources
         """
-        logger.info(f"Starting aggregation{' for zip ' + zip_code if zip_code else ''}...")
+        logger.info(f"Starting aggregation{' for zip ' + zip_code if zip_code else ''}{' (' + city_state + ')' if city_state else ''}...")
         
         all_articles = []
         
-        # If zip_code provided, fetch from Google News
+        # Phase 4: Get sources for city (dynamic source discovery)
+        sources = self._get_sources_for_city(city_state, zip_code)
+        
+        # If zip_code provided, fetch from sources
         if zip_code:
             from zip_resolver import resolve_zip
             from ingestors.google_news_ingestor import GoogleNewsIngestor
             
-            zip_data = resolve_zip(zip_code)
-            if zip_data:
-                city = zip_data.get("city", "")
-                state = zip_data.get("state_abbrev", "")
-                
-                if city and state:
-                    # Fetch from Google News
-                    google_ingestor = GoogleNewsIngestor(city, state, zip_code)
-                    google_articles = await google_ingestor.fetch_articles_async()
-                    all_articles.extend(google_articles)
-                    logger.info(f"Fetched {len(google_articles)} articles from Google News for {city}, {state}")
+            # Resolve zip if city_state not provided
+            if not city_state:
+                zip_data = resolve_zip(zip_code)
+                if zip_data:
+                    city_state = zip_data.get("city_state")
+                    city = zip_data.get("city", "")
+                    state = zip_data.get("state_abbrev", "")
+                else:
+                    city = None
+                    state = None
+            else:
+                # Parse city_state to get city and state
+                parts = city_state.split(", ")
+                city = parts[0] if len(parts) > 0 else ""
+                state = parts[1] if len(parts) > 1 else ""
             
-            # Also include existing local RSS feeds if zip matches supported zips (02720, etc.)
-            # Check if zip_code is in supported zips (Fall River area)
-            supported_zips = ["02720", "02721", "02722", "02723", "02724", "02725", "02726"]
-            if zip_code in supported_zips:
-                # Collect from existing local sources
-                local_articles = await self.collect_all_articles_async(force_refresh=force_refresh)
-                # Tag local articles with zip_code
+            # Phase 4: Fetch from Google News (always available for any city)
+            if city and state:
+                google_ingestor = GoogleNewsIngestor(city, state, zip_code)
+                google_articles = await google_ingestor.fetch_articles_async()
+                all_articles.extend(google_articles)
+                logger.info(f"Fetched {len(google_articles)} articles from Google News for {city}, {state}")
+            
+            # Phase 4: Also fetch from configured sources (Fall River sources for 02720, or admin-configured)
+            if sources:
+                # Collect from configured sources
+                local_articles = await self._collect_from_sources_async(sources, force_refresh=force_refresh)
+                # Tag local articles with zip_code and city_state
                 for article in local_articles:
                     article["zip_code"] = zip_code
+                    if city_state:
+                        article["city_state"] = city_state
                 all_articles.extend(local_articles)
-                logger.info(f"Added {len(local_articles)} articles from local sources for zip {zip_code}")
+                logger.info(f"Added {len(local_articles)} articles from configured sources for zip {zip_code}")
         else:
             # Default behavior: collect from all sources (Fall River)
             all_articles = await self.collect_all_articles_async(force_refresh=force_refresh)
@@ -1162,13 +1298,16 @@ class NewsAggregator:
         unique = self.deduplicate_articles(all_articles)
         logger.info(f"Deduplicated to {len(unique)} unique articles")
         
-        # Filter relevant articles (skip for zip_code aggregation - Google News is already filtered)
-        if zip_code:
-            # For zip_code aggregation, skip relevance filtering (Google News is already location-specific)
-            relevant = unique
-        else:
-            relevant = self.filter_relevant_articles(unique, zip_code=zip_code)
-            logger.info(f"Filtered to {len(relevant)} relevant articles (filtered out {len(unique) - len(relevant)})")
+        # Filter relevant articles (Phase 5: uses city_state for relevance)
+        relevant = self.filter_relevant_articles(unique, zip_code=zip_code, city_state=city_state)
+        logger.info(f"Filtered to {len(relevant)} relevant articles (filtered out {len(unique) - len(relevant)})")
+        
+        # Tag articles with city_state before enriching
+        for article in relevant:
+            if city_state and not article.get("city_state"):
+                article["city_state"] = city_state
+            if zip_code and not article.get("zip_code"):
+                article["zip_code"] = zip_code
         
         # Enrich with metadata
         enriched = self.enrich_articles(relevant)

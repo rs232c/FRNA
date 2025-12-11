@@ -297,6 +297,7 @@ def get_relevance_config(zip_code: str) -> dict:
         'high_relevance': [],
         'medium_relevance': [],
         'local_places': [],
+        'excluded_towns': [],
         'topic_keywords': {},
         'source_credibility': {},
         'clickbait_patterns': []
@@ -307,7 +308,7 @@ def get_relevance_config(zip_code: str) -> dict:
         item = row[1]
         points = row[2]
         
-        if category in ['high_relevance', 'medium_relevance', 'local_places', 'clickbait_patterns']:
+        if category in ['high_relevance', 'medium_relevance', 'local_places', 'excluded_towns', 'clickbait_patterns']:
             relevance_config[category].append(item)
         elif category == 'topic_keywords':
             relevance_config[category][item] = points if points is not None else 0.0
@@ -454,17 +455,119 @@ def toggle_good_fit_api():
     """Toggle good fit API"""
     if request.method == 'OPTIONS':
         return '', 200
-    
+
     data = request.json or {}
     article_id = data.get('id') or data.get('article_id')
     is_good_fit = data.get('is_good_fit', True)
     zip_code = data.get('zip_code') or session.get('zip_code')
-    
+
     if not article_id or not zip_code:
         return jsonify({'success': False, 'error': 'Article ID and zip code required'}), 400
-    
+
     result = toggle_good_fit(article_id, zip_code, is_good_fit)
     return jsonify(result)
+
+
+@admin_bp.route('/api/toggle-top-article', methods=['POST', 'OPTIONS'])
+@login_required
+def toggle_top_article_api():
+    """Toggle top article status (exclusive - only one can be top article)"""
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    data = request.json or {}
+    article_id = data.get('article_id')
+    zip_code = data.get('zip_code') or session.get('zip_code')
+
+    if not article_id or not zip_code:
+        return jsonify({'success': False, 'error': 'Article ID and zip code required'}), 400
+
+    try:
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+
+        # First, unset all other top articles for this zip code
+        cursor.execute('UPDATE article_management SET is_top_article = 0 WHERE zip_code = ?', (zip_code,))
+
+        # Set this article as top article
+        cursor.execute('''
+            INSERT OR REPLACE INTO article_management (article_id, enabled, display_order, is_top_article, is_top_story, zip_code, updated_at)
+            VALUES (?, COALESCE((SELECT enabled FROM article_management WHERE article_id = ? AND zip_code = ?), 1),
+                    COALESCE((SELECT display_order FROM article_management WHERE article_id = ? AND zip_code = ?), ?),
+                    1,  -- is_top_article = 1
+                    COALESCE((SELECT is_top_story FROM article_management WHERE article_id = ? AND zip_code = ?), 0),
+                    ?, CURRENT_TIMESTAMP)
+        ''', (article_id, article_id, zip_code, article_id, zip_code, article_id, article_id, zip_code, zip_code))
+
+        conn.commit()
+        conn.close()
+
+        logger.info(f"Set article {article_id} as top article for zip {zip_code}")
+        return jsonify({'success': True, 'message': f'Article {article_id} set as top article'})
+
+    except Exception as e:
+        logger.error(f"Error toggling top article: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@admin_bp.route('/api/toggle-alert', methods=['POST', 'OPTIONS'])
+@login_required
+def toggle_alert_api():
+    """Toggle alert (siren) status for an article"""
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    data = request.json or {}
+    article_id = data.get('article_id') or data.get('id')
+    zip_code = data.get('zip_code') or session.get('zip_code')
+    is_alert = data.get('is_alert', False)
+
+    if not article_id or not zip_code:
+        return jsonify({'success': False, 'error': 'Article ID and zip code required'}), 400
+
+    from admin.utils import toggle_alert
+    result = toggle_alert(int(article_id), str(zip_code), bool(is_alert))
+    return jsonify(result)
+
+
+@admin_bp.route('/api/analyze-target', methods=['POST', 'OPTIONS'])
+@login_required
+def analyze_target_api():
+    """Analyze article for targeting keywords (placeholder implementation)"""
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    data = request.json or {}
+    article_id = data.get('article_id') or data.get('id')
+    zip_code = data.get('zip_code') or session.get('zip_code')
+
+    if not article_id or not zip_code:
+        return jsonify({'success': False, 'error': 'Article ID and zip code required'}), 400
+
+    # Minimal placeholder: return the article data and empty suggestions
+    try:
+        conn = get_db_legacy()
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM articles WHERE id = ?', (article_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        article = dict(row) if row else {}
+        breakdown = {
+            'has_suggestions': False,
+            'message': 'Target analysis not yet implemented. No suggestions available.'
+        }
+
+        return jsonify({
+            'success': True,
+            'article': article,
+            'breakdown': breakdown,
+            'suggested_keywords': {}
+        })
+    except Exception as e:
+        logger.error(f"Error analyzing target: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @admin_bp.route('/api/get-rejected-articles', methods=['GET', 'OPTIONS'])
@@ -933,7 +1036,14 @@ def get_relevance_breakdown():
         if not breakdown:
             breakdown.append("No relevance factors found")
         
-        return jsonify({'success': True, 'breakdown': breakdown})
+        return jsonify({
+            'success': True,
+            'breakdown': breakdown,
+            'relevance_score': article.get('relevance_score'),
+            'local_score': article.get('local_score'),
+            'category': article.get('primary_category') or article.get('category'),
+            'category_confidence': article.get('category_confidence')
+        })
     except Exception as e:
         logger.error(f"Error getting relevance breakdown: {e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -1578,6 +1688,277 @@ def recategorize_all_articles():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
+@admin_bp.route('/api/train-relevance', methods=['POST', 'OPTIONS'])
+@login_required
+def train_relevance_api():
+    """Train relevance and category models from admin click"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    data = request.json or {}
+    article_id = data.get('article_id') or data.get('id')
+    click_type = data.get('click_type')  # 'thumbs_up', 'thumbs_down', 'top_story', 'trash'
+    zip_code = data.get('zip_code') or session.get('zip_code')
+    
+    if not article_id or not click_type or not zip_code:
+        return jsonify({'success': False, 'error': 'article_id, click_type, and zip_code required'}), 400
+    
+    try:
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        
+        # Get article data
+        cursor.execute('SELECT title, content, summary, source FROM articles WHERE id = ?', (article_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Article not found'}), 404
+        
+        article = {
+            'id': article_id,
+            'title': row[0] or '',
+            'content': row[1] or '',
+            'summary': row[2] or '',
+            'source': row[3] or ''
+        }
+        
+        # Determine good_fit based on click_type
+        if click_type == 'thumbs_up' or click_type == 'top_story':
+            good_fit = 1  # Perfect example
+        elif click_type == 'thumbs_down' or click_type == 'trash':
+            good_fit = 0  # Bad example
+        else:
+            good_fit = 0
+        
+        # Train relevance model
+        try:
+            from utils.bayesian_relevance import BayesianRelevanceLearner
+            learner = BayesianRelevanceLearner()
+            learner.train_from_click(article, zip_code, click_type, good_fit)
+        except Exception as e:
+            logger.warning(f"Error training relevance model: {e}")
+        
+        # Train category model (if category exists)
+        try:
+            from utils.category_classifier import CategoryClassifier
+            classifier = CategoryClassifier(zip_code)
+            # Get predicted category
+            primary_category, _, _, _ = classifier.predict_category(article)
+            # Train with feedback
+            classifier.train_from_feedback(article, primary_category, good_fit == 1)
+        except Exception as e:
+            logger.warning(f"Error training category model: {e}")
+        
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Models trained successfully'})
+    except Exception as e:
+        logger.error(f"Error training models: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@admin_bp.route('/api/relevance-breakdown/<int:article_id>', methods=['GET', 'OPTIONS'])
+@login_required
+def relevance_breakdown_api(article_id):
+    """Get detailed relevance score breakdown for an article"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    zip_code = request.args.get('zip_code') or session.get('zip_code')
+    
+    try:
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        
+        # Get article data
+        cursor.execute('SELECT title, content, summary, source, published, relevance_score FROM articles WHERE id = ?', (article_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Article not found'}), 404
+        
+        article = {
+            'id': article_id,
+            'title': row[0] or '',
+            'content': row[1] or '',
+            'summary': row[2] or '',
+            'source': row[3] or '',
+            'published': row[4] or '',
+            'relevance_score': row[5] or 0.0
+        }
+        
+        # Check hard filter
+        from utils.relevance_calculator import check_hard_zip_filter
+        hard_filter_passed = check_hard_zip_filter(article, zip_code)
+        
+        # Calculate breakdown components
+        from utils.relevance_calculator import load_relevance_config
+        from datetime import datetime
+        
+        config = load_relevance_config(zip_code=zip_code)
+        content = article.get("content", article.get("summary", "")).lower()
+        title = article.get("title", "").lower()
+        combined = f"{title} {content}"
+        
+        # Base score calculation
+        base_score = 0.0
+        matched_keywords = []
+        
+        # High relevance keywords
+        high_relevance = config.get('high_relevance', [])
+        high_relevance_points = config.get('high_relevance_points', 15.0)
+        for keyword in high_relevance:
+            if keyword in combined:
+                base_score += float(high_relevance_points)
+                matched_keywords.append(f"{keyword} (+{high_relevance_points})")
+        
+        # Local places
+        local_places = config.get('local_places', [])
+        local_places_points = config.get('local_places_points', 3.0)
+        for place in local_places:
+            if place in combined:
+                base_score += float(local_places_points)
+                matched_keywords.append(f"{place} (+{local_places_points})")
+        
+        # Topic keywords
+        topic_keywords = config.get('topic_keywords', {})
+        for keyword, points in topic_keywords.items():
+            if keyword in combined:
+                base_score += points
+                matched_keywords.append(f"{keyword} (+{points})")
+        
+        # Source credibility
+        source = article.get("source", "").lower()
+        source_credibility = config.get('source_credibility', {})
+        source_boost = 0.0
+        for source_name, points in source_credibility.items():
+            if source_name in source:
+                source_boost = points
+                break
+        
+        # Recency multiplier
+        recency_multiplier = 1.0
+        published = article.get("published")
+        if published:
+            try:
+                pub_date = datetime.fromisoformat(published.replace('Z', '+00:00').split('+')[0])
+                hours_old = (datetime.now() - pub_date.replace(tzinfo=None)).total_seconds() / 3600
+                
+                if hours_old < 6:
+                    recency_multiplier = 2.0
+                elif hours_old < 24:
+                    recency_multiplier = 1.5
+                elif hours_old < 72:
+                    recency_multiplier = 1.0
+                else:
+                    recency_multiplier = 0.5
+            except:
+                pass
+        
+        # Bayesian adjustment
+        bayesian_adjustment = 0.0
+        try:
+            from utils.bayesian_relevance import BayesianRelevanceLearner
+            learner = BayesianRelevanceLearner()
+            bayesian_adjustment = learner.calculate_relevance_adjustment(article, zip_code)
+        except:
+            pass
+        
+        # Final score
+        final_score = article.get('relevance_score', 0.0)
+        
+        conn.close()
+        
+        breakdown = {
+            'final_score': final_score,
+            'hard_filter_passed': hard_filter_passed,
+            'hard_filter_reason': 'Article contains required zip-specific keywords' if hard_filter_passed else 'Article missing required zip-specific keywords',
+            'base_score': base_score,
+            'source_boost': source_boost,
+            'recency_multiplier': recency_multiplier,
+            'bayesian_adjustment': bayesian_adjustment,
+            'matched_keywords': matched_keywords[:10]  # Limit to first 10
+        }
+        
+        return jsonify({'success': True, 'breakdown': breakdown})
+    except Exception as e:
+        logger.error(f"Error getting relevance breakdown: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@admin_bp.route('/api/hard-filter-keywords', methods=['GET', 'POST', 'DELETE', 'OPTIONS'])
+@login_required
+def hard_filter_keywords_api():
+    """Manage hard filter keywords for a zip code"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    zip_code = request.args.get('zip_code') or request.json.get('zip_code') if request.is_json else None
+    if not zip_code:
+        zip_code = session.get('zip_code')
+    
+    if not zip_code:
+        return jsonify({'success': False, 'error': 'Zip code required'}), 400
+    
+    try:
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        
+        if request.method == 'GET':
+            # List keywords
+            cursor.execute('SELECT keyword FROM zip_hard_filters WHERE zip_code = ? ORDER BY keyword', (zip_code,))
+            keywords = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            return jsonify({'success': True, 'keywords': keywords})
+        
+        elif request.method == 'POST':
+            # Add keyword
+            data = request.json or {}
+            keyword = data.get('keyword', '').strip().lower()
+            if not keyword:
+                conn.close()
+                return jsonify({'success': False, 'error': 'Keyword required'}), 400
+            
+            cursor.execute('''
+                INSERT OR IGNORE INTO zip_hard_filters (zip_code, keyword)
+                VALUES (?, ?)
+            ''', (zip_code, keyword))
+            conn.commit()
+            conn.close()
+            
+            if cursor.rowcount > 0:
+                logger.info(f"Added hard filter keyword '{keyword}' for zip {zip_code}")
+                return jsonify({'success': True, 'message': f'Keyword "{keyword}" added'})
+            else:
+                return jsonify({'success': False, 'error': 'Keyword already exists'}), 400
+        
+        elif request.method == 'DELETE':
+            # Remove keyword
+            data = request.json or {}
+            keyword = data.get('keyword', '').strip().lower()
+            if not keyword:
+                conn.close()
+                return jsonify({'success': False, 'error': 'Keyword required'}), 400
+            
+            cursor.execute('''
+                DELETE FROM zip_hard_filters
+                WHERE zip_code = ? AND keyword = ?
+            ''', (zip_code, keyword))
+            conn.commit()
+            conn.close()
+            
+            if cursor.rowcount > 0:
+                logger.info(f"Removed hard filter keyword '{keyword}' for zip {zip_code}")
+                return jsonify({'success': True, 'message': f'Keyword "{keyword}" removed'})
+            else:
+                return jsonify({'success': False, 'error': 'Keyword not found'}), 404
+        
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error managing hard filter keywords: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @admin_bp.route('/api/add-source', methods=['POST', 'OPTIONS'])
 @login_required
 def add_source_api():
@@ -1604,3 +1985,60 @@ def add_source_api():
         logger.error(f"Error adding source: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
+
+@admin_bp.route('/api/get-zip-pin-setting', methods=['GET', 'OPTIONS'])
+def get_zip_pin_setting():
+    """Get zip pin editability setting (Phase 9: Purple Zip Pin)"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('zip_pin_editable',))
+        row = cursor.fetchone()
+        conn.close()
+        
+        editable = row[0] == '1' if row else False
+        return jsonify({'success': True, 'editable': editable})
+    except Exception as e:
+        logger.error(f"Error getting zip pin setting: {e}", exc_info=True)
+        return jsonify({'success': False, 'editable': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/api/toggle-zip-pin-editable', methods=['POST', 'OPTIONS'])
+@login_required
+def toggle_zip_pin_editable():
+    """Toggle zip pin editability setting (Phase 9: Purple Zip Pin) - MAIN ADMIN ONLY"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    # Only main admin can toggle this setting
+    is_main_admin = session.get('is_main_admin', False)
+    if not is_main_admin:
+        return jsonify({'success': False, 'error': 'Main admin access required'}), 403
+    
+    try:
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        
+        # Get current value
+        cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('zip_pin_editable',))
+        row = cursor.fetchone()
+        current_value = row[0] if row else '0'
+        
+        # Toggle: if '1', set to '0'; if '0', set to '1'
+        new_value = '0' if current_value == '1' else '1'
+        
+        cursor.execute('''
+            INSERT OR REPLACE INTO admin_settings (key, value)
+            VALUES (?, ?)
+        ''', ('zip_pin_editable', new_value))
+        conn.commit()
+        conn.close()
+        
+        editable = new_value == '1'
+        return jsonify({'success': True, 'editable': editable, 'message': f'Zip pin editing {"enabled" if editable else "disabled"}'})
+    except Exception as e:
+        logger.error(f"Error toggling zip pin setting: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
