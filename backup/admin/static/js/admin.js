@@ -28,6 +28,10 @@ function escapeAttr(unsafe) {
     return str;
 }
 
+function matchesSelector(target, selector) {
+    return target && target.matches && target.matches(selector);
+}
+
 // Extract zip code from URL
 function getZipCodeFromUrl() {
     const pathParts = window.location.pathname.split('/');
@@ -765,9 +769,9 @@ document.addEventListener('click', async (e) => {
     }
 
     if (btn.classList.contains('target-btn') || btn.getAttribute('data-action') === 'analyze-target') {
-        const articleId = btn.getAttribute('data-id');
+        const articleId = btn.getAttribute('data-id') || btn.dataset.id;
         const zipCode = getZipCodeFromUrl();
-        console.log('Target button clicked:', { articleId, zipCode });
+        console.log('Target button clicked:', { articleId, zipCode, btn: btn });
         
         // Check if button is greyed out (no suggestions available)
         if (btn.getAttribute('data-no-suggestions') === 'true') {
@@ -782,22 +786,35 @@ document.addEventListener('click', async (e) => {
         btn.classList.add('active');
         
         if (!articleId) {
+            console.error('Article ID missing from button:', btn);
             alert('Error: Article ID is missing');
             btn.classList.remove('active');
             return;
         }
         
         if (!zipCode) {
+            console.error('Zip code not found in URL');
             alert('Error: Zip code not found. Please ensure you are on a zip-specific admin page.');
             btn.classList.remove('active');
             return;
         }
         
-        // Check if function exists
-        if (typeof showTargetAnalysis === 'function') {
-            showTargetAnalysis(articleId, zipCode);
+        // Check if function exists (try both window and global scope)
+        const analysisFunc = window.showTargetAnalysis || (typeof showTargetAnalysis !== 'undefined' ? showTargetAnalysis : null);
+        if (analysisFunc && typeof analysisFunc === 'function') {
+            try {
+                analysisFunc(articleId, zipCode);
+            } catch (error) {
+                console.error('Error calling showTargetAnalysis:', error);
+                alert('Error: Failed to analyze article. Check console for details.');
+                btn.classList.remove('active');
+            }
         } else {
-            console.error('showTargetAnalysis function not found');
+            console.error('showTargetAnalysis function not found. Available:', {
+                windowShowTargetAnalysis: typeof window.showTargetAnalysis,
+                showTargetAnalysis: typeof showTargetAnalysis,
+                windowKeys: Object.keys(window).filter(k => k.includes('Target'))
+            });
             alert('Error: Analysis function not loaded. Please refresh the page.');
             btn.classList.remove('active');
         }
@@ -1436,7 +1453,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Toggle handlers
     document.body.addEventListener('change', function(e) {
         // Show images toggle
-        if (e.target.matches('#showImages') || e.target.matches('#showImagesSettings')) {
+        if (matchesSelector(e.target, '#showImages') || matchesSelector(e.target, '#showImagesSettings')) {
             const zipCode = getZipCodeFromUrl();
             const requestBody = {show_images: e.target.checked};
             if (zipCode) {
@@ -1464,11 +1481,76 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Source enabled toggle
-        if (e.target.matches('.source-enabled')) {
-            const sourceKey = e.target.dataset.source;
-            const enabled = e.target.checked;
-            updateSourceSetting(sourceKey, 'enabled', enabled, e.target);
+        // Source enabled toggle (new button style)
+        if (matchesSelector(e.target, '.source-enabled-btn') || e.target.closest('.source-enabled-btn')) {
+            const btn = e.target.closest('.source-enabled-btn') || e.target;
+            const sourceKey = btn.dataset.source;
+            const currentState = btn.dataset.state === 'on';
+            const newState = !currentState;
+            
+            // Update UI immediately
+            btn.dataset.state = newState ? 'on' : 'off';
+            btn.style.background = newState ? '#4caf50' : 'transparent';
+            btn.style.opacity = newState ? '1' : '0.5';
+            btn.textContent = newState ? '✓' : '✕';
+            btn.title = newState ? 'Disable source' : 'Enable source';
+            
+            // Save to server
+            const zipCode = getZipCodeFromUrl();
+            const requestBody = {
+                source: sourceKey,
+                setting: 'enabled',
+                value: newState
+            };
+            if (zipCode) {
+                requestBody.zip_code = zipCode;
+            }
+            
+            fetch('/admin/api/source', {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                credentials: "same-origin",
+                body: JSON.stringify(requestBody)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    // Revert on error
+                    btn.dataset.state = currentState ? 'on' : 'off';
+                    btn.style.background = currentState ? '#4caf50' : 'transparent';
+                    btn.style.opacity = currentState ? '1' : '0.5';
+                    btn.textContent = currentState ? '✓' : '✕';
+                    btn.title = currentState ? 'Disable source' : 'Enable source';
+                    alert('Error saving source setting: ' + (data.message || 'Unknown error'));
+                } else {
+                    // Show success indicator
+                    const indicator = document.createElement('span');
+                    indicator.style.cssText = 'color: #4caf50; margin-left: 0.5rem; font-size: 0.85rem; font-weight: 600;';
+                    indicator.textContent = '✓ Saved';
+                    btn.parentElement.appendChild(indicator);
+                    setTimeout(() => indicator.remove(), 2000);
+                }
+            })
+            .catch(e => {
+                // Revert on error
+                btn.dataset.state = currentState ? 'on' : 'off';
+                btn.style.background = currentState ? '#4caf50' : 'transparent';
+                btn.style.opacity = currentState ? '1' : '0.5';
+                btn.textContent = currentState ? '✓' : '✕';
+                btn.title = currentState ? 'Disable source' : 'Enable source';
+                alert('Error: ' + e.message);
+            });
+        }
+        
+        // Edit source button
+        if (matchesSelector(e.target, '.edit-source-btn') || e.target.closest('.edit-source-btn')) {
+            const btn = e.target.closest('.edit-source-btn') || e.target;
+            const sourceKey = btn.getAttribute('data-source-key') || btn.dataset.sourceKey;
+            if (sourceKey && typeof window.editSource === 'function') {
+                e.preventDefault();
+                e.stopPropagation();
+                window.editSource(sourceKey);
+            }
         }
         
     });
@@ -1487,7 +1569,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let tooltipTimeout = null;
     
     document.addEventListener('mouseenter', function(e) {
-        if (e.target.matches('.relevance-score-tooltip')) {
+        if (matchesSelector(e.target, '.relevance-score-tooltip')) {
             const articleId = e.target.dataset.articleId;
             if (!articleId) return;
             
@@ -1565,7 +1647,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }, true);
     
     document.addEventListener('mouseleave', function(e) {
-        if (e.target.matches('.relevance-score-tooltip')) {
+        if (matchesSelector(e.target, '.relevance-score-tooltip')) {
             tooltipTimeout = setTimeout(function() {
                 if (tooltipElement) {
                     tooltipElement.remove();
@@ -2037,34 +2119,112 @@ function closeExplanation(id) {
 }
 window.closeExplanation = closeExplanation;
 
-// Regenerate website for current zip code
-function regenerateWebsite() {
-    const zipCode = getZipCodeFromUrl();
+// Regenerate website for current zip code (fast, quick regenerate)
+function regenerateWebsite(evt) {
+    let zipCode = getZipCodeFromUrl();
+
     if (!zipCode) {
-        alert('Zip code not found in URL');
+        const pathMatch = window.location.pathname.match(/\/admin\/(\d{5})/);
+        if (pathMatch) {
+            zipCode = pathMatch[1];
+        }
+    }
+
+    if (!zipCode) {
+        const zipElement = document.querySelector('[data-zip-code]');
+        if (zipElement) zipCode = zipElement.getAttribute('data-zip-code');
+    }
+
+    if (!zipCode) {
+        alert('Zip code not found. Navigate to a zip-specific admin page.');
+        console.error('Unable to determine zip code for regeneration from URL or page.');
         return;
     }
-    
-    if (!confirm(`Regenerate website for zip code ${zipCode}?`)) {
-        return;
+
+    const button = evt?.target || document.querySelector('button[onclick*="regenerateWebsite"]');
+    const originalText = button?.textContent || 'Regenerate Website';
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = '⏳ Regenerating...';
+        button.style.opacity = '0.6';
+        button.style.cursor = 'wait';
     }
-    
+
+    const createProgressBox = () => {
+        const existing = document.getElementById('regenProgress');
+        if (existing) existing.remove();
+
+        const wrapper = document.createElement('div');
+        wrapper.id = 'regenProgress';
+        wrapper.style.cssText = 'margin-top: 1rem; padding: 1rem; background: #121212; border: 1px solid #333; border-radius: 10px; font-size: 0.9rem;';
+        wrapper.innerHTML = `
+            <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;">
+                <div class="regen-spinner" style="width:18px;height:18px;border:2px solid #333;border-top:2px solid #38bdf8;border-radius:50%;animation:regenSpin 1s linear infinite;"></div>
+                <strong style="color:#38bdf8;">Regenerating website for ${zipCode}...</strong>
+            </div>
+            <div id="regenStatus" style="color:#888;">⏳ Starting quick regeneration</div>
+        `;
+        if (!document.getElementById('regenSpinnerStyle')) {
+            const style = document.createElement('style');
+            style.id = 'regenSpinnerStyle';
+            style.textContent = '@keyframes regenSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+            document.head.appendChild(style);
+        }
+        return wrapper;
+    };
+
+    const progressBox = createProgressBox();
+    if (button?.parentElement) {
+        button.parentElement.insertBefore(progressBox, button.nextSibling);
+    } else {
+        document.body.appendChild(progressBox);
+    }
+
+    const updateStatus = message => {
+        const statusEl = document.getElementById('regenStatus');
+        if (statusEl) statusEl.textContent = message;
+    };
+
+    const finalize = (message, isError = false) => {
+        if (button) {
+            button.disabled = false;
+            button.textContent = originalText;
+            button.style.opacity = '1';
+            button.style.cursor = 'pointer';
+        }
+
+        if (progressBox) {
+            progressBox.style.borderColor = isError ? '#dc2626' : '#22c55e';
+            progressBox.innerHTML = `<div style="color:${isError ? '#f87171' : '#22c55e'}; font-weight:600;">${isError ? '✗ ' : '✓ '} ${message}</div>`;
+            setTimeout(() => progressBox.remove(), 5000);
+        }
+    };
+
     fetch('/admin/api/regenerate', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         credentials: 'same-origin',
-        body: JSON.stringify({ zip_code: zipCode, force_refresh: false })
+        body: JSON.stringify({ zip_code: zipCode })
     })
-    .then(r => r.json())
+    .then(async r => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+            throw new Error(data.message || `HTTP ${r.status}`);
+        }
+        return data;
+    })
     .then(data => {
         if (data.success) {
-            alert('Website regeneration started. This may take a few minutes.');
+            updateStatus('✓ Quick regeneration kicked off. Estimating 30-60 seconds.');
+            setTimeout(() => finalize('Website regenerated successfully!'), 60000);
         } else {
-            alert('Error: ' + (data.message || 'Failed to regenerate website'));
+            throw new Error(data.message || 'Failed to regenerate website');
         }
     })
-    .catch(e => {
-        alert('Error: ' + e.message);
+    .catch(err => {
+        console.error('Regeneration error:', err);
+        finalize(err.message || 'Failed to regenerate website', true);
     });
 }
 window.regenerateWebsite = regenerateWebsite;
@@ -2200,42 +2360,164 @@ window.rerunRelevanceScoring = rerunRelevanceScoring;
 
 // Add new source
 function addNewSource() {
-    const name = prompt('Enter source name:');
-    if (!name) return;
-    
-    const url = prompt('Enter source URL:');
-    if (!url) return;
-    
+    // Show edit modal with empty source
+    showEditSourceModal({
+        key: '',
+        name: '',
+        url: '',
+        rss: '',
+        category: 'news',
+        relevance_score: ''
+    });
+}
+window.addNewSource = addNewSource;
+
+// Edit source
+function editSource(sourceKey) {
     const zipCode = getZipCodeFromUrl();
-    const requestBody = {
-        name: name,
-        url: url,
-        enabled: true
-    };
-    if (zipCode) {
-        requestBody.zip_code = zipCode;
+    if (!zipCode) {
+        alert('Zip code not found');
+        return;
     }
     
-    fetch('/admin/api/add-source', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        credentials: 'same-origin',
-        body: JSON.stringify(requestBody)
+    fetch(`/admin/api/get-source?key=${encodeURIComponent(sourceKey)}&zip=${encodeURIComponent(zipCode)}`, {
+        credentials: 'same-origin'
     })
     .then(r => r.json())
     .then(data => {
-        if (data.success) {
-            alert('Source added successfully');
-            location.reload();
+        if (data.success && data.source) {
+            showEditSourceModal(data.source);
         } else {
-            alert('Error: ' + (data.message || 'Failed to add source'));
+            alert('Error loading source: ' + (data.message || 'Unknown error'));
         }
     })
     .catch(e => {
         alert('Error: ' + e.message);
     });
 }
-window.addNewSource = addNewSource;
+window.editSource = editSource;
+
+// Show edit source modal
+function showEditSourceModal(source) {
+    let modal = document.getElementById('editSourceModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'editSourceModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2>${source.key ? 'Edit' : 'Add'} Source</h2>
+                    <span class="close-modal" onclick="closeEditSourceModal()">&times;</span>
+                </div>
+                <form id="editSourceForm" onsubmit="saveSourceEdit(event); return false;">
+                    <input type="hidden" id="editSourceKey" name="key" value="${escapeAttr(source.key || '')}">
+                    <div class="form-group">
+                        <label>Name:</label>
+                        <input type="text" id="editSourceName" name="name" value="${escapeAttr(source.name || '')}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>URL:</label>
+                        <input type="url" id="editSourceUrl" name="url" value="${escapeAttr(source.url || '')}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>RSS URL (optional):</label>
+                        <input type="url" id="editSourceRss" name="rss" value="${escapeAttr(source.rss || '')}">
+                    </div>
+                    <div class="form-group">
+                        <label>Category:</label>
+                        <select id="editSourceCategory" name="category">
+                            <option value="news" ${source.category === 'news' ? 'selected' : ''}>News</option>
+                            <option value="entertainment" ${source.category === 'entertainment' ? 'selected' : ''}>Entertainment</option>
+                            <option value="sports" ${source.category === 'sports' ? 'selected' : ''}>Sports</option>
+                            <option value="local" ${source.category === 'local' ? 'selected' : ''}>Local</option>
+                            <option value="media" ${source.category === 'media' ? 'selected' : ''}>Media</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Relevance Score (optional):</label>
+                        <input type="number" id="editSourceRelevance" name="relevance_score" 
+                               value="${source.relevance_score !== undefined ? source.relevance_score : ''}" 
+                               step="0.1" min="0" placeholder="e.g., 15.0">
+                        <small style="color: #888; display: block; margin-top: 0.25rem;">Higher scores = more relevant articles</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" style="padding: 0.75rem 1.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Save</button>
+                        <button type="button" onclick="closeEditSourceModal()" style="padding: 0.75rem 1.5rem; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; margin-left: 0.5rem;">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        // Update existing modal
+        document.getElementById('editSourceKey').value = source.key || '';
+        document.getElementById('editSourceName').value = source.name || '';
+        document.getElementById('editSourceUrl').value = source.url || '';
+        document.getElementById('editSourceRss').value = source.rss || '';
+        document.getElementById('editSourceCategory').value = source.category || 'news';
+        document.getElementById('editSourceRelevance').value = source.relevance_score !== undefined ? source.relevance_score : '';
+        modal.querySelector('h2').textContent = (source.key ? 'Edit' : 'Add') + ' Source';
+    }
+    
+    modal.style.display = 'block';
+}
+window.showEditSourceModal = showEditSourceModal;
+
+// Close edit source modal
+function closeEditSourceModal() {
+    const modal = document.getElementById('editSourceModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+window.closeEditSourceModal = closeEditSourceModal;
+
+// Save source edit
+function saveSourceEdit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    const zipCode = getZipCodeFromUrl();
+    if (!zipCode) {
+        alert('Zip code not found');
+        return;
+    }
+    
+    const data = {
+        key: formData.get('key'),
+        name: formData.get('name'),
+        url: formData.get('url'),
+        rss: formData.get('rss') || null,
+        category: formData.get('category'),
+        relevance_score: formData.get('relevance_score') || null,
+        zip_code: zipCode
+    };
+    
+    const isNew = !data.key;
+    const endpoint = isNew ? '/admin/api/add-source' : '/admin/api/edit-source';
+    
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'same-origin',
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            closeEditSourceModal();
+            location.reload();
+        } else {
+            alert('Error saving source: ' + (result.message || 'Unknown error'));
+        }
+    })
+    .catch(e => {
+        alert('Error: ' + e.message);
+    });
+}
+window.saveSourceEdit = saveSourceEdit;
 
 // Retrain all categories
 function retrainAllCategories() {
@@ -2974,7 +3256,7 @@ function displayTargetAnalysis(data, articleId, zipCode) {
                 <div style="color: #e0e0e0;">
                     ${article.display_category ? `
                         <span style="background: #0078d4; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">${escapeHtml(article.display_category)}</span>
-                        ${article.category_confidence && article.category_confidence > 0 ? `<span style="color: #888; font-size: 0.85rem; margin-left: 0.5rem;">(${(article.category_confidence * 100).toFixed(0)}%)</span>` : ''}
+                        ${article.category_confidence && article.category_confidence > 0 ? `<span style="color: #888; font-size: 0.85rem; margin-left: 0.5rem;">(${Math.round(article.category_confidence)}%)</span>` : ''}
                         ${article.primary_category && article.primary_category !== article.display_category ? `<span style="background: #404040; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; margin-left: 0.5rem;">${escapeHtml(article.primary_category)}</span>` : ''}
                     ` : '<span style="color: #888;">Not categorized</span>'}
                 </div>

@@ -272,12 +272,23 @@ class CategoryClassifier:
         # Count total words (approximate)
         total_words = len(combined.split())
         
-        # Fast base score: (hits + 1) / (total_words + 10)
-        # This gives higher scores for articles with more keyword matches relative to article length
+        # Improved base score calculation
+        # Use logarithmic scaling to avoid penalizing longer articles too heavily
+        # Formula: hits * log(1 + hits) / sqrt(total_words + 100)
+        # This gives reasonable scores: 1-2 hits in 500 words = ~0.1-0.2, 5+ hits = ~0.3-0.5
         if total_words == 0:
             base_score = 0.0
+        elif hits == 0:
+            base_score = 0.0
         else:
-            base_score = (hits + 1) / (total_words + 10)
+            import math
+            # Logarithmic boost for multiple hits
+            hit_multiplier = math.log(1 + hits) * hits
+            # Square root normalization to reduce penalty for length
+            length_normalizer = math.sqrt(total_words + 100)
+            base_score = hit_multiplier / length_normalizer
+            # Normalize to 0-1 range (cap at reasonable max)
+            base_score = min(1.0, base_score / 10.0)  # Divide by 10 to bring into 0-1 range
         
         # Apply Bayesian adjustment from training data
         bayesian_adjustment = self._get_bayesian_adjustment(article, category)
@@ -436,18 +447,35 @@ class CategoryClassifier:
         secondary_score = sorted_categories[1][1] if len(sorted_categories) > 1 else 0.1
         
         # Normalize confidence to 0-100%
-        # For cold-start, scale by max score to get better percentages
+        # Use relative scoring: compare primary score to all other scores
+        max_score = max(category_scores.values())
+        min_score = min(category_scores.values())
+        score_range = max_score - min_score if max_score > min_score else 1.0
+        
         if use_cold_start and primary_score > 0:
-            max_possible = max(category_scores.values())
-            if max_possible > 0:
-                primary_confidence = min(100, max(0, (primary_score / max_possible) * 100))
-                secondary_confidence = min(100, max(0, (secondary_score / max_possible) * 100))
+            # Cold-start: scale relative to max score
+            if max_score > 0:
+                # Use relative position in score range for better percentages
+                primary_confidence = min(100, max(20, ((primary_score - min_score) / score_range) * 70 + 20))
+                secondary_confidence = min(80, max(5, ((secondary_score - min_score) / score_range) * 50 + 10))
             else:
                 primary_confidence = 50.0
                 secondary_confidence = 10.0
         else:
-            primary_confidence = min(100, max(0, primary_score * 100))
-            secondary_confidence = min(100, max(0, secondary_score * 100))
+            # Full scoring: use relative position + absolute boost
+            # Primary confidence: 30-100% based on relative position
+            # Add boost if primary score is significantly higher than others
+            score_advantage = primary_score - secondary_score if len(sorted_categories) > 1 else primary_score
+            relative_position = ((primary_score - min_score) / score_range) if score_range > 0 else 0.5
+            
+            # Base confidence from relative position (40-90%)
+            base_confidence = relative_position * 50 + 40
+            
+            # Boost if primary score is much higher than others (up to +20%)
+            advantage_boost = min(20, score_advantage * 50)
+            
+            primary_confidence = min(100, max(30, base_confidence + advantage_boost))
+            secondary_confidence = min(80, max(5, relative_position * 40 + 10))
         
         return (primary_category, primary_confidence, secondary_category, secondary_confidence)
     

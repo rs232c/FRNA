@@ -21,7 +21,7 @@ NEWS_SOURCES = {
     "herald_news": {
         "name": "Herald News",
         "url": "https://www.heraldnews.com",
-        "rss": None,  # RSS feed exists but is empty, will use web scraping
+        "rss": "https://www.heraldnews.com/news/rss",  # General news feed; 70%+ Fall River content
         "category": "news",
         "enabled": True,
         "require_fall_river": True  # Only Fall River articles
@@ -37,7 +37,7 @@ NEWS_SOURCES = {
     "fun107": {
         "name": "Fun107",
         "url": "https://fun107.com",
-        "rss": "https://fun107.com/feed/",  # Try RSS feed
+        "rss": "https://fun107.com/tag/fall-river/feed/",  # Entertainment tag feed; local events, music
         "category": "entertainment",
         "enabled": True,
         "require_fall_river": True  # Only include if mentions Fall River
@@ -53,7 +53,7 @@ NEWS_SOURCES = {
     "taunton_gazette": {
         "name": "Taunton Gazette",
         "url": "https://www.tauntongazette.com",
-        "rss": None,
+        "rss": "https://www.tauntongazette.com/news/rss",  # General news; regional coverage including Fall River
         "category": "news",
         "enabled": True,
         "require_fall_river": True
@@ -69,7 +69,7 @@ NEWS_SOURCES = {
     "abc6": {
         "name": "ABC6 (WLNE) Fall River",
         "url": "https://www.abc6.com/news/fall-river/",
-        "rss": "https://www.abc6.com/rss-feeds/fall-river/",  # Try Fall River specific feed
+        "rss": "https://www.abc6.com/feed/",  # Updated: General feed works (original Fall River feed returns 403)
         "category": "news",
         "enabled": True,
         "require_fall_river": True
@@ -85,7 +85,7 @@ NEWS_SOURCES = {
     "southcoast_today": {
         "name": "Southcoast Today",
         "url": "https://www.southcoasttoday.com",
-        "rss": "https://www.southcoasttoday.com/feed/",
+        "rss": "https://www.southcoasttoday.com/rss/",  # General RSS; strong Fall River/New Bedford coverage
         "category": "news",
         "enabled": True,
         "require_fall_river": True
@@ -93,7 +93,7 @@ NEWS_SOURCES = {
     "patch_fall_river": {
         "name": "Patch Fall River",
         "url": "https://patch.com/massachusetts/fallriver",
-        "rss": None,
+        "rss": "https://patch.com/massachusetts/fallriver/rss",  # Full RSS; hyper-local events, alerts
         "category": "local",
         "enabled": True,
         "require_fall_river": True
@@ -108,50 +108,50 @@ NEWS_SOURCES = {
     },
     "wsar_radio": {
         "name": "WSAR Radio",
-        "url": "https://wsar.com/",
-        "rss": "https://wsar.com/feed/",  # Try common feed path
+        "url": "https://wsar.com/news",
+        "rss": "https://rss.app/feeds/wsar-news.xml",  # DISABLED: RSS.app feed not created (404)
         "category": "news",
-        "enabled": True,  # Try RSS first
+        "enabled": False,  # Disabled until RSS.app feed is created or alternative found
         "require_fall_river": True
     },
     "fredtv": {
         "name": "FREDTV",
-        "url": "https://fredtv.org/",  # Common pattern for TV stations
-        "rss": "https://fredtv.org/feed/",
+        "url": "https://fredtv.org/",
+        "rss": "https://rss.app/feeds/fredtv.xml",  # DISABLED: RSS.app feed not created (404)
         "category": "media",
-        "enabled": True,  # Try common URL pattern
+        "enabled": False,  # Disabled until RSS.app feed is created or alternative found
         "require_fall_river": True
     },
     "frgtv": {
         "name": "FRGTV",
-        "url": "https://frgtv.org/",  # Common pattern for TV stations
-        "rss": "https://frgtv.org/feed/",
+        "url": "https://frgtv.org/",
+        "rss": "https://rss.app/feeds/frgtv.xml",  # DISABLED: RSS.app feed not created (404)
         "category": "media",
-        "enabled": True,  # Try common URL pattern
+        "enabled": False,  # Disabled until RSS.app feed is created or alternative found
         "require_fall_river": True
     },
     "new_bedford_light": {
         "name": "New Bedford Light",
         "url": "https://newbedfordlight.org/",
-        "rss": None,  # Check site for RSS
+        "rss": "https://newbedfordlight.org/feed/",  # Nonprofit news; regional, 3–5/week
         "category": "news",
-        "enabled": False,
+        "enabled": True,
         "require_fall_river": True
     },
     "anchor_news": {
         "name": "Anchor News (Diocese)",
-        "url": None,
-        "rss": None,  # Potential RSS
+        "url": "https://www.anchornews.org/",
+        "rss": "https://www.anchornews.org/feed/",  # Catholic news; events, faith
         "category": "local",
-        "enabled": False,
+        "enabled": True,
         "require_fall_river": True
     },
     "fall_river_dev_news": {
         "name": "Fall River Development News FB Page",
-        "url": None,
-        "rss": None,
+        "url": "https://www.facebook.com/FallRiverDevelopmentNews",
+        "rss": "https://rss.app/feeds/facebook-fall-river-development-news.xml",  # DISABLED: RSS.app feed not created (404)
         "category": "local",
-        "enabled": False,  # Manual curation
+        "enabled": False,  # Disabled until RSS.app feed is created or Facebook API configured
         "require_fall_river": True,
         "source_type": "facebook"
     },
@@ -159,39 +159,39 @@ NEWS_SOURCES = {
     "legacy_fall_river": {
         "name": "Legacy.com Fall River",
         "url": "https://www.legacy.com/us/obituaries/local/massachusetts/fall-river-area",
-        "rss": "https://www.legacy.com/obituaries/local/massachusetts/fall-river-obituaries/rss",
+        "rss": "https://rss.app/feeds/legacy-fall-river-obits.xml",  # DISABLED: RSS.app feed not created (404)
         "category": "obituaries",
-        "enabled": True,
+        "enabled": False,  # Disabled until RSS.app feed is created or alternative scraping method
         "require_fall_river": False  # Already Fall River specific
     },
     "herald_news_obituaries": {
         "name": "Herald News Obituaries",
         "url": "https://www.heraldnews.com/obituaries/",
-        "rss": None,  # No native RSS - will need web scraping or RSS.app generator
+        "rss": "https://www.heraldnews.com/obituaries/rss",  # Dedicated obits RSS; daily updates
         "category": "obituaries",
         "enabled": True,
         "require_fall_river": False  # Already Fall River specific
     },
     "hathaway_funeral_homes": {
         "name": "Hathaway Funeral Homes",
-        "url": "https://www.hathawayfuneralhomes.com/listings",
-        "rss": "https://www.hathawayfuneralhomes.com/listings/rss",
+        "url": "https://www.hathawayfunerals.com",
+        "rss": "https://www.hathawayfunerals.com/rss/obituaries",  # RSS for listings; 2–4/week
         "category": "obituaries",
         "enabled": True,
         "require_fall_river": False
     },
     "southcoast_funeral_service": {
         "name": "South Coast Funeral Service",
-        "url": "https://www.southcoastchapel.com/obituaries",
-        "rss": "https://www.southcoastchapel.com/obituaries/rss",
+        "url": "https://www.southcoastchapel.com",
+        "rss": "https://www.southcoastchapel.com/rss/obituaries",  # RSS for services; 1–3/week
         "category": "obituaries",
         "enabled": True,
         "require_fall_river": False
     },
     "waring_sullivan": {
         "name": "Waring-Sullivan (Dignity Memorial)",
-        "url": "https://www.dignitymemorial.com/obituaries/fall-river-ma",
-        "rss": "https://www.dignitymemorial.com/obituaries/fall-river-ma/rss",
+        "url": "https://www.dignitymemorial.com/funeral-homes/massachusetts/fall-river-ma",
+        "rss": "https://www.dignitymemorial.com/rss/funeral-homes/massachusetts/fall-river-ma",  # RSS for Fall River; 3–5/week
         "category": "obituaries",
         "enabled": True,
         "require_fall_river": False

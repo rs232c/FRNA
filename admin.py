@@ -232,18 +232,9 @@ def session_check():
 
 @app.route('/')
 def index():
-    """Main index route - shows landing page or serves static index.html"""
-    # Serve static index.html - client-side handles routing
-    index_path = WEBSITE_OUTPUT_DIR / "index.html"
-    if index_path.exists():
-        return send_from_directory(str(WEBSITE_OUTPUT_DIR), "index.html")
-    else:
-        # Fallback: show landing page
-        from website_generator import WebsiteGenerator
-        generator = WebsiteGenerator()
-        template = generator._get_landing_template()
-        html = template.render()
-        return html
+    """Main index route - redirects to default zip code 02720"""
+    # Redirect to default zip code 02720
+    return redirect('/02720', code=302)
 
 @app.route('/category/<category_slug>')
 def category_page(category_slug):
@@ -278,12 +269,52 @@ def zip_page(zip_code):
         except (ValueError, OSError):
             return redirect('/?error=invalid_zip')
     
-    # Serve static index.html - client-side JavaScript will handle the zip code
-    index_path = WEBSITE_OUTPUT_DIR / "index.html"
-    if index_path.exists():
-        return send_from_directory(str(WEBSITE_OUTPUT_DIR), "index.html")
+    # Check for zip-specific index.html first
+    zip_index_path = WEBSITE_OUTPUT_DIR / f"zip_{zip_code}" / "index.html"
+    root_index_path = WEBSITE_OUTPUT_DIR / "index.html"
+    
+    import os
+    zip_exists = zip_index_path.exists() if zip_index_path else False
+    root_exists = root_index_path.exists() if root_index_path else False
+    zip_mtime = os.path.getmtime(zip_index_path) if zip_exists else None
+    root_mtime = os.path.getmtime(root_index_path) if root_exists else None
+    
+    # Serve the NEWER file (zip-specific if it exists and is newer, otherwise root)
+    if zip_exists and root_exists:
+        # Both exist - serve the newer one
+        if zip_mtime >= root_mtime:
+            response = send_from_directory(str(WEBSITE_OUTPUT_DIR / f"zip_{zip_code}"), "index.html")
+            served_mtime = zip_mtime
+        else:
+            response = send_from_directory(str(WEBSITE_OUTPUT_DIR), "index.html")
+            served_mtime = root_mtime
+    elif zip_index_path.exists():
+        response = send_from_directory(str(WEBSITE_OUTPUT_DIR / f"zip_{zip_code}"), "index.html")
+        served_mtime = zip_mtime
+    elif root_index_path.exists():
+        response = send_from_directory(str(WEBSITE_OUTPUT_DIR), "index.html")
+        served_mtime = root_mtime
     else:
         return "Website not generated yet. Please run the aggregator first.", 404
+    
+    # Add aggressive cache-control headers to prevent stale content
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    # Add ETag based on file modification time to force revalidation
+    if served_mtime:
+        etag = f'"{int(served_mtime)}"'
+        response.headers['ETag'] = etag
+        # Check if client has matching ETag (304 Not Modified)
+        if request.headers.get('If-None-Match') == etag:
+            response.status_code = 304
+            return response
+    # Add Last-Modified header
+    if served_mtime:
+        from email.utils import formatdate
+        response.headers['Last-Modified'] = formatdate(served_mtime, usegmt=True)
+    
+    return response
 
 @app.route('/<zip_code>/category/<category_slug>')
 def zip_category_page(zip_code, category_slug):
@@ -1057,11 +1088,14 @@ def admin_dashboard_legacy(tab='articles', zip_code_param=None):
                 dt = dt.replace(tzinfo=timezone.utc)
             
             # Convert to Eastern Time
-            eastern_tz = ZoneInfo('America/New_York')
-            dt_eastern = dt.astimezone(eastern_tz)
-            last_regeneration = dt_eastern.strftime('%Y-%m-%d %I:%M %p %Z')
-        except Exception as e:
-            logger.warning(f"Error formatting timestamp: {e}")
+            try:
+                eastern_tz = ZoneInfo('America/New_York')
+                dt_eastern = dt.astimezone(eastern_tz)
+                last_regeneration = dt_eastern.strftime('%Y-%m-%d %I:%M %p %Z')
+            except (Exception, LookupError) as zone_error:
+                # If zoneinfo fails (e.g., tzdata not available), try manual conversion
+                raise zone_error
+        except (Exception, LookupError) as e:
             # If zoneinfo fails, try manual conversion
             try:
                 from datetime import timedelta
@@ -2805,8 +2839,16 @@ def check_regeneration_needed():
             conn.close()
             return jsonify({'needs_regeneration': True, 'reason': 'Invalid last regeneration time'})
         
+        # Ensure both datetimes are timezone-aware or both are naive
+        from datetime import timezone
+        if last_time.tzinfo is not None:
+            # last_time is timezone-aware, make now timezone-aware too
+            now = datetime.now(timezone.utc)
+        else:
+            # last_time is naive, make now naive too
+            now = datetime.now()
+        
         next_time = last_time + timedelta(minutes=interval_minutes)
-        now = datetime.now()
         
         conn.close()
         

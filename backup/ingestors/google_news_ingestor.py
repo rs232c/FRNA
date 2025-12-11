@@ -98,6 +98,7 @@ class GoogleNewsIngestor(NewsIngestor):
         articles = []
         rss_url = self._build_rss_url()
         source_name = self.source_config["name"]
+        logger.info(f"  → Fetching Google News RSS: {rss_url}")
         
         try:
             session = await self._get_aiohttp_session()
@@ -105,6 +106,7 @@ class GoogleNewsIngestor(NewsIngestor):
                 if response.status == 200:
                     content = await response.text()
                     feed = feedparser.parse(content)
+                    logger.info(f"  ✓ Successfully fetched {len(feed.entries)} entries from {source_name} RSS")
                     
                     for entry in feed.entries[:50]:  # Get up to 50 articles
                         # Parse published date

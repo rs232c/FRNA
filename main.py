@@ -193,7 +193,9 @@ class NewsAggregatorApp:
                     force_refresh = self.force_refresh or (os.environ.get('FORCE_REFRESH', '0') == '1')
                     if force_refresh:
                         logger.info("Force refresh enabled - fetching fresh data from all sources")
+                    logger.info("Starting article aggregation from all sources...")
                     articles = self.aggregator.aggregate(force_refresh=force_refresh, zip_code=zip_code, city_state=city_state)
+                    logger.info(f"Aggregation complete: {len(articles)} articles collected")
                     metrics.record_count("articles_aggregated", len(articles))
             except Exception as e:
                 logger.error(f"Error during aggregation: {e}", exc_info=True)
@@ -235,9 +237,14 @@ class NewsAggregatorApp:
             
             # Generate website from enriched articles (Phase 6: city-based generation)
             with TimingContext("generate_website"):
-                logger.info("Generating website...")
+                logger.info("=" * 60)
+                logger.info("Starting website generation...")
+                logger.info(f"Input: {len(enriched_articles)} enriched articles")
+                logger.info("=" * 60)
                 self.website_generator.generate(enriched_articles, zip_code=zip_code, city_state=city_state)
-                logger.info("Website generated successfully")
+                logger.info("=" * 60)
+                logger.info("✓ Website generation completed successfully")
+                logger.info("=" * 60)
             
             # Save metrics
             metrics.save_metrics()

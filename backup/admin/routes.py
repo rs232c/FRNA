@@ -1242,41 +1242,65 @@ def get_category_stats():
 @admin_bp.route('/api/regenerate', methods=['POST', 'OPTIONS'])
 @login_required
 def regenerate_website_api():
-    """Regenerate website for a specific zip code"""
+    """Regenerate website for a specific zip code using quick_regenerate."""
     if request.method == 'OPTIONS':
         return '', 200
-    
-    zip_code = request.args.get('zip') or session.get('zip_code')
+
+    payload = request.get_json(silent=True) or {}
+    zip_code = payload.get('zip_code') or request.args.get('zip') or session.get('zip_code')
     if not zip_code:
         return jsonify({'success': False, 'error': 'Zip code required'}), 400
-    
+
     try:
-        # Import regenerate_zip_website from the main admin.py file
-        # Since it's in the parent module, we need to import it differently
-        import importlib.util
+        import threading
+        import subprocess
+        import sys
         import os
-        
-        # Get the path to admin.py in the parent directory
-        admin_py_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'admin.py')
-        if os.path.exists(admin_py_path):
-            spec = importlib.util.spec_from_file_location("admin_main", admin_py_path)
-            admin_main = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(admin_main)
-            
-            if hasattr(admin_main, 'regenerate_zip_website'):
-                success, message = admin_main.regenerate_zip_website(zip_code, force_refresh=False)
-                if success:
-                    return jsonify({'success': True, 'message': message})
-                else:
-                    return jsonify({'success': False, 'message': message}), 500
-        
-        # Fallback: return a message that regeneration needs to be done manually
+
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        quick_regen_path = os.path.join(project_root, 'quick_regenerate.py')
+
+        if not os.path.exists(quick_regen_path):
+            logger.error(f"quick_regenerate.py not found at {quick_regen_path}")
+            return jsonify({
+                'success': False,
+                'message': 'quick_regenerate.py missing. Please restore the file.'
+            }), 500
+
+        logger.info(f"Starting quick regeneration for zip {zip_code}")
+
+        def run_regeneration():
+            try:
+                cmd = [sys.executable, quick_regen_path, zip_code]
+                logger.info(f"Running quick regeneration command: {' '.join(cmd)}")
+                result = subprocess.run(
+                    cmd,
+                    cwd=project_root,
+                    capture_output=True,
+                    text=True,
+                    timeout=300
+                )
+                if result.stdout:
+                    logger.info(f"Quick regen stdout: {result.stdout[-1000:]}")
+                if result.stderr:
+                    logger.warning(f"Quick regen stderr: {result.stderr[-1000:]}")
+                if result.returncode != 0:
+                    logger.error(f"Quick regeneration returned code {result.returncode}")
+            except subprocess.TimeoutExpired:
+                logger.error(f"Quick regeneration timed out for zip {zip_code}")
+            except Exception as err:
+                logger.error(f"Quick regeneration failed: {err}", exc_info=True)
+
+        thread = threading.Thread(target=run_regeneration, daemon=True)
+        thread.start()
+
         return jsonify({
-            'success': False, 
-            'message': 'Regenerate function not available. Please use the main admin interface.'
-        }), 500
+            'success': True,
+            'message': f'Quick website regeneration started for zip {zip_code}. It should complete shortly.'
+        })
+
     except Exception as e:
-        logger.error(f"Error regenerating website: {e}", exc_info=True)
+        logger.error(f"Error starting quick regeneration: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -1969,20 +1993,256 @@ def add_source_api():
     data = request.json or {}
     name = data.get('name', '').strip()
     url = data.get('url', '').strip()
+    rss = data.get('rss', '').strip() or None
+    category = data.get('category', 'news').strip()
+    relevance_score = data.get('relevance_score')
     zip_code = data.get('zip_code') or session.get('zip_code')
     
     if not name or not url:
         return jsonify({'success': False, 'error': 'Name and URL required'}), 400
     
+    if not zip_code:
+        return jsonify({'success': False, 'error': 'Zip code required'}), 400
+    
     try:
-        # For now, return a message that this needs to be configured in config.py
-        # In a full implementation, this would add to a sources table or config
-        return jsonify({
-            'success': False, 
-            'message': 'Adding sources via API is not yet implemented. Please add sources in config.py'
-        }), 501
+        import re
+        # Generate source key from name
+        source_key = re.sub(r'[^a-z0-9_]', '_', name.lower())
+        source_key = re.sub(r'_+', '_', source_key).strip('_')
+        
+        if not source_key:
+            return jsonify({'success': False, 'error': 'Invalid source name'}), 400
+        
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        
+        # Save as custom source
+        source_data = {
+            'name': name,
+            'url': url,
+            'rss': rss,
+            'category': category,
+            'enabled': data.get('enabled', True),
+            'require_fall_river': data.get('require_fall_river', False)
+        }
+        
+        cursor.execute('''
+            INSERT OR REPLACE INTO admin_settings_zip (zip_code, key, value)
+            VALUES (?, ?, ?)
+        ''', (zip_code, f'custom_source_{source_key}', json.dumps(source_data)))
+        
+        # Save relevance score if provided
+        if relevance_score is not None and relevance_score != '':
+            try:
+                relevance_score_float = float(relevance_score)
+                cursor.execute('''
+                    INSERT OR REPLACE INTO relevance_config (category, item, points, zip_code)
+                    VALUES (?, ?, ?, ?)
+                ''', ('source_credibility', name.lower(), relevance_score_float, zip_code))
+            except (ValueError, TypeError):
+                pass
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': f'Source "{name}" added successfully', 'source_key': source_key})
     except Exception as e:
         logger.error(f"Error adding source: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@admin_bp.route('/api/source', methods=['POST', 'OPTIONS'])
+@login_required
+def update_source_setting():
+    """Update a source setting (enabled, require_fall_river, etc.)"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    data = request.json or {}
+    source_key = data.get('source', '').strip()
+    setting = data.get('setting', '').strip()
+    value = data.get('value')
+    zip_code = data.get('zip_code') or session.get('zip_code')
+    
+    if not source_key or not setting or zip_code is None:
+        return jsonify({'success': False, 'error': 'Source key, setting, and zip code required'}), 400
+    
+    try:
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        
+        # Convert boolean to string for storage
+        if isinstance(value, bool):
+            value_str = '1' if value else '0'
+        else:
+            value_str = str(value)
+        
+        # Save setting
+        cursor.execute('''
+            INSERT OR REPLACE INTO admin_settings_zip (zip_code, key, value)
+            VALUES (?, ?, ?)
+        ''', (zip_code, f'source_{source_key}_{setting}', value_str))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': f'Source setting updated'})
+    except Exception as e:
+        logger.error(f"Error updating source setting: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@admin_bp.route('/api/get-source', methods=['GET', 'OPTIONS'])
+@login_required
+def get_source():
+    """Get source configuration"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    source_key = request.args.get('key', '').strip()
+    zip_code = request.args.get('zip') or session.get('zip_code')
+    
+    if not source_key or not zip_code:
+        return jsonify({'success': False, 'error': 'Source key and zip code required'}), 400
+    
+    try:
+        from config import NEWS_SOURCES
+        
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        
+        source_config = None
+        
+        # Check for custom source first
+        cursor.execute('SELECT value FROM admin_settings_zip WHERE zip_code = ? AND key = ?', 
+                      (zip_code, f'custom_source_{source_key}'))
+        row = cursor.fetchone()
+        if row:
+            source_config = json.loads(row['value'])
+            source_config['key'] = source_key
+        else:
+            # Check for override
+            cursor.execute('SELECT value FROM admin_settings_zip WHERE zip_code = ? AND key = ?', 
+                          (zip_code, f'source_override_{source_key}'))
+            row = cursor.fetchone()
+            if row:
+                override_data = json.loads(row['value'])
+                if source_key in NEWS_SOURCES:
+                    source_config = dict(NEWS_SOURCES[source_key])
+                    source_config.update(override_data)
+                else:
+                    source_config = override_data
+                source_config['key'] = source_key
+            elif source_key in NEWS_SOURCES:
+                # Use default from config
+                source_config = dict(NEWS_SOURCES[source_key])
+                source_config['key'] = source_key
+        
+        if not source_config:
+            return jsonify({'success': False, 'error': 'Source not found'}), 404
+        
+        # Get relevance score
+        cursor.execute('SELECT points FROM relevance_config WHERE zip_code = ? AND category = ? AND item = ?',
+                      (zip_code, 'source_credibility', source_config.get('name', '').lower()))
+        rel_row = cursor.fetchone()
+        if rel_row:
+            source_config['relevance_score'] = rel_row['points']
+        
+        # Get zip-specific settings
+        cursor.execute('SELECT key, value FROM admin_settings_zip WHERE zip_code = ? AND key LIKE ?',
+                      (zip_code, f'source_{source_key}_%'))
+        for row in cursor.fetchall():
+            setting = row['key'].replace(f'source_{source_key}_', '')
+            if setting == 'enabled':
+                source_config['enabled'] = row['value'] == '1'
+            elif setting == 'require_fall_river':
+                source_config['require_fall_river'] = row['value'] == '1'
+        
+        conn.close()
+        
+        return jsonify({'success': True, 'source': source_config})
+    except Exception as e:
+        logger.error(f"Error getting source: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@admin_bp.route('/api/edit-source', methods=['POST', 'OPTIONS'])
+@login_required
+def edit_source():
+    """Edit an existing source"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    data = request.json or {}
+    source_key = data.get('key', '').strip()
+    name = data.get('name', '').strip()
+    url = data.get('url', '').strip()
+    rss = data.get('rss', '').strip() or None
+    category = data.get('category', 'news').strip()
+    relevance_score = data.get('relevance_score')
+    zip_code = data.get('zip_code') or session.get('zip_code')
+    
+    if not source_key or not name or not url or not zip_code:
+        return jsonify({'success': False, 'error': 'Source key, name, URL, and zip code required'}), 400
+    
+    try:
+        conn = get_db_legacy()
+        cursor = conn.cursor()
+        
+        # Check if it's a custom source or default source
+        cursor.execute('SELECT value FROM admin_settings_zip WHERE zip_code = ? AND key = ?',
+                      (zip_code, f'custom_source_{source_key}'))
+        row = cursor.fetchone()
+        
+        if row:
+            # Update custom source
+            source_data = json.loads(row['value'])
+            source_data.update({
+                'name': name,
+                'url': url,
+                'rss': rss,
+                'category': category
+            })
+            cursor.execute('''
+                UPDATE admin_settings_zip SET value = ?
+                WHERE zip_code = ? AND key = ?
+            ''', (json.dumps(source_data), zip_code, f'custom_source_{source_key}'))
+        else:
+            # Create override for default source
+            override_data = {
+                'name': name,
+                'url': url,
+                'rss': rss,
+                'category': category
+            }
+            cursor.execute('''
+                INSERT OR REPLACE INTO admin_settings_zip (zip_code, key, value)
+                VALUES (?, ?, ?)
+            ''', (zip_code, f'source_override_{source_key}', json.dumps(override_data)))
+        
+        # Update relevance score if provided
+        if relevance_score is not None and relevance_score != '':
+            try:
+                relevance_score_float = float(relevance_score)
+                cursor.execute('''
+                    INSERT OR REPLACE INTO relevance_config (category, item, points, zip_code)
+                    VALUES (?, ?, ?, ?)
+                ''', ('source_credibility', name.lower(), relevance_score_float, zip_code))
+            except (ValueError, TypeError):
+                pass
+        elif relevance_score == '':
+            # Delete relevance score if cleared
+            cursor.execute('''
+                DELETE FROM relevance_config 
+                WHERE zip_code = ? AND category = ? AND item = ?
+            ''', (zip_code, 'source_credibility', name.lower()))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': f'Source "{name}" updated successfully'})
+    except Exception as e:
+        logger.error(f"Error editing source: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 

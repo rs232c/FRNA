@@ -1,0 +1,316 @@
+{
+  "herald_news": {
+    "name": "Herald News",
+    "current_url": "https://www.heraldnews.com/news/rss",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": [
+      {
+        "url": "https://www.heraldnews.com/feed/",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      },
+      {
+        "url": "https://www.heraldnews.com/rss",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      },
+      {
+        "url": "https://www.heraldnews.com/rss.xml",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      }
+    ]
+  },
+  "fall_river_reporter": {
+    "name": "Fall River Reporter",
+    "current_url": "https://fallriverreporter.com/feed/",
+    "current_status": 200,
+    "current_valid": true,
+    "current_message": "Valid RSS feed with 10 entries",
+    "alternatives": []
+  },
+  "fun107": {
+    "name": "Fun107",
+    "current_url": "https://fun107.com/tag/fall-river/feed/",
+    "current_status": 200,
+    "current_valid": false,
+    "current_message": "RSS feed has no entries",
+    "alternatives": []
+  },
+  "wpri": {
+    "name": "WPRI 12 Fall River",
+    "current_url": "https://www.wpri.com/feed/",
+    "current_status": 200,
+    "current_valid": true,
+    "current_message": "Valid RSS feed with 29 entries",
+    "alternatives": []
+  },
+  "taunton_gazette": {
+    "name": "Taunton Gazette",
+    "current_url": "https://www.tauntongazette.com/news/rss",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": [
+      {
+        "url": "https://www.tauntongazette.com/feed/",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      },
+      {
+        "url": "https://www.tauntongazette.com/rss",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      }
+    ]
+  },
+  "masslive": {
+    "name": "MassLive Fall River",
+    "current_url": "https://www.masslive.com/topic/fall-river/feed/",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": [
+      {
+        "url": "https://www.masslive.com/search/?q=Fall+River&f=rss",
+        "status": 200,
+        "valid": false,
+        "message": "Invalid RSS format: <unknown>:2:1921: not well-formed (invalid token)"
+      },
+      {
+        "url": "https://www.masslive.com/feed/",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      }
+    ]
+  },
+  "abc6": {
+    "name": "ABC6 (WLNE) Fall River",
+    "current_url": "https://www.abc6.com/feed/",
+    "current_status": 200,
+    "current_valid": true,
+    "current_message": "Valid RSS feed with 10 entries",
+    "alternatives": []
+  },
+  "nbc10": {
+    "name": "NBC10/WJAR Fall River",
+    "current_url": "https://turnto10.com/topic/Fall%20River/feed/",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": [
+      {
+        "url": "https://turnto10.com/station/rss-feeds",
+        "status": 200,
+        "valid": false,
+        "message": "Invalid RSS format: <unknown>:245:17112: not well-formed (invalid token)"
+      },
+      {
+        "url": "https://turnto10.com/feed/",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      }
+    ]
+  },
+  "southcoast_today": {
+    "name": "Southcoast Today",
+    "current_url": "https://www.southcoasttoday.com/rss/",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": [
+      {
+        "url": "https://www.southcoasttoday.com/feed/",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      },
+      {
+        "url": "https://www.southcoasttoday.com/news/rss",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      }
+    ]
+  },
+  "patch_fall_river": {
+    "name": "Patch Fall River",
+    "current_url": "https://patch.com/massachusetts/fallriver/rss",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": [
+      {
+        "url": "https://patch.com/massachusetts/fallriver/feed/",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      },
+      {
+        "url": "https://fallriver.patch.com/rss.xml",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      }
+    ]
+  },
+  "frcmedia": {
+    "name": "FRCMedia (Fall River Community Media)",
+    "current_url": "https://frmedia.org/feed/",
+    "current_status": 406,
+    "current_valid": false,
+    "current_message": "HTTP 406",
+    "alternatives": []
+  },
+  "wsar_radio": {
+    "name": "WSAR Radio",
+    "current_url": "https://rss.app/feeds/wsar-news.xml",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": []
+  },
+  "fredtv": {
+    "name": "FREDTV",
+    "current_url": "https://rss.app/feeds/fredtv.xml",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": []
+  },
+  "frgtv": {
+    "name": "FRGTV",
+    "current_url": "https://rss.app/feeds/frgtv.xml",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": []
+  },
+  "new_bedford_light": {
+    "name": "New Bedford Light",
+    "current_url": "https://newbedfordlight.org/feed/",
+    "current_status": 200,
+    "current_valid": true,
+    "current_message": "Valid RSS feed with 10 entries",
+    "alternatives": []
+  },
+  "anchor_news": {
+    "name": "Anchor News (Diocese)",
+    "current_url": "https://www.anchornews.org/feed/",
+    "current_status": 200,
+    "current_valid": true,
+    "current_message": "Valid RSS feed with 10 entries",
+    "alternatives": []
+  },
+  "fall_river_dev_news": {
+    "name": "Fall River Development News FB Page",
+    "current_url": "https://rss.app/feeds/facebook-fall-river-development-news.xml",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": []
+  },
+  "legacy_fall_river": {
+    "name": "Legacy.com Fall River",
+    "current_url": "https://rss.app/feeds/legacy-fall-river-obits.xml",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": []
+  },
+  "herald_news_obituaries": {
+    "name": "Herald News Obituaries",
+    "current_url": "https://www.heraldnews.com/obituaries/rss",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": [
+      {
+        "url": "https://www.heraldnews.com/obituaries/feed/",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      },
+      {
+        "url": "https://www.heraldnews.com/feed/?section=obituaries",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      }
+    ]
+  },
+  "hathaway_funeral_homes": {
+    "name": "Hathaway Funeral Homes",
+    "current_url": "https://www.hathawayfunerals.com/rss/obituaries",
+    "current_status": 200,
+    "current_valid": true,
+    "current_message": "Valid RSS feed with 20 entries",
+    "alternatives": []
+  },
+  "southcoast_funeral_service": {
+    "name": "South Coast Funeral Service",
+    "current_url": "https://www.southcoastchapel.com/rss/obituaries",
+    "current_status": 404,
+    "current_valid": false,
+    "current_message": "Not Found - URL doesn't exist",
+    "alternatives": [
+      {
+        "url": "https://www.southcoastchapel.com/feed/",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      },
+      {
+        "url": "https://www.southcoastchapel.com/obituaries/feed/",
+        "status": 404,
+        "valid": false,
+        "message": "Not Found - URL doesn't exist"
+      }
+    ]
+  },
+  "waring_sullivan": {
+    "name": "Waring-Sullivan (Dignity Memorial)",
+    "current_url": "https://www.dignitymemorial.com/rss/funeral-homes/massachusetts/fall-river-ma",
+    "current_status": 403,
+    "current_valid": false,
+    "current_message": "Forbidden - server blocking requests",
+    "alternatives": [
+      {
+        "url": "https://www.dignitymemorial.com/obituaries/massachusetts/fall-river-ma/rss",
+        "status": 403,
+        "valid": false,
+        "message": "Forbidden - server blocking requests"
+      }
+    ]
+  },
+  "oliveira_funeral_homes": {
+    "name": "Oliveira Funeral Homes",
+    "current_url": "https://www.oliveirafuneralhomes.com/rss/obituaries",
+    "current_status": 403,
+    "current_valid": false,
+    "current_message": "Forbidden - server blocking requests",
+    "alternatives": [
+      {
+        "url": "https://www.oliveirafuneralhomes.com/feed/",
+        "status": 403,
+        "valid": false,
+        "message": "Forbidden - server blocking requests"
+      },
+      {
+        "url": "https://www.oliveirafuneralhomes.com/obituaries/feed/",
+        "status": 403,
+        "valid": false,
+        "message": "Forbidden - server blocking requests"
+      }
+    ]
+  }
+}

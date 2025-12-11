@@ -6,6 +6,8 @@ import os
 import sqlite3
 import re
 import shutil
+import json
+import time
 from jinja2 import Template, Environment, FileSystemLoader
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
@@ -159,29 +161,71 @@ class WebsiteGenerator:
             zip_code: Optional zip code for zip-specific generation
             city_state: Optional city_state (e.g., "Fall River, MA") for city-based generation
         """
-        # #region agent log
-        with open('c:\\FRNA\\.cursor\\debug.log', 'a', encoding='utf-8') as f:
-            import json
-            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"website_generator.py:116","message":"_generate_full called","data":{"zip_code":zip_code,"zip_code_type":type(zip_code).__name__ if zip_code else "NoneType"},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
-        # #endregion
+        logger.info("=" * 60)
+        logger.info(f"Starting full website generation (zip: {zip_code}, city_state: {city_state})")
+        logger.info(f"Processing {len(articles)} articles")
+        logger.info("=" * 60)
+        
+        logger.info("Step 1/6: Loading admin settings...")
         admin_settings = self._get_admin_settings()
+        logger.info("✓ Admin settings loaded")
+        
+        logger.info("Step 2/6: Filtering enabled articles...")
         enabled_articles = self._get_enabled_articles(articles, admin_settings, zip_code=zip_code, city_state=city_state)
-        weather = self.weather_ingestor.fetch_weather()
+        logger.info(f"✓ Filtered to {len(enabled_articles)} enabled articles (from {len(articles)} total)")
         
+        logger.info("Step 3/6: Fetching weather data...")
+        # File-based weather caching - only fetch if older than 10 minutes
+        cache_dir = Path("cache")
+        cache_dir.mkdir(exist_ok=True)
+        weather_cache_file = cache_dir / "weather.json"
+        
+        weather = None
+        if weather_cache_file.exists():
+            cache_age = time.time() - os.path.getmtime(weather_cache_file)
+            if cache_age < 600:  # 10 minutes = 600 seconds
+                try:
+                    with open(weather_cache_file, 'r', encoding='utf-8') as f:
+                        weather = json.load(f)
+                    logger.info(f"✓ Using cached weather data (age: {int(cache_age)}s)")
+                except Exception as e:
+                    logger.warning(f"Error reading weather cache: {e}, fetching fresh data")
+        
+        if weather is None:
+            weather = self.weather_ingestor.fetch_weather()
+            # Save to file cache
+            try:
+                with open(weather_cache_file, 'w', encoding='utf-8') as f:
+                    json.dump(weather, f, ensure_ascii=False, indent=2)
+                logger.info("✓ Weather data fetched and cached")
+            except Exception as e:
+                logger.warning(f"Error saving weather cache: {e}")
+        
+        logger.info("Step 4/6: Generating index page...")
         self._generate_index(enabled_articles, weather, admin_settings, zip_code, city_state)
+        logger.info("✓ Index page generated")
         
+        logger.info("Step 5/6: Generating category pages...")
         # Generate category pages for all navigation categories (in order)
         # This ensures all nav links have working pages, even if empty
         category_order = ["local-news", "crime", "sports", "events", "business", "schools", "food", "obituaries"]
-        for category_slug in category_order:
+        for i, category_slug in enumerate(category_order, 1):
             if category_slug in CATEGORY_SLUGS:
+                logger.info(f"  Generating category page {i}/{len(category_order)}: {category_slug}...")
                 self._generate_category_page(category_slug, enabled_articles, weather, admin_settings, zip_code, city_state)
+        logger.info("✓ All category pages generated")
         
+        logger.info("Step 6/6: Generating CSS and JS files...")
         self._generate_css()
+        logger.info("  ✓ CSS generated")
         self._generate_js()
+        logger.info("  ✓ JS generated")
         self._copy_static_js_files()
+        logger.info("  ✓ Static JS files copied")
         
-        logger.info(f"Website fully regenerated in {self.output_dir}")
+        logger.info("=" * 60)
+        logger.info(f"✓ Website fully regenerated in {self.output_dir}")
+        logger.info("=" * 60)
     
     def _generate_incremental(self, all_articles: List[Dict], new_articles: List[Dict], last_article_id: int, zip_code: Optional[str] = None):
         """Generate website incrementally - only update changed pages
@@ -676,12 +720,50 @@ class WebsiteGenerator:
             top_stories = news_articles[:5] if news_articles else articles[:5]
         
         # Get trending articles (recent articles with high relevance scores)
+        # Excludes obituaries and returns top 10 (client-side will filter to top 5 based on user preferences)
         try:
             from website_generator.utils import get_trending_articles
             trending_articles = get_trending_articles(articles)
         except ImportError:
-            # Fallback to old method
-            trending_articles = self._get_trending_articles(articles)
+            # Fallback to old method - get more articles to account for client-side filtering
+            trending_articles = self._get_trending_articles(articles, limit=10)
+        
+        # Add category slug and format trending date (no year) to each trending article
+        for article in trending_articles:
+            article_category = article.get('category', '').lower() if article.get('category') else ''
+            
+            # Map category to slug using CATEGORY_MAPPING
+            # First check direct mapping
+            if article_category in CATEGORY_SLUGS:
+                category_slug = article_category
+            elif article_category in CATEGORY_MAPPING:
+                category_slug = CATEGORY_MAPPING[article_category]
+            else:
+                # Default to local-news for unknown categories
+                category_slug = 'local-news'
+            
+            article['_category_slug'] = category_slug
+            
+            # Format trending date: remove year, keep time
+            if article.get('formatted_date'):
+                formatted_date = article['formatted_date']
+                # Remove year from "January 15, 2024 at 3:45 PM" -> "January 15 at 3:45 PM"
+                if ', ' in formatted_date and ' at ' in formatted_date:
+                    parts = formatted_date.split(', ')
+                    if len(parts) == 2:
+                        date_part = parts[0]  # "January 15"
+                        time_part = parts[1]  # "2024 at 3:45 PM"
+                        if ' at ' in time_part:
+                            time_only = time_part.split(' at ', 1)[1]  # "3:45 PM"
+                            article['_trending_date'] = f"{date_part} at {time_only}"
+                        else:
+                            article['_trending_date'] = date_part
+                    else:
+                        article['_trending_date'] = formatted_date
+                else:
+                    article['_trending_date'] = formatted_date
+            else:
+                article['_trending_date'] = 'Recently'
         
         # Get latest stories (5 most recent by publication date, excluding top stories)
         latest_stories = [a for a in articles if not a.get('_is_top_story', 0)]
@@ -900,6 +982,17 @@ class WebsiteGenerator:
         # #endregion
         
         current_time = datetime.now().strftime("%I:%M %p")
+        generation_timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+        
+        # Get last database update time for enabled articles
+        last_db_update = None
+        try:
+            from database import ArticleDatabase
+            db = ArticleDatabase()
+            last_db_update = db.get_last_enabled_article_update_time(zip_code=zip_code)
+        except Exception as e:
+            logger.warning(f"Could not get last database update time: {e}")
+        
         # #region agent log
         with open('c:\\FRNA\\.cursor\\debug.log', 'a', encoding='utf-8') as f:
             f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"website_generator.py:789","message":"Before template.render","data":{"weather_api_key":weather_api_key,"weather_api_key_length":len(weather_api_key),"weather_api_key_type":type(weather_api_key).__name__},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
@@ -912,7 +1005,7 @@ class WebsiteGenerator:
             articles=grid_articles,  # Articles for main grid (excluding featured)
             all_articles=all_articles,  # All articles for reference
             news_articles=news_articles,  # News articles for filtering
-            trending_articles=trending_articles[:8],  # Trending articles (6-8 for sidebar)
+            trending_articles=trending_articles[:5],  # Trending articles (top 5)
             entertainment_articles=entertainment_articles[:10],  # Entertainment in sidebar
             sports_articles=sports_articles,  # Sports articles for filtering
             top_stories=top_stories[:5],
@@ -926,6 +1019,8 @@ class WebsiteGenerator:
             show_images=show_images,
             current_year=datetime.now().year,
             current_time=current_time,  # Add timestamp for visible change
+            generation_timestamp=generation_timestamp,  # Full timestamp for display
+            last_db_update=last_db_update,  # Last database update time for enabled articles
             nav_tabs=nav_tabs,
             sources=unique_sources,  # Sources for filter dropdown
             location_badge_text=location_badge_text,  # Location badge text
@@ -963,9 +1058,9 @@ class WebsiteGenerator:
             category_prefix = "category/"
         
         # Top row: Primary navigation (big, bold)
+        # Note: "Local" replaces "Home" and shows mixed articles (all enabled articles)
         top_row_tabs = [
-            ("Home", home_href, "all", "home"),
-            ("Local", f"{category_prefix}local-news.html" if category_prefix else "local-news.html", None, "category-local-news"),
+            ("Local", home_href, "all", "home"),
             ("Police & Fire", f"{category_prefix}crime.html" if category_prefix else "crime.html", None, "category-crime"),
             ("Sports", f"{category_prefix}sports.html" if category_prefix else "sports.html", None, "category-sports"),
             ("Obituaries", f"{category_prefix}obituaries.html" if category_prefix else "obituaries.html", None, "category-obituaries"),
@@ -1044,148 +1139,307 @@ class WebsiteGenerator:
         nav_html += '''        </div>
     </div>
     
-    <!-- Mobile Navigation: Hamburger Menu -->
-    <div class="lg:hidden w-full flex flex-col items-center gap-3">
-        <div class="text-xl font-bold text-blue-400 mb-1">FRNA</div>
-        <button id="mobileNavToggle" class="flex items-center gap-2 text-gray-200 hover:text-white px-4 py-2 rounded-lg hover:bg-[#161616]/50 transition-colors border border-gray-800" aria-label="Toggle navigation menu">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-            <span class="font-semibold">Menu</span>
-        </button>
-        
-        <div id="mobileNavMenu" class="hidden mt-4 space-y-3 bg-[#161616]/90 backdrop-blur-md rounded-lg p-4 border border-gray-800/30">
-            <!-- Mobile: Primary Row -->
-            <div class="space-y-2 pb-3 border-b border-gray-800/30">
-                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Primary</div>
+    <!-- Custom Hamburger Menu - Side Drawer Overlay -->
+    <div id="mobileNavMenu" class="hidden fixed inset-0 z-[100] transition-opacity duration-300" style="opacity: 0;">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" onclick="closeHamburgerMenu()"></div>
+        <!-- Side Drawer -->
+        <div id="hamburgerDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-[#161616] shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-out" style="transform: translateX(100%);" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="sticky top-0 bg-gradient-to-r from-[#161616] to-[#1a1a1a] border-b border-gray-800/50 p-5 flex items-center justify-between z-10 shadow-lg">
+                <div class="flex items-center gap-3">
+                    <div class="text-2xl font-bold text-blue-400">FRNA</div>
+                    <span class="text-xs text-gray-500 uppercase tracking-wider">Menu</span>
+                </div>
+                <button id="closeMobileNav" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50" aria-label="Close menu" onclick="closeHamburgerMenu()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Menu Content -->
+            <div class="p-5 space-y-6">
+                <!-- Admin Section (Top) - Collapsible Submenu -->
+                <div class="pb-4 border-b border-gray-800/50">
+                    <button id="adminMenuToggle" class="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 hover:border-blue-500/50 transition-all group" onclick="toggleAdminSubmenu(event)">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="text-white font-semibold">Admin Panel</div>
+                                <div class="text-xs text-gray-400">Manage articles & settings</div>
+                            </div>
+                        </div>
+                        <svg id="adminMenuArrow" class="w-5 h-5 text-gray-400 group-hover:text-white transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <!-- Admin Submenu (Hidden by default) -->
+                    <div id="adminSubmenu" class="hidden mt-2 pl-4 space-y-2">
+                        <a href="#" id="adminLink" class="block px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-[#1a1a1a]/50 transition-colors text-sm">Current Zip Admin</a>
+                        <a href="/admin" class="block px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-[#1a1a1a]/50 transition-colors text-sm">Main Admin Dashboard</a>
+                    </div>
+                </div>
+                
+                <!-- Navigation Links Section -->
+                <div class="space-y-4">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Navigation</div>
+                    
+                    <!-- Home Link (No Toggle) -->
+                    <a href="''' + home_href + '''" class="flex items-center px-4 py-3 rounded-lg text-gray-200 hover:text-white hover:bg-[#1a1a1a] transition-colors border border-transparent hover:border-gray-800" data-tab="all">
+                        <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        <span class="font-semibold">Home</span>
+                    </a>
+                </div>
+                
+                <!-- Category Controls Section -->
+                <div class="space-y-4">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Category Controls</div>
+                    <p class="text-xs text-gray-400 mb-4 px-2">Toggle categories on/off to customize your navigation</p>
+                    
+                    <!-- Primary Categories -->
+                    <div class="space-y-2">
+                        <div class="text-xs font-medium text-gray-500 px-2 mb-2">Primary Navigation</div>
 '''
         
-        # Mobile top row - with inline toggles
+        # Primary categories with toggle switches
         for label, href, data_tab, page_key in top_row_tabs:
-            # Check if this is the active page
-            is_active = (active_page == page_key) or (page_key == "home" and (active_page == "home" or active_page == "all"))
-            if is_active:
-                active_class = 'text-blue-400 bg-blue-500/10 border-blue-500/30'
-            else:
-                active_class = 'text-gray-200 hover:text-white hover:bg-[#1a1a1a]'
-            
-            # Add category slug data attribute for category links (not Home)
+            # Skip Home - already added above
+            if page_key == "home":
+                continue
+                
+            # Get category slug
             category_slug = None
             if page_key and page_key.startswith('category-'):
                 category_slug = page_key.replace('category-', '')
             elif page_key in ['submit-tip', 'lost-found']:
                 category_slug = page_key
             
-            data_attr = f' data-tab="{data_tab}"' if data_tab else ''
-            category_attr = f' data-category-slug="{category_slug}"' if category_slug else ''
+            if not category_slug:
+                continue
             
-            # For Home, no toggle - just the link
-            if page_key == "home":
-                nav_html += f'                <a href="{href}" class="block px-4 py-2.5 rounded-lg text-base font-bold transition-colors border {active_class}"{data_attr}>{label}</a>\n'
-            else:
-                # For categories, add inline toggle (X or checkbox)
-                nav_html += f'                <div class="flex items-center justify-between px-4 py-2.5 rounded-lg border {active_class}">\n'
-                nav_html += f'                    <a href="{href}" class="nav-category-link flex-1 {active_class.replace("border ", "")}"{data_attr}{category_attr}>{label}</a>\n'
-                nav_html += f'                    <button class="category-toggle-btn ml-3 p-1 rounded hover:bg-gray-800/50 transition-colors" data-category-slug="{category_slug}" title="Toggle category">\n'
-                nav_html += f'                        <span class="category-toggle-icon text-lg">✓</span>\n'
-                nav_html += f'                    </button>\n'
-                nav_html += f'                </div>\n'
-        
-        nav_html += '''            </div>
-            
-            <!-- Mobile: Secondary Row -->
-            <div class="space-y-2">
-                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">More</div>
+            category_attr = f' data-category-slug="{category_slug}"'
+            nav_html += f'''                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="{category_slug}">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="{href}" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1"{category_attr}>{label}</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="{category_slug}" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
 '''
         
-        # Mobile second row - with inline toggles
+        nav_html += '''                    </div>
+                    
+                    <!-- Secondary Categories -->
+                    <div class="space-y-2 pt-2">
+                        <div class="text-xs font-medium text-gray-500 px-2 mb-2">Secondary Navigation</div>
+'''
+        
+        # Secondary categories with toggle switches
         for label, href, data_tab, page_key in second_row_tabs:
-            is_active = active_page == page_key
-            if is_active:
-                active_class = 'text-blue-300 bg-blue-500/10 border-blue-500/20'
-            else:
-                active_class = 'text-gray-300 hover:text-gray-100 hover:bg-[#1a1a1a]'
-            
-            # Add category slug data attribute for category links
+            # Get category slug
             category_slug = None
             if page_key and page_key.startswith('category-'):
                 category_slug = page_key.replace('category-', '')
             elif page_key in ['submit-tip', 'lost-found']:
                 category_slug = page_key
             
-            data_attr = f' data-tab="{data_tab}"' if data_tab else ''
-            category_attr = f' data-category-slug="{category_slug}"' if category_slug else ''
+            if not category_slug:
+                continue
             
-            # For placeholder items (#), no toggle - just the link
-            if href == "#":
-                nav_html += f'                <a href="{href}" class="nav-category-link block px-4 py-2 rounded-lg text-sm font-medium transition-colors border {active_class}"{data_attr}{category_attr}>{label}</a>\n'
-            else:
-                # For categories, add inline toggle (X or checkbox)
-                nav_html += f'                <div class="flex items-center justify-between px-4 py-2 rounded-lg border {active_class}">\n'
-                nav_html += f'                    <a href="{href}" class="nav-category-link flex-1 {active_class.replace("border ", "")}"{data_attr}{category_attr}>{label}</a>\n'
-                nav_html += f'                    <button class="category-toggle-btn ml-3 p-1 rounded hover:bg-gray-800/50 transition-colors" data-category-slug="{category_slug}" title="Toggle category">\n'
-                nav_html += f'                        <span class="category-toggle-icon text-lg">✓</span>\n'
-                nav_html += f'                    </button>\n'
-                nav_html += f'                </div>\n'
+            category_attr = f' data-category-slug="{category_slug}"'
+            nav_html += f'''                        <div class="flex items-center justify-between px-4 py-3 rounded-lg bg-[#1a1a1a]/50 border border-gray-800/30 hover:border-gray-700 transition-colors" data-category-slug="{category_slug}">
+                            <div class="flex items-center gap-3 flex-1">
+                                <a href="{href}" class="nav-category-link text-gray-200 hover:text-white font-medium transition-colors flex-1"{category_attr}>{label}</a>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer ml-4">
+                                <input type="checkbox" class="category-toggle-switch sr-only peer" data-category-slug="{category_slug}" checked>
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+'''
         
-        # Add Admin button at the end
-        nav_html += '''            </div>
-            
-            <!-- Admin Button -->
-            <div class="pt-3 border-t border-gray-800/30">
-                <a href="#" id="adminLink" class="block px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-[#1a1a1a] border border-gray-800 transition-colors text-center">
-                    <span class="mr-2">⚙️</span>Admin
-                </a>
+        nav_html += '''                    </div>
+                </div>
             </div>
         </div>
     </div>
     
     <script>
-        // Mobile menu toggle
-        (function() {
+        // Custom Hamburger Menu with Smooth Animations
+        function openHamburgerMenu() {
+            const menu = document.getElementById('mobileNavMenu');
+            const drawer = document.getElementById('hamburgerDrawer');
+            if (!menu || !drawer) {
+                console.error('Hamburger menu elements not found:', { menu: !!menu, drawer: !!drawer });
+                return;
+            }
+            
+            menu.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            // Trigger animation
+            requestAnimationFrame(() => {
+                menu.style.opacity = '1';
+                drawer.style.transform = 'translateX(0)';
+            });
+            
+            // Update toggle switch states
+            updateToggleSwitches();
+        }
+        
+        function closeHamburgerMenu() {
+            const menu = document.getElementById('mobileNavMenu');
+            const drawer = document.getElementById('hamburgerDrawer');
+            if (!menu || !drawer) return;
+            
+            // Animate out
+            menu.style.opacity = '0';
+            drawer.style.transform = 'translateX(100%)';
+            
+            setTimeout(() => {
+                menu.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, 300);
+        }
+        
+        function updateToggleSwitches() {
+            // Wait for CategoryPreferences to be available
+            if (!window.CategoryPreferences) {
+                setTimeout(updateToggleSwitches, 100);
+                return;
+            }
+            
+            document.querySelectorAll('.category-toggle-switch').forEach(switchEl => {
+                const categorySlug = switchEl.dataset.categorySlug;
+                if (categorySlug) {
+                    const isEnabled = window.CategoryPreferences.isCategoryEnabled(categorySlug);
+                    switchEl.checked = isEnabled;
+                }
+            });
+        }
+        
+        // Initialize menu - wait for DOM and CategoryPreferences
+        function initHamburgerMenu() {
             const toggle = document.getElementById('mobileNavToggle');
             const menu = document.getElementById('mobileNavMenu');
-            if (toggle && menu) {
-                toggle.addEventListener('click', function(e) {
+            const closeBtn = document.getElementById('closeMobileNav');
+            
+            if (!toggle || !menu) {
+                // Retry if elements not found yet
+                setTimeout(initHamburgerMenu, 100);
+                return;
+            }
+            
+            // Hamburger button click handler
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openHamburgerMenu();
+            });
+            
+            // Close button handler
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     e.stopPropagation();
-                    menu.classList.toggle('hidden');
-                    const isOpen = !menu.classList.contains('hidden');
-                    toggle.setAttribute('aria-expanded', isOpen);
-                });
-                
-                // Close menu when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!toggle.contains(e.target) && !menu.contains(e.target)) {
-                        menu.classList.add('hidden');
-                        toggle.setAttribute('aria-expanded', 'false');
-                    }
-                });
-                
-                // Close menu when clicking a link
-                menu.querySelectorAll('a').forEach(link => {
-                    link.addEventListener('click', function(e) {
-                        // Don't close if clicking on a toggle button
-                        if (!e.target.closest('.category-toggle-btn')) {
-                            menu.classList.add('hidden');
-                            toggle.setAttribute('aria-expanded', 'false');
-                        }
-                    });
-                });
-                
-                // Update toggle icons when menu opens
-                toggle.addEventListener('click', function() {
-                    setTimeout(() => {
-                        if (!menu.classList.contains('hidden') && window.CategoryPreferences) {
-                            updateMobileToggleIcons();
-                        }
-                    }, 10);
+                    closeHamburgerMenu();
                 });
             }
-        })();
+            
+            // Close on backdrop click
+            const backdrop = menu.querySelector('.backdrop-blur-sm');
+            if (backdrop) {
+                backdrop.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeHamburgerMenu();
+                });
+            }
+            
+            // Close on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !menu.classList.contains('hidden')) {
+                    closeHamburgerMenu();
+                }
+            });
+            
+            // Handle toggle switch changes
+            menu.addEventListener('change', function(e) {
+                if (e.target.classList.contains('category-toggle-switch')) {
+                    const categorySlug = e.target.dataset.categorySlug;
+                    const isEnabled = e.target.checked;
+                    
+                    if (categorySlug) {
+                        // Wait for CategoryPreferences if not ready
+                        if (!window.CategoryPreferences) {
+                            setTimeout(() => {
+                                if (window.CategoryPreferences) {
+                                    window.CategoryPreferences.toggleCategory(categorySlug, isEnabled);
+                                    if (window.NavigationFilter) {
+                                        window.NavigationFilter.applyFilters();
+                                    }
+                                }
+                            }, 100);
+                        } else {
+                            window.CategoryPreferences.toggleCategory(categorySlug, isEnabled);
+                            if (window.NavigationFilter) {
+                                window.NavigationFilter.applyFilters();
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Close menu when clicking navigation links (but not toggle switches)
+            menu.querySelectorAll('a.nav-category-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (!e.target.closest('label') && !e.target.closest('.category-toggle-switch')) {
+                        setTimeout(() => closeHamburgerMenu(), 200);
+                    }
+                });
+            });
+            
+            // Update switches when preferences change
+            window.addEventListener('categoryPreferencesChanged', updateToggleSwitches);
+            
+            // Initial update after CategoryPreferences loads
+            function waitForCategoryPreferences() {
+                if (window.CategoryPreferences) {
+                    updateToggleSwitches();
+                } else {
+                    setTimeout(waitForCategoryPreferences, 100);
+                }
+            }
+            waitForCategoryPreferences();
+        }
+        
+        // Start initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initHamburgerMenu);
+        } else {
+            initHamburgerMenu();
+        }
+        
+        // Make functions globally available for onclick handlers
+        window.openHamburgerMenu = openHamburgerMenu;
+        window.closeHamburgerMenu = closeHamburgerMenu;
         
         // Update mobile toggle icons based on preferences
         function updateMobileToggleIcons() {
-            if (!window.CategoryPreferences) return;
+            if (!window.CategoryPreferences) {
+                setTimeout(updateMobileToggleIcons, 100);
+                return;
+            }
             
             document.querySelectorAll('.category-toggle-btn').forEach(btn => {
                 const slug = btn.dataset.categorySlug;
@@ -1202,6 +1456,9 @@ class WebsiteGenerator:
             });
         }
         
+        // Make function globally available
+        window.updateMobileToggleIcons = updateMobileToggleIcons;
+        
         // Handle toggle button clicks
         document.addEventListener('click', function(e) {
             const toggleBtn = e.target.closest('.category-toggle-btn');
@@ -1214,12 +1471,38 @@ class WebsiteGenerator:
                     const currentState = window.CategoryPreferences.isCategoryEnabled(slug);
                     const newState = !currentState;
                     window.CategoryPreferences.toggleCategory(slug, newState);
+                    
+                    // Update icons
                     updateMobileToggleIcons();
+                    
+                    // Update navigation visibility
+                    if (window.NavigationFilter) {
+                        window.NavigationFilter.applyFilters();
+                    }
                 }
             }
         });
         
-        // Update admin link with current zip code
+        // Toggle admin submenu
+        function toggleAdminSubmenu(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const submenu = document.getElementById('adminSubmenu');
+            const arrow = document.getElementById('adminMenuArrow');
+            if (submenu && arrow) {
+                const isHidden = submenu.classList.contains('hidden');
+                if (isHidden) {
+                    submenu.classList.remove('hidden');
+                    arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    submenu.classList.add('hidden');
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            }
+        }
+        window.toggleAdminSubmenu = toggleAdminSubmenu;
+        
+        // Update admin link with current zip code and initialize icons
         document.addEventListener('DOMContentLoaded', function() {
             const adminLink = document.getElementById('adminLink');
             if (adminLink) {
@@ -1230,12 +1513,18 @@ class WebsiteGenerator:
                 const currentZip = zipFromPath || zipFromStorage || '02720';
                 
                 adminLink.href = `/admin/${currentZip}`;
+                adminLink.textContent = `Zip ${currentZip} Admin`;
             }
             
-            // Initial icon update
-            if (window.CategoryPreferences) {
-                updateMobileToggleIcons();
+            // Initial icon update - wait for CategoryPreferences to be ready
+            function initIcons() {
+                if (window.CategoryPreferences && window.updateMobileToggleIcons) {
+                    window.updateMobileToggleIcons();
+                } else {
+                    setTimeout(initIcons, 100);
+                }
             }
+            initIcons();
         });
     </script>
 '''
@@ -1348,7 +1637,14 @@ class WebsiteGenerator:
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <a href="/admin" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors inline-flex items-center justify-center w-10 h-10" title="Admin Panel">⚙️</a>
+                    <!-- Hamburger Menu Button (Visible on All Screens - for category controls) -->
+                    <button id="mobileNavToggle" class="flex items-center gap-2 text-gray-200 hover:text-white px-3 py-2 rounded-lg hover:bg-[#161616]/50 transition-colors border border-gray-800" aria-label="Toggle navigation menu" title="Menu & Category Controls">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <!-- Desktop Admin Button -->
+                    <a href="/admin" class="hidden lg:inline-flex bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors inline-flex items-center justify-center w-10 h-10" title="Admin Panel">⚙️</a>
                 </div>
             </div>
         </div>
@@ -1500,10 +1796,10 @@ class WebsiteGenerator:
                         <span class="text-2xl">🔥</span>
                         <h3 class="text-lg font-bold text-gray-100">Trending in {{ locale.split(',')[0] if ',' in locale else locale }}</h3>
                     </div>
-                    <div class="space-y-4">
+                    <div class="space-y-4" id="trendingArticlesContainer">
                         {% if trending_articles %}
-                            {% for article in trending_articles[:8] %}
-                            <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group">
+                            {% for article in trending_articles[:10] %}
+                            <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group trending-article-item" data-category-slug="{{ article._category_slug if article._category_slug else 'local-news' }}">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 hover:bg-[#1a1a1a] -mx-2 px-2 rounded-lg transition-colors">
                                     {% if show_images and article.image_url %}
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f]">
@@ -1520,7 +1816,7 @@ class WebsiteGenerator:
                                             <span class="text-sm">🔥</span>
                                             <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2 leading-[1.15]">{{ article.title }}</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">{{ article.source_display }} • {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}</div>
+                                        <div class="text-xs text-gray-500">{{ article.source_display }} • {{ article._trending_date if article._trending_date else (article.formatted_date if article.formatted_date else 'Recently') }}</div>
                                     </div>
                                 </div>
                             </a>
@@ -1643,18 +1939,6 @@ class WebsiteGenerator:
         </div>
     </footer>
     
-    <!-- Mobile Bottom Navigation -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-[#0f0f0f]/95 backdrop-blur-md border-t border-gray-900/30 px-4 py-2 flex justify-around items-center z-50 lg:hidden">
-        <a href="index.html" class="flex flex-col items-center gap-1 text-gray-400 hover:text-blue-400 transition-colors py-2 px-4 rounded-lg min-h-[44px] min-w-[44px]">
-            <span class="text-xl">🏠</span>
-            <span class="text-xs">Home</span>
-        </a>
-        <a href="{{ weather_station_url }}" target="_blank" rel="noopener" class="flex flex-col items-center gap-1 text-gray-400 hover:text-blue-400 transition-colors py-2 px-4 rounded-lg min-h-[44px] min-w-[44px]">
-            <span class="text-xl">🌤️</span>
-            <span class="text-xs">Weather</span>
-        </a>
-    </nav>
-    
     <!-- Back to Top Button -->
     <button class="fixed bottom-20 right-6 bg-blue-500 hover:bg-blue-600 text-white w-12 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 hidden lg:block z-40" id="backToTop" onclick="scrollToTop()" title="Back to top">↑</button>
     
@@ -1678,6 +1962,60 @@ class WebsiteGenerator:
                 });
             });
             images.forEach(img => imageObserver.observe(img));
+            
+            // Filter trending articles based on user category preferences
+            function filterTrendingArticles() {
+                const container = document.getElementById('trendingArticlesContainer');
+                if (!container) return;
+                
+                // Wait for CategoryPreferences to be available
+                if (!window.CategoryPreferences) {
+                    setTimeout(filterTrendingArticles, 100);
+                    return;
+                }
+                
+                const trendingItems = Array.from(container.querySelectorAll('.trending-article-item'));
+                const maxVisible = 5; // Show top 5 trending articles
+                let visibleCount = 0;
+                
+                // Filter and show articles based on enabled categories
+                trendingItems.forEach(item => {
+                    const categorySlug = item.dataset.categorySlug;
+                    
+                    // Check if category is enabled
+                    let isEnabled = true;
+                    if (categorySlug) {
+                        isEnabled = window.CategoryPreferences.isCategoryEnabled(categorySlug);
+                    }
+                    
+                    // Show up to maxVisible articles from enabled categories
+                    if (isEnabled && visibleCount < maxVisible) {
+                        item.style.display = '';
+                        visibleCount++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                
+                // Show "No trending articles" message if none visible
+                let noTrendingMsg = container.parentElement.querySelector('.no-trending-msg');
+                if (visibleCount === 0) {
+                    if (!noTrendingMsg) {
+                        noTrendingMsg = document.createElement('p');
+                        noTrendingMsg.className = 'text-gray-400 text-sm no-trending-msg mt-4';
+                        noTrendingMsg.textContent = 'No trending articles available for your selected categories.';
+                        container.appendChild(noTrendingMsg);
+                    }
+                } else if (noTrendingMsg) {
+                    noTrendingMsg.remove();
+                }
+            }
+            
+            // Filter on load
+            filterTrendingArticles();
+            
+            // Re-filter when preferences change
+            window.addEventListener('categoryPreferencesChanged', filterTrendingArticles);
         });
     </script>
     {% if zip_pin_editable %}
@@ -1750,13 +2088,20 @@ class WebsiteGenerator:
         return Template(template_str)
     
     def _get_trending_articles(self, articles: List[Dict], limit: int = 5) -> List[Dict]:
-        """Get trending articles based on recency and relevance score"""
+        """Get trending articles based on recency and relevance score
+        Excludes obituaries and filters to top trending stories
+        """
         from datetime import datetime, timedelta
         
         now = datetime.now()
         trending = []
         
         for article in articles:
+            # EXCLUDE OBITUARIES - Never show in trending
+            article_category = article.get('category', '').lower() if article.get('category') else ''
+            if article_category in ['obituaries', 'obituary']:
+                continue
+            
             # Get publication date
             published = article.get("published")
             if not published:
@@ -1768,7 +2113,14 @@ class WebsiteGenerator:
                 
                 # Only consider articles from last 7 days
                 if days_old <= 7:
-                    relevance_score = article.get('_relevance_score', 0)
+                    # Get relevance score (check both _relevance_score and relevance_score)
+                    relevance_score = article.get('_relevance_score') or article.get('relevance_score') or 0
+                    
+                    # Ensure relevance_score is a number
+                    try:
+                        relevance_score = float(relevance_score)
+                    except (ValueError, TypeError):
+                        relevance_score = 0
                     
                     # Calculate trending score: relevance + recency bonus
                     trending_score = relevance_score
@@ -1788,6 +2140,8 @@ class WebsiteGenerator:
         
         # Sort by trending score (highest first)
         trending.sort(key=lambda x: x.get('_trending_score', 0), reverse=True)
+        
+        # Return top N trending stories (limit parameter controls how many)
         return trending[:limit]
     
     def _get_source_initials(self, source: str) -> str:
@@ -2306,10 +2660,10 @@ class WebsiteGenerator:
                         <span class="text-2xl">🔥</span>
                         <h3 class="text-lg font-bold text-gray-100">Trending in {{ locale.split(',')[0] if ',' in locale else locale }}</h3>
                     </div>
-                    <div class="space-y-4">
+                    <div class="space-y-4" id="trendingArticlesContainer">
                         {% if trending_articles %}
-                            {% for article in trending_articles[:8] %}
-                            <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group">
+                            {% for article in trending_articles[:10] %}
+                            <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group trending-article-item" data-category-slug="{{ article._category_slug if article._category_slug else 'local-news' }}">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 hover:bg-[#1a1a1a] -mx-2 px-2 rounded-lg transition-colors">
                                     {% if show_images and article.image_url %}
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f]">
@@ -2326,7 +2680,7 @@ class WebsiteGenerator:
                                             <span class="text-sm">🔥</span>
                                             <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2 leading-[1.15]">{{ article.title }}</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">{{ article.source_display }} • {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}</div>
+                                        <div class="text-xs text-gray-500">{{ article.source_display }} • {{ article._trending_date if article._trending_date else (article.formatted_date if article.formatted_date else 'Recently') }}</div>
                                     </div>
                                 </div>
                             </a>
@@ -2650,10 +3004,32 @@ class WebsiteGenerator:
                     hero_article['_is_video'] = self._is_video_article(hero_article)
         
         # Get trending articles from this category only (already filtered by category)
-        trending_articles_raw = self._get_trending_articles(filtered_articles, limit=8)
+        # Use limit=5 to match index page consistency
+        trending_articles_raw = self._get_trending_articles(filtered_articles, limit=5)
         trending_articles = []
         for article in trending_articles_raw:
             formatted = self._format_article_for_display(article, show_images)
+            
+            # Format trending date: remove year, keep time
+            if formatted.get('formatted_date'):
+                formatted_date = formatted['formatted_date']
+                # Remove year from "January 15, 2024 at 3:45 PM" -> "January 15 at 3:45 PM"
+                if ', ' in formatted_date and ' at ' in formatted_date:
+                    parts = formatted_date.split(', ')
+                    if len(parts) == 2:
+                        date_part = parts[0]  # "January 15"
+                        time_part = parts[1]  # "2024 at 3:45 PM"
+                        if ' at ' in time_part:
+                            time_only = time_part.split(' at ', 1)[1]  # "3:45 PM"
+                            formatted['_trending_date'] = f"{date_part} at {time_only}"
+                        else:
+                            formatted['_trending_date'] = date_part
+                    else:
+                        formatted['_trending_date'] = formatted_date
+                else:
+                    formatted['_trending_date'] = formatted_date
+            else:
+                formatted['_trending_date'] = 'Recently'
             if 'source_initials' not in formatted:
                 formatted['source_initials'] = self._get_source_initials(formatted.get('source_display', formatted.get('source', '')))
             if 'source_gradient' not in formatted:
@@ -2747,6 +3123,16 @@ class WebsiteGenerator:
             funeral_homes = sorted(list(funeral_homes))
         
         current_time = datetime.now().strftime("%I:%M %p")
+        generation_timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+        
+        # Get last database update time for enabled articles
+        last_db_update = None
+        try:
+            from database import ArticleDatabase
+            db = ArticleDatabase()
+            last_db_update = db.get_last_enabled_article_update_time(zip_code=zip_code)
+        except Exception as e:
+            logger.warning(f"Could not get last database update time: {e}")
         
         # Prepare template variables
         template_vars = {
@@ -2757,11 +3143,13 @@ class WebsiteGenerator:
             "articles": grid_articles,
             "hero_articles": hero_articles,  # Hero articles for carousel (up to 3)
             "hero_article": None,  # Keep for backward compatibility but use hero_articles
-            "trending_articles": trending_articles[:8],
+            "trending_articles": trending_articles[:5],
             "weather": weather,
             "show_images": show_images,
             "current_year": datetime.now().year,
             "current_time": current_time,
+            "generation_timestamp": generation_timestamp,  # Full timestamp for display
+            "last_db_update": last_db_update,  # Last database update time for enabled articles
             "nav_tabs": nav_tabs,
             "home_path": home_path,
             "css_path": css_path,

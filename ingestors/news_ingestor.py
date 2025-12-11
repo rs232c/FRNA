@@ -30,7 +30,17 @@ class NewsIngestor:
         })
         self._aiohttp_session = None
         self._headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/rss+xml,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': 'https://www.google.com/',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Cache-Control': 'max-age=0'
         }
     
     def fetch_articles(self) -> List[Dict]:
@@ -41,10 +51,14 @@ class NewsIngestor:
         """Fetch articles from the news source (async)"""
         articles = []
         
-        if self.source_config.get("rss"):
-            articles.extend(await self._fetch_from_rss_async())
-        else:
-            articles.extend(await self._fetch_from_web_async())
+        try:
+            if self.source_config.get("rss"):
+                articles.extend(await self._fetch_from_rss_async())
+            else:
+                articles.extend(await self._fetch_from_web_async())
+        finally:
+            # Ensure session is closed after fetching
+            await self._close_session()
         
         return articles
     
@@ -83,11 +97,13 @@ class NewsIngestor:
             return cached_data
         
         async def fetch_rss():
+            logger.info(f"  → Fetching RSS feed: {rss_url}")
             session = await self._get_aiohttp_session()
             async with session.get(rss_url) as response:
                 if response.status == 200:
                     content = await response.text()
                     feed = feedparser.parse(content)
+                    logger.info(f"  ✓ Successfully fetched {len(feed.entries)} entries from {source_name} RSS")
                     # Fetch more entries to get past month of data
                     for entry in feed.entries[:50]:  # Get 50 entries to cover past month
                         # Use feedparser's parsed date tuple first (most reliable - feedparser already parsed it)
@@ -133,6 +149,8 @@ class NewsIngestor:
                         }
                         articles.append(article)
                     return articles
+                elif response.status == 403:
+                    raise Exception(f"HTTP 403 Forbidden")
                 else:
                     raise Exception(f"HTTP {response.status}")
         
@@ -140,7 +158,7 @@ class NewsIngestor:
             # Use retry logic with circuit breaker
             articles = await retry_async(
                 fetch_rss,
-                max_retries=3,
+                max_retries=1,  # 1 initial attempt + 1 retry = 2 total attempts
                 initial_delay=1.0,
                 exceptions=(aiohttp.ClientError, Exception),
                 circuit_breaker_key=f"rss:{source_key}"

@@ -14,6 +14,7 @@ from ingestors.weather_ingestor import WeatherIngestor
 from config import (
     NEWS_SOURCES, AGGREGATION_CONFIG, LOCALE_HASHTAG, HASHTAGS, ARTICLE_CATEGORIES
 )
+import asyncio
 from database import ArticleDatabase
 from cache import get_cache
 import hashlib
@@ -55,24 +56,41 @@ class NewsAggregator:
         # Default to 10 minutes (600 seconds)
         return 10 * 60
     
-    def _load_source_overrides(self) -> Dict:
-        """Load source configuration overrides from database"""
+    def _load_source_overrides(self, zip_code: Optional[str] = None) -> Dict:
+        """Load source configuration overrides from database
+        
+        Args:
+            zip_code: Optional zip code for zip-specific overrides
+        """
+        overrides = {}
         try:
             conn = sqlite3.connect(self.database.db_path)
             cursor = conn.cursor()
             
-            # Get all source overrides
-            cursor.execute('SELECT key, value FROM admin_settings WHERE key LIKE "source_override_%"')
-            overrides = {}
+            # Get zip-specific source overrides if zip_code provided
+            if zip_code:
+                cursor.execute('SELECT key, value FROM admin_settings_zip WHERE zip_code = ? AND key LIKE "source_override_%"', (zip_code,))
+                for row in cursor.fetchall():
+                    key = row[0].replace('source_override_', '')
+                    try:
+                        import json
+                        override_data = json.loads(row[1])
+                        overrides[key] = override_data
+                    except:
+                        pass
             
+            # Also get global source overrides (fallback)
+            cursor.execute('SELECT key, value FROM admin_settings WHERE key LIKE "source_override_%"')
             for row in cursor.fetchall():
                 key = row[0].replace('source_override_', '')
-                try:
-                    import json
-                    override_data = json.loads(row[1])
-                    overrides[key] = override_data
-                except:
-                    pass
+                # Don't override zip-specific if we already have it
+                if key not in overrides:
+                    try:
+                        import json
+                        override_data = json.loads(row[1])
+                        overrides[key] = override_data
+                    except:
+                        pass
             
             conn.close()
             return overrides
@@ -126,8 +144,33 @@ class NewsAggregator:
         """
         # Phase 4: Use hardcoded Fall River sources for 02720 or "Fall River, MA"
         if city_state == "Fall River, MA" or zip_code == "02720" or (not city_state and not zip_code):
-            # Use hardcoded Fall River sources (backward compat)
-            return NEWS_SOURCES
+            # Start with hardcoded Fall River sources (backward compat)
+            sources = dict(NEWS_SOURCES)
+            
+            # Apply zip-specific overrides from database if zip_code provided
+            if zip_code:
+                try:
+                    zip_overrides = self._load_source_overrides(zip_code)
+                    if zip_overrides:
+                        logger.info(f"Loading {len(zip_overrides)} zip-specific source overrides for zip {zip_code}")
+                        for source_key, override_data in zip_overrides.items():
+                            if source_key in sources:
+                                # Merge override with base config (override takes precedence)
+                                old_rss = sources[source_key].get('rss', 'None')
+                                sources[source_key] = {**sources[source_key], **override_data}
+                                new_rss = sources[source_key].get('rss', 'None')
+                                if old_rss != new_rss:
+                                    logger.info(f"  Override RSS for {source_key}: {old_rss} -> {new_rss}")
+                            else:
+                                # New source not in config
+                                sources[source_key] = override_data
+                                logger.info(f"  Added new source from override: {source_key}")
+                    else:
+                        logger.info(f"No zip-specific overrides found for zip {zip_code}, using config defaults")
+                except Exception as e:
+                    logger.warning(f"Error loading zip-specific source overrides: {e}")
+            
+            return sources
         
         # Phase 4: Dynamic sources for new cities
         sources = {}
@@ -197,9 +240,37 @@ class NewsAggregator:
                     ingestor = NewsIngestor(source_config)
                 
                 ingestor._source_key = source_key
-                articles = await ingestor.fetch_articles_async()
-                all_articles.extend(articles)
-                logger.info(f"Fetched {len(articles)} articles from {source_key}")
+                rss_url = source_config.get('rss', 'None (web scraping)')
+                if rss_url:
+                    logger.info(f"Fetching articles from {source_key} (RSS: {rss_url})...")
+                else:
+                    logger.info(f"Fetching articles from {source_key} (web scraping)...")
+                try:
+                    # Check if source has recent 403 errors - add delay
+                    if self._has_recent_403_error(source_key):
+                        delay_seconds = 5
+                        logger.info(f"Source {source_key} has recent 403 errors - adding {delay_seconds}s delay")
+                        await asyncio.sleep(delay_seconds)
+                    
+                    articles = await ingestor.fetch_articles_async()
+                    all_articles.extend(articles)
+                    logger.info(f"✓ Fetched {len(articles)} articles from {source_key}")
+                    # Update fetch tracking
+                    self._update_source_fetch_time(source_key, len(articles), had_error=False)
+                except Exception as e:
+                    error_str = str(e)
+                    error_code = None
+                    if '403' in error_str or 'Forbidden' in error_str:
+                        error_code = 403
+                    logger.error(f"Error fetching from {source_key}: {e}")
+                    self._update_source_fetch_time(source_key, 0, had_error=True, error_code=error_code)
+                finally:
+                    # Ensure session is closed
+                    if hasattr(ingestor, '_close_session'):
+                        try:
+                            await ingestor._close_session()
+                        except:
+                            pass
             except Exception as e:
                 logger.error(f"Error fetching from {source_key}: {e}")
         
@@ -228,16 +299,41 @@ class NewsAggregator:
             source_keys.append(source_key)
             # Wrap in async function with timeout
             async def fetch_with_logging(key, ing):
+                # Check if source has recent 403 errors - add delay before fetching
+                if self._has_recent_403_error(key):
+                    delay_seconds = 5  # 5 second delay for sources with recent 403s
+                    logger.info(f"Source {key} has recent 403 errors - adding {delay_seconds}s delay before fetch")
+                    await asyncio.sleep(delay_seconds)
+                
                 try:
-                    logger.info(f"Fetching articles from {key}...")
+                    # Get RSS URL if available
+                    rss_url = ing.source_config.get('rss', 'None (web scraping)')
+                    if rss_url:
+                        logger.info(f"Fetching articles from {key} (RSS: {rss_url})...")
+                    else:
+                        logger.info(f"Fetching articles from {key} (web scraping)...")
                     articles = await ing.fetch_articles_async()
-                    logger.info(f"Fetched {len(articles)} articles from {key}")
-                    # Update fetch tracking
-                    self._update_source_fetch_time(key, len(articles))
+                    logger.info(f"✓ Fetched {len(articles)} articles from {key}")
+                    # Update fetch tracking (no error)
+                    self._update_source_fetch_time(key, len(articles), had_error=False)
                     return (key, articles, None)
                 except Exception as e:
-                    logger.error(f"Error fetching from {key}: {e}")
+                    error_str = str(e)
+                    error_code = None
+                    # Check if error mentions 403
+                    if '403' in error_str or 'Forbidden' in error_str:
+                        error_code = 403
+                    logger.error(f"✗ Error fetching from {key}: {e}")
+                    # Update fetch tracking with error info
+                    self._update_source_fetch_time(key, 0, had_error=True, error_code=error_code)
                     return (key, [], e)
+                finally:
+                    # Ensure session is closed
+                    if hasattr(ing, '_close_session'):
+                        try:
+                            await ing._close_session()
+                        except:
+                            pass
             
             tasks.append(fetch_with_logging(source_key, ingestor))
         
@@ -1247,7 +1343,18 @@ class NewsAggregator:
         all_articles = []
         
         # Phase 4: Get sources for city (dynamic source discovery)
+        logger.info("Step 1/5: Discovering sources for city...")
         sources = self._get_sources_for_city(city_state, zip_code)
+        logger.info(f"✓ Found {len(sources)} configured sources")
+        
+        # Log RSS feeds being used (for verification)
+        if zip_code:
+            logger.info(f"RSS feeds for zip {zip_code}:")
+            for source_key, source_config in sources.items():
+                rss = source_config.get('rss', 'None (web scraping)')
+                enabled = source_config.get('enabled', True)
+                status = "ENABLED" if enabled else "DISABLED"
+                logger.info(f"  {source_config.get('name', source_key)}: {rss} [{status}]")
         
         # If zip_code provided, fetch from sources
         if zip_code:
@@ -1256,12 +1363,15 @@ class NewsAggregator:
             
             # Resolve zip if city_state not provided
             if not city_state:
+                logger.info(f"Resolving zip code {zip_code} to city/state...")
                 zip_data = resolve_zip(zip_code)
                 if zip_data:
                     city_state = zip_data.get("city_state")
                     city = zip_data.get("city", "")
                     state = zip_data.get("state_abbrev", "")
+                    logger.info(f"✓ Resolved to: {city_state}")
                 else:
+                    logger.warning(f"Could not resolve zip {zip_code}")
                     city = None
                     state = None
             else:
@@ -1272,13 +1382,25 @@ class NewsAggregator:
             
             # Phase 4: Fetch from Google News (always available for any city)
             if city and state:
+                logger.info(f"Step 2/5: Fetching from Google News for {city}, {state}...")
                 google_ingestor = GoogleNewsIngestor(city, state, zip_code)
-                google_articles = await google_ingestor.fetch_articles_async()
-                all_articles.extend(google_articles)
-                logger.info(f"Fetched {len(google_articles)} articles from Google News for {city}, {state}")
+                try:
+                    google_articles = await google_ingestor.fetch_articles_async()
+                    all_articles.extend(google_articles)
+                    logger.info(f"✓ Fetched {len(google_articles)} articles from Google News")
+                finally:
+                    # Ensure session is closed
+                    if hasattr(google_ingestor, '_close_session'):
+                        try:
+                            await google_ingestor._close_session()
+                        except:
+                            pass
+            else:
+                logger.info("Step 2/5: Skipping Google News (city/state not available)")
             
             # Phase 4: Also fetch from configured sources (Fall River sources for 02720, or admin-configured)
             if sources:
+                logger.info(f"Step 3/5: Fetching from {len(sources)} configured sources...")
                 # Collect from configured sources
                 local_articles = await self._collect_from_sources_async(sources, force_refresh=force_refresh)
                 # Tag local articles with zip_code and city_state
@@ -1287,22 +1409,29 @@ class NewsAggregator:
                     if city_state:
                         article["city_state"] = city_state
                 all_articles.extend(local_articles)
-                logger.info(f"Added {len(local_articles)} articles from configured sources for zip {zip_code}")
+                logger.info(f"✓ Added {len(local_articles)} articles from configured sources")
+            else:
+                logger.info("Step 3/5: No configured sources to fetch")
         else:
             # Default behavior: collect from all sources (Fall River)
+            logger.info("Step 2-3/5: Fetching from all configured sources (default mode)...")
             all_articles = await self.collect_all_articles_async(force_refresh=force_refresh)
+            logger.info(f"✓ Collected {len(all_articles)} articles from all sources")
         
-        logger.info(f"Collected {len(all_articles)} total articles from all sources")
+        logger.info(f"Step 4/5: Processing {len(all_articles)} total articles...")
         
         # Deduplicate first (before filtering)
+        logger.info("  Deduplicating articles...")
         unique = self.deduplicate_articles(all_articles)
-        logger.info(f"Deduplicated to {len(unique)} unique articles")
+        logger.info(f"  ✓ Deduplicated to {len(unique)} unique articles (removed {len(all_articles) - len(unique)} duplicates)")
         
         # Filter relevant articles (Phase 5: uses city_state for relevance)
+        logger.info("  Filtering for relevance...")
         relevant = self.filter_relevant_articles(unique, zip_code=zip_code, city_state=city_state)
-        logger.info(f"Filtered to {len(relevant)} relevant articles (filtered out {len(unique) - len(relevant)})")
+        logger.info(f"  ✓ Filtered to {len(relevant)} relevant articles (removed {len(unique) - len(relevant)} irrelevant)")
         
         # Tag articles with city_state before enriching
+        logger.info("  Tagging articles with location data...")
         for article in relevant:
             if city_state and not article.get("city_state"):
                 article["city_state"] = city_state
@@ -1310,25 +1439,59 @@ class NewsAggregator:
                 article["zip_code"] = zip_code
         
         # Enrich with metadata
+        logger.info("Step 5/5: Enriching articles with metadata...")
         enriched = self.enrich_articles(relevant)
-        logger.info(f"Final aggregated articles: {len(enriched)}")
+        logger.info(f"✓ Final aggregated articles: {len(enriched)}")
         
         return enriched
     
     def _get_sources_to_fetch(self, force_refresh: bool = False) -> Dict:
-        """Get sources that need fetching (skip recently updated ones)"""
+        """Get sources that need fetching (skip recently updated ones)
+        
+        Obituaries sources are checked 4x per day (every 6 hours) instead of default interval.
+        Sources that return 403 errors are fetched less frequently to avoid triggering bot detection.
+        """
         if force_refresh:
             return self.news_ingestors
         
         sources_to_fetch = {}
-        cutoff_time = datetime.now() - timedelta(seconds=self._source_fetch_interval)
+        default_cutoff_time = datetime.now() - timedelta(seconds=self._source_fetch_interval)
+        obituaries_cutoff_time = datetime.now() - timedelta(hours=6)  # 4x per day = every 6 hours
         
         for source_key, ingestor in self.news_ingestors.items():
+            # Get source config to check category
+            source_config = None
+            for key, config in NEWS_SOURCES.items():
+                if key == source_key:
+                    source_config = config
+                    break
+            
+            # Determine cutoff time based on source type
+            is_obituaries = False
+            if source_config:
+                category = source_config.get("category", "").lower()
+                is_obituaries = category == "obituaries" or "obituary" in source_key.lower() or "funeral" in source_key.lower()
+            
+            # Check if source has recent 403 errors (slow down fetching)
+            has_recent_403 = self._has_recent_403_error(source_key)
+            if has_recent_403:
+                # For sources with 403 errors, use longer interval (30 minutes instead of default)
+                cutoff_time = datetime.now() - timedelta(minutes=30)
+            elif is_obituaries:
+                cutoff_time = obituaries_cutoff_time
+            else:
+                cutoff_time = default_cutoff_time
+            
             last_fetch = self._get_source_last_fetch_time(source_key)
             if not last_fetch or last_fetch < cutoff_time:
                 sources_to_fetch[source_key] = ingestor
+                if is_obituaries:
+                    logger.debug(f"Including obituaries source {source_key} (checked every 6 hours)")
+                elif has_recent_403:
+                    logger.debug(f"Including 403-prone source {source_key} (slowed down to 30 min intervals)")
             else:
-                logger.debug(f"Skipping {source_key} - fetched {int((datetime.now() - last_fetch).total_seconds() / 60)} min ago")
+                age_minutes = int((datetime.now() - last_fetch).total_seconds() / 60)
+                logger.debug(f"Skipping {source_key} - fetched {age_minutes} min ago")
         
         return sources_to_fetch
     
@@ -1349,19 +1512,67 @@ class NewsAggregator:
             pass
         return None
     
-    def _update_source_fetch_time(self, source_key: str, article_count: int):
-        """Update last fetch time for a source"""
+    def _update_source_fetch_time(self, source_key: str, article_count: int, had_error: bool = False, error_code: Optional[int] = None):
+        """Update last fetch time for a source
+        
+        Args:
+            source_key: Source identifier
+            article_count: Number of articles fetched
+            had_error: Whether the fetch had an error
+            error_code: HTTP error code if applicable (e.g., 403)
+        """
         try:
             import sqlite3
             from config import DATABASE_CONFIG
             conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
             cursor = conn.cursor()
+            
+            # Check if last_403_error column exists, if not add it
+            try:
+                cursor.execute('ALTER TABLE source_fetch_tracking ADD COLUMN last_403_error TEXT')
+            except:
+                pass  # Column already exists
+            
+            # Update fetch time and track 403 errors
+            last_403_error = None
+            if had_error and error_code == 403:
+                last_403_error = datetime.now().isoformat()
+                logger.warning(f"Recording 403 error for {source_key} - will slow down future fetches")
+            
             cursor.execute('''
-                INSERT OR REPLACE INTO source_fetch_tracking (source_key, last_fetch_time, last_article_count)
-                VALUES (?, ?, ?)
-            ''', (source_key, datetime.now().isoformat(), article_count))
+                INSERT OR REPLACE INTO source_fetch_tracking 
+                (source_key, last_fetch_time, last_article_count, last_403_error)
+                VALUES (?, ?, ?, ?)
+            ''', (source_key, datetime.now().isoformat(), article_count, last_403_error))
             conn.commit()
             conn.close()
         except Exception as e:
             logger.warning(f"Could not update source fetch time for {source_key}: {e}")
+    
+    def _has_recent_403_error(self, source_key: str) -> bool:
+        """Check if source has a recent 403 error (within last hour)"""
+        try:
+            import sqlite3
+            from config import DATABASE_CONFIG
+            conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+            cursor = conn.cursor()
+            
+            # Check if last_403_error column exists
+            try:
+                cursor.execute('SELECT last_403_error FROM source_fetch_tracking WHERE source_key = ?', (source_key,))
+                row = cursor.fetchone()
+                
+                last_403_str = row[0] if row and row[0] else None
+                if last_403_str:
+                    last_403 = datetime.fromisoformat(last_403_str)
+                    # Consider "recent" if within last hour
+                    if (datetime.now() - last_403).total_seconds() < 3600:
+                        conn.close()
+                        return True
+            except:
+                pass  # Column doesn't exist yet or error reading
+            conn.close()
+        except:
+            pass
+        return False
 

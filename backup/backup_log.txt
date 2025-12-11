@@ -4103,4 +4103,38 @@ ERROR : You do not have the Manage Auditing user right.
 
 ------------------------------------------------------------------------------
 
-	    Newer     		  354849	C:\FRNA\backup_log.txt
+	    Newer     		  354849	C:\FRNA\backup_log.txt100%  
+	  *EXTRA File 		      41	C:\FRNA\backup\.git\refs\heads\master
+	  *EXTRA File 		     191	C:\FRNA\backup\.git\logs\refs\heads\master
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :       392       391       392         0         0         0
+   Files :      1466         1      1465         0         0         2
+   Bytes :   24.88 m   346.5 k   24.54 m         0         0       232
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :           354,849,000 Bytes/sec.
+   Speed :            20,304.623 MegaBytes/min.
+   Ended : Wednesday, December 10, 2025 9:24:09 PM
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : Wednesday, December 10, 2025 11:57:04 PM
+   Source : C:\FRNA\
+     Dest : C:\FRNA\backup\
+
+    Files : *.*
+	    
+ Exc Dirs : backup
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /MT:32 /R:3 /W:5 
+
+------------------------------------------------------------------------------
+
+	    Newer     		  458060	C:\FRNA\admin.py

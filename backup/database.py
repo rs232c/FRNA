@@ -1142,4 +1142,91 @@ class ArticleDatabase:
         
         logger.info(f"Cleaned up {deleted_count} old articles")
         return deleted_count
+    
+    def get_last_enabled_article_update_time(self, zip_code: Optional[str] = None) -> Optional[str]:
+        """Get the timestamp of the most recently created enabled article
+        
+        Args:
+            zip_code: Optional zip code filter
+            
+        Returns:
+            Formatted timestamp string or None if no enabled articles found
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Query for enabled articles (not rejected, enabled=1 or no management entry)
+        # Get the MAX created_at from articles that are enabled
+        if zip_code:
+            query = '''
+                SELECT MAX(a.created_at)
+                FROM articles a
+                LEFT JOIN (
+                    SELECT article_id, 
+                           COALESCE(is_rejected, 0) as is_rejected,
+                           COALESCE(enabled, 1) as enabled
+                    FROM article_management
+                    WHERE ROWID IN (
+                        SELECT MAX(ROWID)
+                        FROM article_management
+                        GROUP BY article_id
+                    )
+                ) am ON a.id = am.article_id
+                WHERE (am.article_id IS NULL OR (am.is_rejected = 0 AND am.enabled = 1))
+                AND (a.zip_code = ? OR a.zip_code IS NULL)
+            '''
+            cursor.execute(query, (zip_code,))
+        else:
+            query = '''
+                SELECT MAX(a.created_at)
+                FROM articles a
+                LEFT JOIN (
+                    SELECT article_id, 
+                           COALESCE(is_rejected, 0) as is_rejected,
+                           COALESCE(enabled, 1) as enabled
+                    FROM article_management
+                    WHERE ROWID IN (
+                        SELECT MAX(ROWID)
+                        FROM article_management
+                        GROUP BY article_id
+                    )
+                ) am ON a.id = am.article_id
+                WHERE (am.article_id IS NULL OR (am.is_rejected = 0 AND am.enabled = 1))
+            '''
+            cursor.execute(query)
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result and result[0]:
+            try:
+                # Parse and format the timestamp, converting UTC to local time
+                from datetime import datetime, timezone
+                import time
+                
+                # Parse the timestamp (assume UTC if no timezone info)
+                timestamp_str = result[0]
+                if timestamp_str.endswith('Z'):
+                    dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                elif '+' in timestamp_str or (timestamp_str.count('-') > 2 and 'T' in timestamp_str):
+                    # Has timezone info
+                    dt = datetime.fromisoformat(timestamp_str)
+                else:
+                    # No timezone info, assume UTC
+                    dt = datetime.fromisoformat(timestamp_str)
+                    dt = dt.replace(tzinfo=timezone.utc)
+                
+                # Convert to local time if timezone-aware
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                
+                # Convert UTC to local time (system local time)
+                local_dt = dt.astimezone()
+                
+                return local_dt.strftime("%Y-%m-%d %I:%M:%S %p")
+            except Exception as e:
+                logger.warning(f"Error formatting last update time: {e}")
+                return result[0]
+        
+        return None
 

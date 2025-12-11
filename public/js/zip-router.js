@@ -43,8 +43,9 @@ class ZipRouter {
             window.location.href = `/${storedZip}`;
             return;
         } else {
-            // No zip - show landing page
-            this.showLandingPage();
+            // No zip - default to 02720 (Fall River)
+            window.location.href = '/02720';
+            return;
         }
     }
 

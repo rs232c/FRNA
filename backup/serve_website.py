@@ -6,6 +6,7 @@ import sqlite3
 import time
 import subprocess
 import sys
+import json
 from datetime import datetime, timedelta
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 # Global flag to prevent concurrent regenerations
 _regenerating = False
 _regeneration_lock = threading.Lock()
+_last_regeneration_start = None  # Track when regen started to prevent rapid-fire triggers
 
 
 class RegeneratingHTTPRequestHandler(SimpleHTTPRequestHandler):
@@ -29,17 +31,27 @@ class RegeneratingHTTPRequestHandler(SimpleHTTPRequestHandler):
     
     def do_GET(self):
         """Handle GET requests - check if regeneration needed"""
+        # Handle root path - redirect to default zip 02720
+        if self.path == '/' or self.path == '':
+            self.send_response(302)
+            self.send_header('Location', '/02720')
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+            self.end_headers()
+            return
+        
         # Handle API proxy endpoint
         if self.path.startswith('/api/proxy-rss'):
             self._handle_rss_proxy()
             return
         
-        # Check if we need to regenerate
+        # Check if we need to regenerate (non-blocking)
         if self._should_regenerate():
-            # Trigger regeneration and wait for it to complete
-            self._trigger_regeneration()
+            # Trigger regeneration asynchronously - don't wait!
+            self._trigger_regeneration_async()
         
-        # Serve the file normally
+        # Serve the file immediately (don't wait for regeneration)
         return super().do_GET()
     
     def _handle_rss_proxy(self):
@@ -112,6 +124,7 @@ class RegeneratingHTTPRequestHandler(SimpleHTTPRequestHandler):
             cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('auto_regenerate',))
             row = cursor.fetchone()
             auto_regenerate = row[0] == '1' if row else True
+            logger.info(f"Auto-regenerate flag is {'enabled' if auto_regenerate else 'disabled'}")
             
             if not auto_regenerate:
                 conn.close()
@@ -126,6 +139,7 @@ class RegeneratingHTTPRequestHandler(SimpleHTTPRequestHandler):
             cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('regenerate_on_load',))
             row = cursor.fetchone()
             regenerate_on_load = row[0] == '1' if row else False
+            logger.info(f"Regenerate interval: {interval_minutes} min, regenerate_on_load: {regenerate_on_load}")
             
             # Check last regeneration time
             cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('last_regeneration_time',))
@@ -147,8 +161,14 @@ class RegeneratingHTTPRequestHandler(SimpleHTTPRequestHandler):
             
             conn.close()
             
+            # Check if regeneration is already running (prevent duplicate triggers)
+            global _regenerating
+            if _regenerating:
+                logger.info("Regeneration already in progress, skipping check")
+                return False
+            
             if datetime.now() >= next_time:
-                logger.info(f"Website is out of date (last: {last_time}, interval: {interval_minutes} min)")
+                logger.info(f"Website is out of date (last: {last_time}, interval: {interval_minutes} min) - will trigger quick regen")
                 return True
             
             return False
@@ -157,58 +177,102 @@ class RegeneratingHTTPRequestHandler(SimpleHTTPRequestHandler):
             logger.error(f"Error checking regeneration status: {e}")
             return False
     
-    def _trigger_regeneration(self):
-        """Trigger website regeneration - wait for it to complete"""
-        global _regenerating
+    def _trigger_regeneration_async(self):
+        """Trigger website regeneration asynchronously - returns immediately, doesn't block"""
+        global _regenerating, _last_regeneration_start
         
         with _regeneration_lock:
+            # Check if regeneration is already running
             if _regenerating:
-                logger.info("Regeneration already in progress, serving current page...")
+                logger.info("Regeneration already in progress, serving current page immediately...")
                 return
             
+            # Prevent rapid-fire regenerations (wait at least 30 seconds between triggers)
+            if _last_regeneration_start:
+                time_since_start = (datetime.now() - _last_regeneration_start).total_seconds()
+                if time_since_start < 30:
+                    logger.info(f"Regeneration started {time_since_start:.0f}s ago, skipping duplicate trigger")
+                    return
+            
             _regenerating = True
+            _last_regeneration_start = datetime.now()
         
-        try:
-            logger.info("=" * 60)
-            logger.info("Website is out of date - triggering regeneration before serving page")
-            logger.info("=" * 60)
-            
-            # Get the parent directory (we're serving from website_output)
-            parent_dir = os.path.dirname(os.path.abspath(os.getcwd()))
-            if not parent_dir:
-                parent_dir = os.path.join(os.getcwd(), '..')
-            
-            # Run main.py --once to regenerate (synchronously so page is fresh)
-            result = subprocess.run(
-                [sys.executable, 'main.py', '--once'],
-                cwd=parent_dir,
-                capture_output=True,
-                text=True,
-                timeout=300  # 5 minute timeout
-            )
-            
-            if result.returncode == 0:
-                # Update last regeneration time
-                conn = sqlite3.connect(os.path.join(parent_dir, DATABASE_CONFIG.get("path", "fallriver_news.db")))
-                cursor = conn.cursor()
-                cursor.execute('''
-                    INSERT OR REPLACE INTO admin_settings (key, value)
-                    VALUES ('last_regeneration_time', ?)
-                ''', (datetime.now().isoformat(),))
-                conn.commit()
-                conn.close()
+        # Start regeneration in background thread - don't block!
+        def regenerate_in_background():
+            global _regenerating, _last_regeneration_start
+            try:
+                logger.info("=" * 60)
+                logger.info("Website is out of date - triggering QUICK regeneration in background")
+                logger.info("Page served immediately - regeneration happening asynchronously")
+                logger.info("=" * 60)
                 
-                logger.info("✓ Website regenerated successfully - serving fresh content")
-            else:
-                logger.error(f"✗ Regeneration failed: {result.stderr}")
-                logger.info("Serving existing content despite regeneration failure")
+                # Get the parent directory (we're serving from website_output)
+                parent_dir = os.path.dirname(os.path.abspath(os.getcwd()))
+                if not parent_dir:
+                    parent_dir = os.path.join(os.getcwd(), '..')
                 
-        except subprocess.TimeoutExpired:
-            logger.error("Regeneration timed out after 5 minutes - serving existing content")
-        except Exception as e:
-            logger.error(f"Error during regeneration: {e} - serving existing content")
-        finally:
-            _regenerating = False
+                logger.info(f"Starting quick regeneration in directory: {parent_dir}")
+                logger.info(f"Running command: {sys.executable} quick_regenerate.py")
+                
+                # Use quick_regenerate.py instead of main.py --once for fast regeneration
+                # This skips fetching new articles and just regenerates HTML/CSS/JS
+                import subprocess as sp
+                process = sp.Popen(
+                    [sys.executable, 'quick_regenerate.py'],
+                    cwd=parent_dir,
+                    stdout=sp.PIPE,
+                    stderr=sp.STDOUT,
+                    text=True,
+                    bufsize=1,
+                    universal_newlines=True
+                )
+                
+                # Stream output line by line
+                logger.info("--- Quick Regeneration Output (Background) ---")
+                output_lines = []
+                start_time = time.time()
+                
+                for line in process.stdout:
+                    line = line.rstrip()
+                    if line:
+                        logger.info(f"  {line}")
+                        output_lines.append(line)
+                        sys.stdout.flush()
+                
+                process.wait()
+                elapsed_time = time.time() - start_time
+                
+                logger.info("--- End Quick Regeneration Output ---")
+                
+                if process.returncode == 0:
+                    # Update last regeneration time
+                    conn = sqlite3.connect(os.path.join(parent_dir, DATABASE_CONFIG.get("path", "fallriver_news.db")))
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO admin_settings (key, value)
+                        VALUES ('last_regeneration_time', ?)
+                    ''', (datetime.now().isoformat(),))
+                    conn.commit()
+                    conn.close()
+                    
+                    logger.info(f"✓ Quick regeneration completed successfully in {elapsed_time:.1f}s")
+                else:
+                    logger.error(f"✗ Quick regeneration failed with exit code {process.returncode}")
+                    logger.error("Last 10 lines of output:")
+                    for line in output_lines[-10:]:
+                        logger.error(f"  {line}")
+                    
+            except Exception as e:
+                logger.error(f"Error during background regeneration: {e}", exc_info=True)
+            finally:
+                with _regeneration_lock:
+                    _regenerating = False
+                    _last_regeneration_start = None
+        
+        # Start background thread - returns immediately!
+        thread = threading.Thread(target=regenerate_in_background, daemon=True)
+        thread.start()
+        logger.info("Background regeneration thread started - page served immediately")
     
     def log_message(self, format, *args):
         """Override to use our logger"""

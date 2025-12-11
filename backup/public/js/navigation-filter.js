@@ -88,21 +88,29 @@ class NavigationFilter {
      * Filter mobile navigation menu
      */
     filterMobileNavigation() {
-        const mobileNavLinks = document.querySelectorAll('#mobileNavMenu .nav-category-link');
+        // Find all category items (divs containing links and toggles)
+        const mobileNavItems = document.querySelectorAll('#mobileNavMenu [data-category-slug]');
         
-        mobileNavLinks.forEach(link => {
-            const categorySlug = link.dataset.categorySlug;
+        mobileNavItems.forEach(item => {
+            const categorySlug = item.dataset.categorySlug || item.closest('[data-category-slug]')?.dataset.categorySlug;
             
             if (categorySlug) {
                 const isEnabled = this.preferences.isCategoryEnabled(categorySlug);
+                // Find the parent div container (the flex container with link and toggle)
+                const container = item.closest('.flex.items-center.justify-between') || item;
                 
                 if (!isEnabled) {
-                    link.style.display = 'none';
+                    container.style.display = 'none';
                 } else {
-                    link.style.display = '';
+                    container.style.display = '';
                 }
             }
         });
+        
+        // Also update toggle icons
+        if (window.updateMobileToggleIcons) {
+            window.updateMobileToggleIcons();
+        }
     }
 
     /**

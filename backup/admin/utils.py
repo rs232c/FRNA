@@ -1363,10 +1363,16 @@ def get_rejected_articles(zip_code: str) -> list:
 
 def get_sources(zip_code: str) -> dict:
     """Get sources configuration for a zip code"""
+    from config import NEWS_SOURCES
+    
     conn = get_db_legacy()
     cursor = conn.cursor()
     
+    # Start with default sources from config
     sources_config = {}
+    for source_key, source_data in NEWS_SOURCES.items():
+        sources_config[source_key] = dict(source_data)
+        sources_config[source_key]['key'] = source_key
     
     if zip_code:
         # Get zip-specific source settings
@@ -1374,7 +1380,7 @@ def get_sources(zip_code: str) -> dict:
         source_settings = {}
         for row in cursor.fetchall():
             key = row['key']
-            if key.startswith('source_'):
+            if key.startswith('source_') and not key.startswith('source_override_') and not key.startswith('custom_source_'):
                 parts = key.replace('source_', '').split('_', 1)
                 if len(parts) == 2:
                     source_key = parts[0]
@@ -1383,7 +1389,7 @@ def get_sources(zip_code: str) -> dict:
                         source_settings[source_key] = {}
                     source_settings[source_key][setting] = row['value']
         
-        # Get custom sources
+        # Get custom sources (override defaults)
         cursor.execute('SELECT key, value FROM admin_settings_zip WHERE zip_code = ? AND key LIKE "custom_source_%"', (zip_code,))
         for row in cursor.fetchall():
             import json
@@ -1395,7 +1401,7 @@ def get_sources(zip_code: str) -> dict:
             except:
                 pass
         
-        # Get source overrides
+        # Get source overrides (merge with defaults)
         cursor.execute('SELECT key, value FROM admin_settings_zip WHERE zip_code = ? AND key LIKE "source_override_%"', (zip_code,))
         for row in cursor.fetchall():
             import json
@@ -1405,23 +1411,32 @@ def get_sources(zip_code: str) -> dict:
                 if source_key in sources_config:
                     sources_config[source_key].update(override_data)
                 else:
-                    from config import NEWS_SOURCES
-                    if source_key in NEWS_SOURCES:
-                        sources_config[source_key] = dict(NEWS_SOURCES[source_key])
-                        sources_config[source_key].update(override_data)
-                    else:
-                        sources_config[source_key] = override_data
+                    sources_config[source_key] = override_data
                     sources_config[source_key]['key'] = source_key
             except:
                 pass
         
-        # Apply settings
+        # Get relevance scores for sources
+        cursor.execute('SELECT item, points FROM relevance_config WHERE zip_code = ? AND category = ?', (zip_code, 'source_credibility'))
+        relevance_scores = {}
+        for row in cursor.fetchall():
+            relevance_scores[row['item'].lower()] = row['points']
+        
+        # Apply settings and relevance scores
         for source_key in sources_config:
+            # Apply zip-specific settings
             if source_key in source_settings:
                 if 'enabled' in source_settings[source_key]:
                     sources_config[source_key]['enabled'] = source_settings[source_key]['enabled'] == '1'
                 if 'require_fall_river' in source_settings[source_key]:
                     sources_config[source_key]['require_fall_river'] = source_settings[source_key]['require_fall_river'] == '1'
+            
+            # Add relevance score
+            source_name_lower = sources_config[source_key].get('name', '').lower()
+            if source_name_lower in relevance_scores:
+                sources_config[source_key]['_relevance_score'] = relevance_scores[source_name_lower]
+            else:
+                sources_config[source_key]['_relevance_score'] = None
     
     conn.close()
     return sources_config
