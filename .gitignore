@@ -31,8 +31,12 @@ wheels/
 *.sqlite
 *.sqlite3
 
-# Website output (optional - remove if you want to commit)
-website_output/
+# Website output - commented out to allow Netlify deployment
+# website_output/
+# But ignore generated files that change frequently
+website_output/*.log
+website_output/cache/
+website_output/images/
 
 # Temporary files
 temp_instagram_image.jpg
