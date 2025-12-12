@@ -981,7 +981,7 @@ def get_rejected_articles_route():
 def toggle_article_route():
     """Toggle article status (reject/restore/feature/unfeature)"""
     data = request.get_json() if request.is_json else request.form
-    article_id = data.get('id')
+    article_id = data.get('article_id')
     action = data.get('action')
 
     if not article_id or not action:
@@ -1003,7 +1003,7 @@ def toggle_article_route():
 def toggle_top_story_route():
     """Toggle top story status"""
     data = request.get_json() if request.is_json else request.form
-    article_id = data.get('id')
+    article_id = data.get('article_id')
 
     if not article_id:
         return jsonify({'success': False, 'error': 'Missing article_id'}), 400
@@ -1032,7 +1032,7 @@ def toggle_top_story_route():
 def toggle_top_article_route():
     """Toggle top article status"""
     data = request.get_json() if request.is_json else request.form
-    article_id = data.get('id')
+    article_id = data.get('article_id')
 
     if not article_id:
         return jsonify({'success': False, 'error': 'Missing article_id'}), 400
@@ -1061,7 +1061,7 @@ def toggle_top_article_route():
 def toggle_alert_route():
     """Toggle alert status"""
     data = request.get_json() if request.is_json else request.form
-    article_id = data.get('id')
+    article_id = data.get('article_id')
 
     if not article_id:
         return jsonify({'success': False, 'error': 'Missing article_id'}), 400
