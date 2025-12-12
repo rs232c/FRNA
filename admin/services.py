@@ -167,6 +167,11 @@ def get_articles(zip_code=None, limit=50, offset=0, category=None, search=None):
                 a.*,
                 COALESCE(am.is_rejected, 0) as is_rejected,
                 COALESCE(am.is_featured, 0) as is_featured,
+                COALESCE(am.is_top_article, 0) as is_top,
+                COALESCE(am.is_top_story, 0) as is_top_story,
+                COALESCE(am.is_alert, 0) as is_alert,
+                COALESCE(am.is_stellar, 0) as is_good_fit,
+                COALESCE(am.is_on_target, NULL) as is_on_target,
                 COALESCE(am.user_notes, '') as user_notes,
                 am.created_at as management_created_at,
                 am.updated_at as management_updated_at
@@ -346,19 +351,25 @@ def get_settings():
         return settings
 
 
-def trash_article(article_id):
+def trash_article(article_id, zip_code=None):
     """Mark article as trashed"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('UPDATE articles SET trashed = 1 WHERE id = ?', (article_id,))
+        cursor.execute('''
+            INSERT OR REPLACE INTO article_management (article_id, is_rejected, updated_at)
+            VALUES (?, 1, ?)
+        ''', (article_id, datetime.now().isoformat()))
         conn.commit()
 
 
-def restore_article(article_id):
+def restore_article(article_id, zip_code=None):
     """Restore trashed article"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('UPDATE articles SET trashed = 0 WHERE id = ?', (article_id,))
+        cursor.execute('''
+            INSERT OR REPLACE INTO article_management (article_id, is_rejected, updated_at)
+            VALUES (?, 0, ?)
+        ''', (article_id, datetime.now().isoformat()))
         conn.commit()
 
 
@@ -390,7 +401,21 @@ def toggle_good_fit(article_id, is_good_fit):
     """Toggle good fit status"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('UPDATE articles SET is_good_fit = ? WHERE id = ?', (1 if is_good_fit else 0, article_id))
+        cursor.execute('''
+            INSERT OR REPLACE INTO article_management (article_id, is_good_fit, updated_at)
+            VALUES (?, ?, ?)
+        ''', (article_id, 1 if is_good_fit else 0, datetime.now().isoformat()))
+        conn.commit()
+
+
+def set_on_target(article_id, is_on_target):
+    """Set on-target status for article"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO article_management (article_id, is_on_target, updated_at)
+            VALUES (?, ?, ?)
+        ''', (article_id, 1 if is_on_target else 0, datetime.now().isoformat()))
         conn.commit()
 
 

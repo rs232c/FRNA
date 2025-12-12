@@ -1266,6 +1266,66 @@ def get_settings_api():
 
 
 @login_required
+@app.route('/admin/api/reject-article', methods=['POST', 'OPTIONS'])
+def reject_article():
+    """Reject/trash an article"""
+    data = request.get_json() if request.is_json else request.form
+    article_id = data.get('article_id')
+    zip_code = data.get('zip_code')
+
+    if not article_id:
+        return jsonify({'error': 'Missing article_id'}), 400
+
+    try:
+        from .services import trash_article
+        trash_article(article_id, zip_code or '02720')
+        return jsonify({'success': True, 'message': 'Article rejected'})
+    except Exception as e:
+        logger.error(f"Error rejecting article {article_id}: {e}")
+        return jsonify({'error': 'Database error'}), 500
+
+
+@login_required
+@app.route('/admin/api/on-target', methods=['POST', 'OPTIONS'])
+def on_target():
+    """Mark article as on-target (relevant for targeting)"""
+    data = request.get_json() if request.is_json else request.form
+    article_id = data.get('article_id')
+    zip_code = data.get('zip_code')
+
+    if not article_id:
+        return jsonify({'error': 'Missing article_id'}), 400
+
+    try:
+        from .services import set_on_target
+        set_on_target(article_id, True)
+        return jsonify({'success': True, 'message': 'Article marked as on-target'})
+    except Exception as e:
+        logger.error(f"Error marking on-target for {article_id}: {e}")
+        return jsonify({'error': 'Database error'}), 500
+
+
+@login_required
+@app.route('/admin/api/off-target', methods=['POST', 'OPTIONS'])
+def off_target():
+    """Mark article as off-target (not relevant for targeting)"""
+    data = request.get_json() if request.is_json else request.form
+    article_id = data.get('article_id')
+    zip_code = data.get('zip_code')
+
+    if not article_id:
+        return jsonify({'error': 'Missing article_id'}), 400
+
+    try:
+        from .services import set_on_target
+        set_on_target(article_id, False)
+        return jsonify({'success': True, 'message': 'Article marked as off-target'})
+    except Exception as e:
+        logger.error(f"Error marking off-target for {article_id}: {e}")
+        return jsonify({'error': 'Database error'}), 500
+
+
+@login_required
 @app.route('/admin/api/get-all-trash', methods=['GET', 'OPTIONS'])
 def get_all_trash():
     """Get all trashed articles"""

@@ -456,6 +456,14 @@ class ArticleDatabase:
         except sqlite3.OperationalError:
             pass  # Column already exists
         try:
+            cursor.execute('ALTER TABLE article_management ADD COLUMN is_good_fit INTEGER DEFAULT 0')
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+        try:
+            cursor.execute('ALTER TABLE article_management ADD COLUMN is_on_target INTEGER')
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+        try:
             cursor.execute('ALTER TABLE article_management ADD COLUMN created_at TEXT')
         except sqlite3.OperationalError:
             pass  # Column already exists
