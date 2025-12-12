@@ -712,9 +712,9 @@ class NewsAggregator:
                         # Use zip_code from article or parameter, default to "02720" if both are None
                         article_zip = article.get("zip_code") or zip_code or "02720"
                         cursor.execute('''
-                            INSERT OR REPLACE INTO article_management 
-                            (article_id, enabled, is_rejected, is_auto_rejected, auto_reject_reason, zip_code)
-                            VALUES (?, 0, 1, 1, ?, ?)
+                            INSERT OR REPLACE INTO article_management
+                            (article_id, enabled, is_auto_filtered, auto_reject_reason, zip_code)
+                            VALUES (?, 0, 1, ?, ?)
                         ''', (article_id, reason, article_zip))
                     
                     conn.commit()
@@ -838,9 +838,9 @@ class NewsAggregator:
                             # Use zip_code from article or parameter, default to "02720" if both are None
                             article_zip = article.get("zip_code") or zip_code or "02720"
                             cursor.execute('''
-                                INSERT OR REPLACE INTO article_management 
-                                (article_id, enabled, is_rejected, is_auto_rejected, auto_reject_reason, zip_code)
-                                VALUES (?, 0, 1, 1, ?, ?)
+                                INSERT OR REPLACE INTO article_management
+                                (article_id, enabled, is_auto_filtered, auto_reject_reason, zip_code)
+                                VALUES (?, 0, 1, ?, ?)
                             ''', (article_id, reason_str, article_zip))
                         
                         conn.commit()

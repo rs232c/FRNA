@@ -166,6 +166,7 @@ def get_articles(zip_code=None, limit=50, offset=0, category=None, search=None):
             SELECT
                 a.*,
                 COALESCE(am.is_rejected, 0) as is_rejected,
+                COALESCE(am.is_auto_filtered, 0) as is_auto_filtered,
                 COALESCE(am.is_featured, 0) as is_featured,
                 COALESCE(am.is_top_article, 0) as is_top,
                 COALESCE(am.is_top_story, 0) as is_top_story,
@@ -234,10 +235,11 @@ def get_rejected_articles(zip_code=None):
         cursor = conn.cursor()
 
         query = '''
-            SELECT a.*, am.user_notes, am.created_at as rejected_at
+            SELECT a.*, am.user_notes, am.created_at as rejected_at,
+                   CASE WHEN am.is_rejected = 1 THEN 'manual' ELSE 'auto' END as rejection_type
             FROM articles a
             JOIN article_management am ON a.id = am.article_id
-            WHERE am.is_rejected = 1
+            WHERE am.is_rejected = 1 OR am.is_auto_filtered = 1
         '''
         params = []
 
@@ -264,7 +266,7 @@ def toggle_article(article_id, action, zip_code=None):
             cursor.execute('UPDATE article_management SET is_rejected = 1, updated_at = ? WHERE article_id = ?',
                          (datetime.now(), article_id))
         elif action == 'restore':
-            cursor.execute('UPDATE article_management SET is_rejected = 0, updated_at = ? WHERE article_id = ?',
+            cursor.execute('UPDATE article_management SET is_rejected = 0, is_auto_filtered = 0, updated_at = ? WHERE article_id = ?',
                          (datetime.now(), article_id))
         elif action == 'feature':
             cursor.execute('UPDATE article_management SET is_featured = 1, updated_at = ? WHERE article_id = ?',
@@ -323,15 +325,15 @@ def get_stats(zip_code=None):
             ''')
         stats['active_articles'] = cursor.fetchone()[0]
 
-        # Rejected articles
+        # Rejected articles (manually rejected only, not auto-filtered)
         if zip_code:
             cursor.execute('''
                 SELECT COUNT(*) FROM article_management am
                 JOIN articles a ON am.article_id = a.id
-                WHERE am.is_rejected = 1 AND a.zip_code = ?
+                WHERE am.is_rejected = 1 AND am.is_auto_filtered = 0 AND a.zip_code = ?
             ''', (zip_code,))
         else:
-            cursor.execute('SELECT COUNT(*) FROM article_management WHERE is_rejected = 1')
+            cursor.execute('SELECT COUNT(*) FROM article_management WHERE is_rejected = 1 AND is_auto_filtered = 0')
         stats['rejected_articles'] = cursor.fetchone()[0]
 
         # Top stories (is_top_story = 1)
@@ -441,6 +443,8 @@ def get_settings():
         return settings
 
 
+
+
 def trash_article(article_id, zip_code=None):
     """Mark article as trashed"""
     with get_db() as conn:
@@ -453,12 +457,13 @@ def trash_article(article_id, zip_code=None):
 
 
 def restore_article(article_id, zip_code=None):
-    """Restore trashed article"""
+    """Restore article (either trashed or auto-filtered)"""
     with get_db() as conn:
         cursor = conn.cursor()
+        # Clear both is_rejected and is_auto_filtered when restoring
         cursor.execute('''
-            INSERT OR REPLACE INTO article_management (article_id, is_rejected, updated_at)
-            VALUES (?, 0, ?)
+            INSERT OR REPLACE INTO article_management (article_id, is_rejected, is_auto_filtered, updated_at)
+            VALUES (?, 0, 0, ?)
         ''', (article_id, datetime.now().isoformat()))
         conn.commit()
 

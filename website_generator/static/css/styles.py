@@ -139,8 +139,7 @@ article:hover {
 }
 
 .story-slide {
-    width: 100%;
-    min-width: 100%;
+    /* width and min-width set by inline styles based on number of slides */
     flex-shrink: 0;
     display: flex;
     /* Ensure slides don't shrink */

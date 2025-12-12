@@ -21,7 +21,7 @@ def main(zip_code=None, city_state=None):
     """
     print("=" * 60)
     print("Quick Regeneration: Using existing articles from database")
-    print("(No fetching - fast regeneration for page-load triggers)")
+    print("(No fetching - fastest regeneration for page-load triggers)")
     print("=" * 60)
     
     # Get articles from database
@@ -39,7 +39,7 @@ def main(zip_code=None, city_state=None):
     enriched = aggregator.enrich_articles(articles)
     print(f"Enriched {len(enriched)} articles")
     
-    # Generate website
+    # Generate website (skip meetings data fetching for fastest regeneration)
     print("Generating website...")
     generator = WebsiteGenerator()
     generator.generate(enriched, zip_code=zip_code, city_state=city_state)

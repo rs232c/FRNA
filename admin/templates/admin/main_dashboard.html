@@ -1,15 +1,86 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Dashboard{% if zip_code %} - Zip {{ zip_code }}{% endif %}{% endblock %}
+{% block title %}{% if is_main_admin %}Main Admin Dashboard{% elif zip_code %}Zip {{ zip_code }} Dashboard{% else %}Admin Dashboard{% endif %}{% endblock %}
 
 {% block content %}
+{% if is_main_admin_view %}
+<style>
+/* Light theme overrides for main admin */
+body { background: #f5f5f5 !important; color: #333 !important; }
+.header { background: #ffffff !important; color: #333 !important; border-bottom: 1px solid #ddd !important; }
+.header a { color: #0078d4 !important; }
+.controls { background: #ffffff !important; border: 1px solid #e9ecef !important; }
+.articles-list { background: #ffffff !important; border: 1px solid #e9ecef !important; }
+.settings-container { background: #ffffff !important; border: 1px solid #e9ecef !important; }
+.settings-section { background: #f8f9fa !important; border: 1px solid #e9ecef !important; }
+.tabs { border-bottom-color: #e9ecef !important; }
+.tab-btn { color: #6c757d !important; }
+.article-item { border-bottom-color: #e9ecef !important; }
+.zip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.zip-card { background: #ffffff; border: 1px solid #e9ecef; border-radius: 8px; padding: 1.5rem; text-align: center; transition: box-shadow 0.2s; }
+.zip-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.zip-code { font-size: 1.5rem; font-weight: bold; color: #0078d4; margin-bottom: 0.5rem; }
+.zip-link { display: inline-block; padding: 0.5rem 1rem; background: #0078d4; color: white; text-decoration: none; border-radius: 4px; transition: background 0.2s; }
+.zip-link:hover { background: #0056b3; }
+</style>
+{% endif %}
+
+<!-- OVERVIEW TAB (Global Dashboard) -->
+<!-- DEBUG: zip_code='{{ zip_code }}', is_main_admin={{ is_main_admin }} -->
+{% if not zip_code and is_main_admin %}
+<div id="overviewTab" class="tab-content{% if active_tab == 'overview' %} active{% endif %}">
+    <div class="container">
+        <h2 style="margin-bottom: 2rem;">Global Admin Dashboard</h2>
+
+        <div class="stats-grid" style="margin-bottom: 3rem;">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_articles or 0 }}</div>
+                <div class="stat-label">Total Articles (All Zips)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.published_today or 0 }}</div>
+                <div class="stat-label">Published Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ enabled_zips|length }}</div>
+                <div class="stat-label">Active Zip Codes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.rejected_articles or 0 }}</div>
+                <div class="stat-label">Rejected Articles</div>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 1.5rem;">Manage Zip Code Dashboards</h3>
+        <p style="color: #666; margin-bottom: 2rem;">Click on any zip code below to access its individual admin dashboard.</p>
+
+        <div class="zip-grid">
+            {% for zip in enabled_zips %}
+            <div class="zip-card">
+                <div class="zip-code">{{ zip }}</div>
+                <a href="/admin/{{ zip }}" class="zip-link">Manage {{ zip }}</a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 3rem; padding: 2rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+            <h3>Quick Actions</h3>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                <button onclick="regenerateWebsite()" style="padding: 0.75rem 1.5rem;">Regenerate All Sites</button>
+                <button onclick="regenerateAll()" style="background: #ff9800; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px;">🔄 Full Data Refresh</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div id="articlesTab" class="tab-content{% if active_tab == 'articles' or not active_tab %} active{% endif %}">
     <div class="articles-list" id="articles-list" data-zip-code="{{ zip_code or '' }}" data-total-articles="{{ total_count }}" data-rejected-count="{{ stats.rejected_articles if stats.rejected_articles else 0 }}">
         <div style="padding: 0.75rem 1rem; background: #1a1a1a; border-bottom: 2px solid #404040; font-weight: 600; color: #e0e0e0;">
-            Showing {{ articles|length }} of {{ total_count }} article{{ 's' if total_count != 1 else '' }}{% if stats.rejected_articles > 0 %} ({{ stats.rejected_articles }} in <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=trash" style="color: #0078d4; text-decoration: underline;">🗑️ Trash</a>){% endif %}
+            Showing {{ articles|length }} of {{ total_count }} article{{ 's' if total_count != 1 else '' }}
         </div>
         {% for article in articles %}
-        <div class="article-item {{ 'rejected' if article.get('is_rejected', 0) else '' }}" data-id="{{ article.id }}">
+        <div class="article-item {{ 'rejected' if article.get('is_rejected', 0) else ('auto-filtered' if article.get('is_auto_filtered', 0) else '') }}" data-id="{{ article.id }}">
             <div class="article-info">
                 <div class="article-title" style="display: flex; align-items: center; gap: 0.5rem;">
                     <span>{{ article.title[:80] }}{% if article.title|length > 80 %}...{% endif %}</span>
@@ -43,60 +114,60 @@
                 </div>
             </div>
             <div class="article-actions" style="display: flex; gap: 0.5rem; align-items: center;">
-                <button class="relevance-breakdown-btn" data-id="{{ article.id }}" data-action="show-breakdown"
-                        style="padding: 0.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;"
+                <button class="relevance-breakdown-btn action-icon" data-id="{{ article.id }}" data-action="show-breakdown"
+                        style="background: #0078d4; color: white; border: none; cursor: pointer;"
                         title="Why rejected? / Score breakdown">
-                    📊
+                    &#128200;
                 </button>
-                <button class="thumbs-up-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_good_fit', 0) else 'off' }}" data-action="thumbs-up"
-                        style="padding: 0.5rem; background: {% if article.get('is_good_fit', 0) %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_good_fit', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                <button class="thumbs-up-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_good_fit', 0) else 'off' }}" data-action="thumbs-up"
+                        style="background: {% if article.get('is_good_fit', 0) %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_good_fit', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
                         title="Thumbs up (train relevance + category)">
-                    👍
+                    &#128077;
                 </button>
-                <button class="thumbs-down-btn" data-id="{{ article.id }}" data-action="thumbs-down"
-                        style="padding: 0.5rem; background: transparent; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: 0.5; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                <button class="thumbs-down-btn action-icon" data-id="{{ article.id }}" data-action="thumbs-down"
+                        style="background: transparent; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: 0.5; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
                         title="Thumbs down (train relevance + category)">
-                    👎
+                    &#128078;
                 </button>
-                <button class="top-story-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top_story', 0) else 'off' }}" data-action="toggle-top-story"
-                        style="padding: 0.5rem; background: {% if article.get('is_top_story', 0) %}#ff9800{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_top_story', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                <button class="top-story-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top_story', 0) else 'off' }}" data-action="toggle-top-story"
+                        style="background: {% if article.get('is_top_story', 0) %}#ff9800{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_top_story', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
                         title="Mark as top story (perfect example)">
-                    🎩
+                    &#127913;
                 </button>
-                <button class="top-article-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top', 0) else 'off' }}" data-action="toggle-top-article"
-                        style="padding: 0.5rem; background: {% if article.get('is_top', 0) %}#ffd700{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_top', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                <button class="top-article-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top', 0) else 'off' }}" data-action="toggle-top-article"
+                        style="background: {% if article.get('is_top', 0) %}#ffd700{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_top', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
                         title="Mark as top article (featured)">
-                    ⭐
+                    &#11088;
                 </button>
-                <button class="alert-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_alert', 0) else 'off' }}" data-action="toggle-alert"
-                        style="padding: 0.5rem; background: {% if article.get('is_alert', 0) %}#ff4444{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_alert', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                <button class="alert-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_alert', 0) else 'off' }}" data-action="toggle-alert"
+                        style="background: {% if article.get('is_alert', 0) %}#ff4444{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_alert', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
                         title="Mark as alert (urgent notification)">
-                    🚨
+                    &#128680;
                 </button>
-                <button class="on-target-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') == 1 else 'off' }}" data-action="on-target"
-                        style="padding: 0.5rem; background: {% if article.get('is_on_target') == 1 %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_on_target') == 1 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                <button class="on-target-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') == 1 else 'off' }}" data-action="on-target"
+                        style="background: {% if article.get('is_on_target') == 1 %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_on_target') == 1 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                         title="Mark as on target (relevant for targeting)">
-                    🎯
+                    &#127919;
                 </button>
-                <button class="off-target-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') is not none and article.get('is_on_target') == 0 else 'off' }}" data-action="off-target"
-                        style="padding: 0.5rem; background: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}#f44336{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1rem; opacity: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                <button class="off-target-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') is not none and article.get('is_on_target') == 0 else 'off' }}" data-action="off-target"
+                        style="background: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}#f44336{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                         title="Mark as off target (not relevant for targeting)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
+                    &#10060;
                 </button>
-                <button class="edit-article-btn" data-id="{{ article.id }}" data-action="edit-article"
-                        style="padding: 0.5rem; background: #252525; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;"
+                <button class="edit-article-btn action-icon" data-id="{{ article.id }}" data-action="edit-article"
+                        style="background: #252525; color: white; border: none; cursor: pointer;"
                         title="Edit article">
-                    ✏️
+                    &#9999;&#65039;
                 </button>
-                {% if not article.get('is_rejected', 0) %}
-                <button class="trash-btn" data-id="{{ article.id }}" data-action="trash-article"
-                        title="Move to trash" style="padding: 0.5rem; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">🗑️</button>
+                {% if article.get('is_rejected', 0) %}
+                <button class="restore-btn action-icon" data-id="{{ article.id }}" data-action="restore-article"
+                        title="Restore article" style="background: #4caf50; color: white; border: none; cursor: pointer;">&#8617;&#65039;</button>
+                {% elif article.get('is_auto_filtered', 0) %}
+                <button class="restore-btn action-icon" data-id="{{ article.id }}" data-action="restore-article"
+                        title="Restore auto-filtered article" style="background: #9c27b0; color: white; border: none; cursor: pointer;">&#8617;&#65039;</button>
                 {% else %}
-                <button class="restore-trash-btn" data-id="{{ article.id }}" data-action="restore-article"
-                        title="Restore from trash" style="padding: 0.5rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">↩️</button>
+                <button class="trash-btn action-icon" data-id="{{ article.id }}" data-action="trash-article"
+                        title="Move to trash" style="background: #d32f2f; color: white; border: none; cursor: pointer;">&#128465;&#65039;</button>
                 {% endif %}
             </div>
         </div>
@@ -123,59 +194,6 @@
     </div>
 </div>
 
-<!-- TRASH TAB -->
-{% if active_tab == 'trash' %}
-<div id="trashTab" class="tab-content{% if active_tab == 'trash' %} active{% endif %}">
-    <div style="padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-        <h3 style="margin: 0 0 0.75rem 0; color: #fff; font-size: 1.5rem; font-weight: 600;">🗑️ Trash - All Rejected Articles</h3>
-        <p style="margin: 0; color: rgba(255,255,255,0.95); font-size: 1rem; line-height: 1.6;">View all rejected articles - both manually rejected and auto-filtered. Manually rejected articles train the Bayesian model. You can restore any article from here.</p>
-    </div>
-    <div style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-        <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <span style="color: #e0e0e0; font-weight: 600; font-size: 0.95rem;">Filter:</span>
-            <button id="trashFilterAll" class="trash-filter-btn active" data-filter="all" style="padding: 0.5rem 1rem; background: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">All</button>
-            <button id="trashFilterManual" class="trash-filter-btn" data-filter="manual" style="padding: 0.5rem 1rem; background: #404040; color: #e0e0e0; border: 1px solid #555; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">🗑️ Manual</button>
-            <button id="trashFilterAuto" class="trash-filter-btn" data-filter="auto" style="padding: 0.5rem 1rem; background: #404040; color: #e0e0e0; border: 1px solid #555; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">🤖 Auto</button>
-        </div>
-        <div id="trashFilterCount" style="color: #888; font-size: 0.9rem; margin-left: auto;">
-            <span id="trashFilterCountText">Loading...</span>
-        </div>
-    </div>
-    <div style="margin-bottom: 1.5rem; position: relative;">
-        <input type="text" id="trashSearchInput" placeholder="🔍 Search by title, source, or reason..."
-               style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 1rem; background: #252525; border: 1px solid #404040; border-radius: 8px; color: #e0e0e0; font-size: 0.95rem; outline: none; transition: border-color 0.2s;"
-               onfocus="this.style.borderColor='#0078d4';" onblur="this.style.borderColor='#404040';">
-        <button id="trashSearchClear" onclick="clearTrashSearch()" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #888; cursor: pointer; font-size: 1.2rem; padding: 0.25rem 0.5rem; display: none; transition: color 0.2s;" onmouseover="this.style.color='#e0e0e0';" onmouseout="this.style.color='#888';" title="Clear search">×</button>
-    </div>
-    <div class="articles-list" id="trashList" style="background: transparent;">
-        {% if rejected_articles %}
-        {% for article in rejected_articles %}
-        <div class="article-item rejected" data-id="{{ article.id }}">
-            <div class="article-info">
-                <div class="article-title" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span>{{ article.title[:80] }}{% if article.title|length > 80 %}...{% endif %}</span>
-                    {% if article.url %}
-                    <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" title="Open article in new window" style="color: #0078d4; text-decoration: none; font-size: 1.1rem; opacity: 0.7; transition: opacity 0.2s;">🔗</a>
-                    {% endif %}
-                </div>
-                <div class="article-meta">
-                    {{ article.source }} - {{ article.published[:10] if article.published else 'N/A' }}
-                    {% if article.relevance_score is defined and article.relevance_score is not none %}
-                    • Relevance: <strong style="color: {% if article.relevance_score >= 70 %}#4caf50{% elif article.relevance_score >= 40 %}#ff9800{% else %}#d32f2f{% endif %};">{{ "%.0f"|format(article.relevance_score) }}</strong>/100
-                    {% endif %}
-                </div>
-            </div>
-            <div class="article-actions" style="display: flex; gap: 0.5rem; align-items: center;">
-                <button class="restore-trash-btn" data-id="{{ article.id }}" data-action="restore-article" title="Restore from trash" style="padding: 0.5rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">↩️</button>
-            </div>
-        </div>
-        {% endfor %}
-        {% else %}
-        <p style="padding: 2rem; text-align: center; color: #888; background: #252525; border-radius: 8px; border: 1px solid #404040;">No rejected articles found.</p>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
 
 <!-- SOURCES TAB -->
 {% if active_tab == 'sources' %}
@@ -321,60 +339,201 @@
 {% if active_tab == 'relevance' %}
 <div id="relevanceTab" class="tab-content{% if active_tab == 'relevance' %} active{% endif %}">
     <div class="relevance-container">
-        <h2 style="margin-bottom: 1.5rem;">Relevance Scoring Configuration</h2>
+        <h2 style="margin-bottom: 1.5rem; color: #e0e0e0;">Relevance Scoring Configuration</h2>
 
-        <!-- Bayesian Learning System Explanation -->
-        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white;">
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white; position: relative;">
             <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="toggleExplanation('bayesianExplanation')">
                 <h3 style="margin: 0; color: white; font-size: 1.3rem;">🧠 Bayesian Learning System</h3>
-                <span id="bayesianExplanationToggle" style="font-size: 1.2rem; user-select: none; color: white;">⏷</span>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span id="bayesianExplanationToggle" style="font-size: 1.2rem; user-select: none; color: white;">▼</span>
+                    <button onclick="event.stopPropagation(); closeExplanation('bayesianExplanation')" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold;" title="Close">×</button>
+                </div>
             </div>
-            <div id="bayesianExplanation" style="margin-top: 1rem;">
-                <div style="background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
-                    <p style="color: white; font-size: 0.95rem; line-height: 1.7; margin: 0;">
-                        The system uses a <strong>Naive Bayes classifier</strong> that learns from your actions to automatically filter similar articles in the future. This creates a personalized filtering system that improves over time.
+            <div id="bayesianExplanation" style="margin-top: 1rem; display: none;">
+                <div style="color: white; font-size: 0.95rem; line-height: 1.8;">
+                    <p style="margin: 0 0 1rem 0;">
+                        The system uses a <strong>Naive Bayes classifier</strong> - a machine learning algorithm that learns from your article rejections to automatically filter similar content in the future. This intelligent system gets smarter over time as you curate your news feed.
                     </p>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-                    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 6px;">
-                        <h4 style="margin-top: 0; margin-bottom: 0.5rem; color: white; font-size: 1rem;">📜 Learning from Rejections</h4>
-                        <p style="color: rgba(255,255,255,0.95); font-size: 0.9rem; line-height: 1.6; margin: 0;">
-                            When you move an article to <strong>🗑️ Trash</strong>, the system extracts features and learns that similar articles should be filtered.
-                        </p>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 6px;">
-                        <h4 style="margin-top: 0; margin-bottom: 0.5rem; color: white; font-size: 1rem;">✓ Learning from Acceptances</h4>
-                        <p style="color: rgba(255,255,255,0.95); font-size: 0.9rem; line-height: 1.6; margin: 0;">
-                            When you mark articles as "good fit" or keep them active, the system learns these patterns are acceptable.
-                        </p>
-                    </div>
-                </div>
-                <div style="background: rgba(255,255,255,0.2); padding: 0.75rem 1rem; border-radius: 6px; margin-top: 1rem; border-left: 4px solid rgba(255,255,255,0.5);">
-                    <p style="color: white; font-size: 0.9rem; line-height: 1.6; margin: 0;">
-                        <strong>💡 Tip:</strong> The Bayesian system works alongside the relevance scoring system below. Relevance scores provide immediate filtering, while Bayesian learning adapts to your preferences over time.
+                    <h4 style="margin: 1rem 0 0.5rem 0; font-size: 1.1rem; color: rgba(255,255,255,0.95);">How It Works:</h4>
+                    <ul style="margin: 0.5rem 0 1rem 0; padding-left: 1.5rem;">
+                        <li style="margin-bottom: 0.5rem;"><strong>Feature Extraction:</strong> When you reject an article, the system extracts key features including keywords (important nouns, verbs), nearby towns mentioned (Cape Cod, Tiverton, Somerset, etc.), topics/categories, and whether Fall River is mentioned.</li>
+                        <li style="margin-bottom: 0.5rem;"><strong>Pattern Learning:</strong> The system stores these patterns in a database, tracking which features are associated with rejections vs. acceptances. It uses Laplace smoothing to handle new, unseen features gracefully.</li>
+                        <li style="margin-bottom: 0.5rem;"><strong>Probability Calculation:</strong> For new articles, it calculates P(reject | features) - the probability that an article should be rejected based on its features. If this probability exceeds 70%, the article is automatically filtered.</li>
+                        <li style="margin-bottom: 0.5rem;"><strong>Context Awareness:</strong> The system is smart enough to allow articles about nearby towns if they also mention Fall River or have high local relevance scores, even if the Bayesian model suggests rejection.</li>
+                    </ul>
+                    <h4 style="margin: 1rem 0 0.5rem 0; font-size: 1.1rem; color: rgba(255,255,255,0.95);">Activation:</h4>
+                    <p style="margin: 0.5rem 0 1rem 0;">
+                        The Bayesian learning system activates after you've rejected <strong>50 or more articles</strong>. Before that threshold, it's in training mode, learning patterns but not yet auto-filtering. Once active, it will automatically filter articles that match learned rejection patterns.
+                    </p>
+                    <h4 style="margin: 1rem 0 0.5rem 0; font-size: 1.1rem; color: rgba(255,255,255,0.95);">Training:</h4>
+                    <p style="margin: 0.5rem 0 0 0;">
+                        Every time you click thumbs down or manually reject an article, the system extracts features and updates its model. The more you provide feedback, the better it gets at identifying similar unwanted content. You can view training statistics in the Stats tab.
                     </p>
                 </div>
             </div>
         </div>
 
-        <!-- Auto-Filter Threshold -->
-        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">Auto-Filter Threshold</h3>
-            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
-                Articles with relevance scores below this threshold will be automatically filtered out during aggregation.
-            </p>
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 8px;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Auto-Filter Threshold</h3>
             <div style="display: flex; align-items: center; gap: 1rem;">
-                <label style="font-weight: 600;">Minimum Relevance Score:</label>
+                <label style="font-weight: 600; color: #1a1a1a;">Minimum Relevance Score:</label>
                 <input type="number" id="relevanceThreshold" value="{{ (settings.get('relevance_threshold', '10') | float) | int }}" step="1" min="0" max="100" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100px;">
                 <button class="save-threshold-btn" style="padding: 0.5rem 1rem; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Save Threshold</button>
-                <span id="thresholdSaveStatus" style="color: #4caf50; font-weight: 600; display: none;">✓ Saved</span>
             </div>
         </div>
 
-        <p style="color: #666; margin-bottom: 2rem; line-height: 1.6;">
-            Manage the keywords, places, topics, and sources that affect article relevance scores.
-            Changes take effect immediately for new articles.
-        </p>
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Rerun Relevance Scoring</h3>
+            <p style="margin-bottom: 1rem; color: #1a1a1a;">
+                Recalculate relevance scores for all existing articles using current relevance settings.
+                Articles that fail the relevance threshold or Bayesian filtering will be automatically marked as auto-filtered.
+            </p>
+            <button id="rerunRelevanceBtn" onclick="rerunRelevanceScoring()" 
+                    style="padding: 0.75rem 1.5rem; background: #ffc107; color: #1a1a1a; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                🔄 Rerun Relevance Scoring on All Articles
+            </button>
+            <div id="rerunRelevanceStatus" style="margin-top: 1rem; display: none;">
+                <p style="color: #1a1a1a; font-weight: 600;"></p>
+            </div>
+        </div>
+
+        {% if relevance_config %}
+        <!-- High Relevance Keywords -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #4caf50;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">High Relevance Keywords ({{ relevance_config.get('high_relevance_points', 15) }} points each)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="highRelevanceInput" placeholder="Add keyword" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
+                <button onclick="addRelevanceItem('high_relevance', document.getElementById('highRelevanceInput').value)" style="padding: 0.5rem 1rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="highRelevanceItems">
+                {% for item in relevance_config.get('high_relevance', []) %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #e8f5e9; border-radius: 4px;">
+                    <span style="color: #1a1a1a;">{{ item }}</span>
+                    <button class="remove-relevance-btn" data-category="high_relevance" data-item="{{ item|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">&#128465;&#65039;</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Medium Relevance Keywords -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #ff9800;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Medium Relevance Keywords (5 points each)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="mediumRelevanceInput" placeholder="Add keyword" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
+                <button onclick="addRelevanceItem('medium_relevance', document.getElementById('mediumRelevanceInput').value)" style="padding: 0.5rem 1rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="mediumRelevanceItems">
+                {% for item in relevance_config.get('medium_relevance', []) %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #fff3e0; border-radius: 4px;">
+                    <span style="color: #1a1a1a;">{{ item }}</span>
+                    <button class="remove-relevance-btn" data-category="medium_relevance" data-item="{{ item|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">&#128465;&#65039;</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Local Places -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #2196f3;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Local Places ({{ relevance_config.get('local_places_points', 3) }} points each)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="localPlacesInput" placeholder="Add place" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
+                <button onclick="addRelevanceItem('local_places', document.getElementById('localPlacesInput').value)" style="padding: 0.5rem 1rem; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="localPlacesItems">
+                {% for item in relevance_config.get('local_places', []) %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #e3f2fd; border-radius: 4px;">
+                    <span style="color: #1a1a1a;">{{ item }}</span>
+                    <button class="remove-relevance-btn" data-category="local_places" data-item="{{ item|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">&#128465;&#65039;</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Topic Keywords -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #9c27b0;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Topic Keywords (Custom Points)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="topicKeywordInput" placeholder="Keyword" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 200px; margin-right: 0.5rem;">
+                <input type="number" id="topicPointsInput" placeholder="Points" step="0.1" min="0" max="100" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100px; margin-right: 0.5rem;">
+                <button onclick="addTopicKeyword()" style="padding: 0.5rem 1rem; background: #9c27b0; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="topicKeywordsItems">
+                {% for keyword, points in relevance_config.get('topic_keywords', {}).items() %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #f3e5f5; border-radius: 4px;">
+                    <span style="color: #1a1a1a;"><strong>{{ keyword }}</strong>: {{ "%.1f"|format(points) }} pts</span>
+                    <button class="remove-relevance-btn" data-category="topic_keywords" data-item="{{ keyword|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">&#128465;&#65039;</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Source Credibility -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #00bcd4;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Source Credibility (Points)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="sourceInput" placeholder="Source name" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 200px; margin-right: 0.5rem;">
+                <input type="number" id="sourcePointsInput" placeholder="Points" step="0.1" min="0" max="100" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100px; margin-right: 0.5rem;">
+                <button onclick="addSourceCredibility()" style="padding: 0.5rem 1rem; background: #00bcd4; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="sourceCredibilityItems">
+                {% for source, points in relevance_config.get('source_credibility', {}).items() %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #e0f7fa; border-radius: 4px;">
+                    <span style="color: #1a1a1a;"><strong>{{ source }}</strong>: {{ "%.1f"|format(points) }} pts</span>
+                    <button class="remove-relevance-btn" data-category="source_credibility" data-item="{{ source|e }}" style="margin-left: 0.5rem; background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">&#128465;&#65039;</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Clickbait Patterns -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #f44336;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Clickbait Patterns (Negative Impact)</h3>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="clickbaitInput" placeholder="Add pattern" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
+                <button onclick="addRelevanceItem('clickbait_patterns', document.getElementById('clickbaitInput').value)" style="padding: 0.5rem 1rem; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="clickbaitPatternsItems">
+                {% for item in relevance_config.get('clickbait_patterns', []) %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #ffebee; border-radius: 4px;">
+                    <span style="color: #1a1a1a;">{{ item }}</span>
+                    <button class="remove-relevance-btn" data-category="clickbait_patterns" data-item="{{ item|e }}" style="margin-left: 0.5rem; background: #d32f2f; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">&#128465;&#65039;</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Excluded Towns -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; border-left: 4px solid #f44336;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">🚫 Excluded Towns (Auto-Filtered)</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                Towns on this list are automatically filtered out unless the article also mentions Fall River.
+                Towns are added automatically when you reject articles about them.
+            </p>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="excludedTownInput" placeholder="Add town (e.g., 'somerset')" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
+                <button onclick="addRelevanceItem('excluded_towns', document.getElementById('excludedTownInput').value)" style="padding: 0.5rem 1rem; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+            </div>
+            <div class="relevance-items" id="excludedTownsItems">
+                {% for item in relevance_config.get('excluded_towns', []) %}
+                <div class="relevance-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; background: #ffebee; border-radius: 4px;">
+                    <span style="color: #1a1a1a;">{{ item }}</span>
+                    <button class="remove-relevance-btn" data-category="excluded_towns" data-item="{{ item|e }}" style="margin-left: 0.5rem; background: #d32f2f; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">&#128465;&#65039;</button>
+                </div>
+                {% endfor %}
+                {% if not relevance_config.get('excluded_towns') %}
+                <p style="color: #888; font-style: italic;">No excluded towns yet. Reject articles about unwanted towns to add them here.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Bayesian Statistics -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white;">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: white;">🧠 Bayesian Learning Statistics</h3>
+            <div id="bayesianStats" style="color: white;">
+                <p>Loading statistics...</p>
+            </div>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -444,7 +603,14 @@
 {% if active_tab == 'settings' %}
 <div id="settingsTab" class="tab-content{% if active_tab == 'settings' %} active{% endif %}">
     <div class="settings-container">
-        <h2 style="margin-bottom: 1.5rem;">Settings</h2>
+        <h2 style="margin-bottom: 1.5rem;">
+            Settings
+            {% if is_main_admin %}
+                <span style="color: #0078d4; font-size: 0.8rem; font-weight: normal;"> (Main Admin - Global)</span>
+            {% elif zip_code %}
+                <span style="color: #ff9800; font-size: 0.8rem; font-weight: normal;"> (Zip {{ zip_code }})</span>
+            {% endif %}
+        </h2>
 
         <div class="settings-section">
             <h3>Website Regeneration</h3>

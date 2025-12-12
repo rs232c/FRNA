@@ -62,6 +62,11 @@
                     <div class="relative flex items-center bg-[#161616]/50 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-800/20 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20">
                         <span class="text-gray-400 mr-2">🔍</span>
                         <input type="text" placeholder="Search by name..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full sm:w-64" id="obituarySearch">
+                        <button id="mobileNavToggle" class="text-gray-400 hover:text-white transition-colors ml-2 px-2 py-1 rounded-lg hover:bg-gray-800/50 border border-gray-700" aria-label="Toggle navigation menu" title="Menu & Category Controls">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
@@ -74,12 +79,6 @@
                     <a href="mailto:obituaries@fallrivernews.local?subject=Submit Obituary" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
                         Submit an Obituary
                     </a>
-                    <!-- Hamburger Menu Button -->
-                    <button id="mobileNavToggle" class="flex items-center gap-2 text-gray-400 hover:text-white px-3 py-2 rounded-lg hover:bg-gray-800/50 transition-colors border border-gray-700" aria-label="Toggle navigation menu" title="Menu & Category Controls">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </button>
                     <!-- Desktop Admin Button -->
                     <a href="/admin" id="hamburgerMenuLink" class="hidden lg:inline-flex bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors items-center justify-center w-10 h-10" title="Admin Panel">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,7 +114,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Navigation -->
     <nav class="bg-[#0a0a0a]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -196,11 +195,11 @@
             <article class="obituary-card bg-white rounded-lg overflow-hidden shadow-sm" data-name="{{ article.title.lower() }}" data-funeral-home="{{ article.source_display.lower() }}">
                 <!-- Photo or Placeholder -->
                 {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
-                <div class="relative h-48 overflow-hidden bg-gray-200">
+                <div class="relative aspect-square overflow-hidden bg-gray-200">
                     <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover">
                 </div>
                 {% else %}
-                <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                <div class="relative aspect-square bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
                     <div class="text-center text-gray-500">
                         <div class="text-4xl mb-2">🕊️</div>
                         <div class="text-xs">No Photo</div>

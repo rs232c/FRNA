@@ -11,12 +11,11 @@ import time
 from collections import OrderedDict
 from jinja2 import Template, Environment, FileSystemLoader
 from typing import List, Dict, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import logging
 from config import WEBSITE_CONFIG, LOCALE, DATABASE_CONFIG, CATEGORY_SLUGS, CATEGORY_MAPPING, WEATHER_CONFIG, SCANNER_CONFIG
 from ingestors.weather_ingestor import WeatherIngestor
-from ingestors.meetings_ingestor import MeetingsIngestor
 # Import from new modular structure
 try:
     from website_generator.static.css.styles import get_css_content
@@ -39,7 +38,6 @@ class WebsiteGenerator:
         self.title = WEBSITE_CONFIG.get("title", f"{LOCALE} News")
         self.description = WEBSITE_CONFIG.get("description", f"Latest news from {LOCALE}")
         self.weather_ingestor = WeatherIngestor()
-        self.meetings_ingestor = MeetingsIngestor()
         self.images_dir = Path(self.output_dir) / "images"
         
         # Setup Jinja2 environment for file-based templates
@@ -70,7 +68,7 @@ class WebsiteGenerator:
     def generate(self, articles: List[Dict], zip_code: Optional[str] = None, city_state: Optional[str] = None):
         """Generate complete website with incremental updates
         Phase 6: Now supports city_state for city-based generation
-        
+
         Args:
             articles: List of articles to generate
             zip_code: Optional zip code for zip-specific generation
@@ -82,6 +80,11 @@ class WebsiteGenerator:
             f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"website_generator.py:65","message":"generate method called","data":{"zip_code":zip_code,"zip_code_type":type(zip_code).__name__ if zip_code else "NoneType","articles_count":len(articles)},"timestamp":int(datetime.now().timestamp()*1000)})+"\n")
         # #endregion
         try:
+            # Phase 6: Default to Fall River (02720) if no zip_code or city_state provided
+            if not zip_code and not city_state:
+                zip_code = '02720'  # Default to Fall River, MA
+                logger.info(f"No location specified, defaulting to zip code: {zip_code}")
+
             # Phase 6: Resolve city_state if not provided
             if not city_state and zip_code:
                 try:
@@ -89,7 +92,7 @@ class WebsiteGenerator:
                     city_state = get_city_state_for_zip(zip_code)
                 except Exception as e:
                     logger.warning(f"Error resolving city_state for zip {zip_code}: {e}")
-            
+
             # Phase 6: Set output directory based on city_state (city-based) or zip_code (fallback)
             original_output_dir = self.output_dir
             if city_state:
@@ -183,41 +186,6 @@ class WebsiteGenerator:
         weather = self.weather_ingestor.fetch_weather()
         logger.info("✓ Weather data fetched (fresh)")
         
-        logger.info("Step 3.5/6: Fetching meetings data...")
-        try:
-            meetings = self.meetings_ingestor.fetch_meetings()
-            if meetings:
-                logger.info(f"✓ Fetched {len(meetings)} upcoming meetings")
-            else:
-                logger.warning("⚠ No meetings found - calendar URL may be incorrect or calendar unavailable")
-                meetings = []  # Ensure meetings is always a list
-        except Exception as e:
-            logger.error(f"Error fetching meetings: {e}")
-            meetings = []  # Continue with empty meetings list
-        
-        logger.info("Step 4/6: Generating index page...")
-        self._generate_index(enabled_articles, weather, admin_settings, zip_code, city_state)
-        logger.info("✓ Index page generated")
-        
-        logger.info("Step 5/6: Generating category pages...")
-        # Generate category pages for all navigation categories (in order)
-        # This ensures all nav links have working pages, even if empty
-        category_order = ["local-news", "crime", "sports", "events", "business", "schools", "food", "obituaries"]
-        for i, category_slug in enumerate(category_order, 1):
-            if category_slug in CATEGORY_SLUGS:
-                logger.info(f"  Generating category page {i}/{len(category_order)}: {category_slug}...")
-                self._generate_category_page(category_slug, enabled_articles, weather, admin_settings, zip_code, city_state)
-        logger.info("✓ All category pages generated")
-        
-        logger.info("Step 5.5/6: Generating scanner page...")
-        # Temporarily skip scanner page generation due to f-string issue
-        # self._generate_scanner_page(weather, admin_settings, zip_code, city_state)
-        logger.info("⚠ Scanner page generation skipped (f-string issue)")
-        logger.info("✓ Scanner page generated")
-        
-        logger.info("Step 5.6/6: Generating meetings page...")
-        self._generate_meetings_page(meetings, admin_settings, zip_code, city_state)
-        logger.info("✓ Meetings page generated")
         
         logger.info("Step 6/6: Generating CSS and JS files...")
         self._generate_css()
@@ -1279,7 +1247,6 @@ class WebsiteGenerator:
         second_row_tabs = [
             ("Media", f"{category_prefix}media.html" if category_prefix else "media.html", None, "category-media"),
             ("Scanner", f"{category_prefix}scanner.html" if category_prefix else "scanner.html", None, "category-scanner"),
-            ("Meetings", f"{category_prefix}meetings.html" if category_prefix else "meetings.html", None, "category-meetings"),
             ("Submit Tip", "#", None, "submit-tip"),  # Placeholder - implement later
             ("Lost & Found", "#", None, "lost-found"),  # Placeholder - implement later
             ("Events", f"{category_prefix}events.html" if category_prefix else "events.html", None, "category-events"),
@@ -3823,387 +3790,6 @@ class WebsiteGenerator:
             f.write(scanner_html)
         
         logger.info(f"Generated scanner page: {output_file}")
-    
-    def _generate_meetings_page(self, meetings: List[Dict], settings: Dict, zip_code: Optional[str] = None, city_state: Optional[str] = None):
-        """Generate meetings page with upcoming city meetings
-        
-        Args:
-            meetings: List of meeting dictionaries
-            settings: Admin settings
-            zip_code: Optional zip code for zip-specific generation
-            city_state: Optional city_state for city-based generation
-        """
-        # Resolve city name for dynamic title
-        locale_name = LOCALE  # Default to "Fall River, MA"
-        if city_state:
-            locale_name = city_state
-        elif zip_code:
-            from zip_resolver import resolve_zip
-            zip_data = resolve_zip(zip_code)
-            if zip_data:
-                city = zip_data.get("city", "")
-                state = zip_data.get("state_abbrev", "")
-                locale_name = f"{city}, {state}" if city and state else f"Zip {zip_code}"
-            else:
-                locale_name = f"Zip {zip_code}"
-        
-        # Determine paths
-        output_path = os.path.join(self.output_dir, "category")
-        meetings_ics_path = os.path.join(self.output_dir, "meetings")
-        if zip_code:
-            output_path = os.path.join(self.output_dir, f"zip_{zip_code}", "category")
-            meetings_ics_path = os.path.join(self.output_dir, f"zip_{zip_code}", "meetings")
-            home_path = "../"
-            css_path = "../css/"
-            meetings_path = "../meetings/"
-        else:
-            home_path = "../"
-            css_path = "../css/"
-            meetings_path = "meetings/"
-        
-        os.makedirs(output_path, exist_ok=True)
-        os.makedirs(meetings_ics_path, exist_ok=True)
-        
-        # Generate navigation (from category subdirectory, meetings is active)
-        nav_tabs = self._get_nav_tabs("category-meetings", zip_code, is_category_page=True)
-        
-        # Update title
-        title = f"{locale_name} News" if zip_code else self.title
-        
-        # Generate .ics files for each meeting
-        for meeting in meetings:
-            ics_content = self.meetings_ingestor.generate_ics_file(meeting)
-            # Use a safe filename from meeting ID
-            safe_id = re.sub(r'[^\w\-_]', '_', meeting['id'])[:100]
-            ics_filename = f"{safe_id}.ics"
-            ics_file_path = os.path.join(meetings_ics_path, ics_filename)
-            try:
-                with open(ics_file_path, 'w', encoding='utf-8') as f:
-                    f.write(ics_content)
-                meeting['ics_url'] = f"{meetings_path}{ics_filename}"
-            except Exception as e:
-                logger.warning(f"Error generating .ics file for meeting {meeting['id']}: {e}")
-                meeting['ics_url'] = None
-        
-        # Format meetings for display
-        formatted_meetings = []
-        for meeting in meetings:
-            dt = meeting.get('datetime')
-            if dt:
-                # Handle string datetime (from cache serialization)
-                if isinstance(dt, str):
-                    try:
-                        dt = datetime.fromisoformat(dt.replace('Z', '+00:00'))
-                    except:
-                        try:
-                            dt = datetime.strptime(dt, '%Y-%m-%d %H:%M:%S')
-                            dt = dt.replace(tzinfo=timezone.utc)
-                        except:
-                            try:
-                                dt = datetime.fromisoformat(dt)
-                            except:
-                                dt = None
-
-                if dt and isinstance(dt, datetime):
-                    date_formatted = dt.strftime('%A, %B %d, %Y')
-                    time_formatted = dt.strftime('%I:%M %p').lstrip('0')
-                    datetime_formatted = f"{date_formatted} at {time_formatted}"
-                else:
-                    date_formatted = meeting.get('date', 'Date TBD')
-                    time_formatted = meeting.get('time', 'Time TBD')
-                    datetime_formatted = f"{date_formatted} at {time_formatted}"
-            else:
-                date_formatted = meeting.get('date', 'Date TBD')
-                time_formatted = meeting.get('time', 'Time TBD')
-                datetime_formatted = f"{date_formatted} at {time_formatted}"
-
-            formatted_meetings.append({
-                'id': meeting['id'],
-                'title': meeting['title'],
-                'date_formatted': date_formatted,
-                'time_formatted': time_formatted,
-                'datetime_formatted': datetime_formatted,
-                'datetime_obj': dt if isinstance(dt, datetime) else None,
-                'location': meeting.get('location', 'Location TBD'),
-                'description': meeting.get('description', ''),
-                'ics_url': meeting.get('ics_url'),
-                'agenda_url': meeting.get('agenda_url')
-            })
-
-        # Build meetings page HTML
-        meetings_month_html = self._generate_meetings_month_view(formatted_meetings)
-
-        meetings_html = f'''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>City Meetings — {locale_name}</title>
-    <meta name="description" content="Upcoming city meetings and board sessions for {locale_name}">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Fallback CSS in case Tailwind CDN fails -->
-    <style>
-    /* Critical fallback styles */
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #e0e0e0; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
-    .grid { display: grid; gap: 1rem; }
-    .flex { display: flex; }
-    .hidden { display: none; }
-    .block { display: block; }
-    .text-center { text-align: center; }
-    .p-4 { padding: 1rem; }
-    .m-4 { margin: 1rem; }
-    .bg-gray-800 { background: #2a2a2a; }
-    .text-white { color: white; }
-    .rounded { border-radius: 0.25rem; }
-    article { margin-bottom: 1rem; padding: 1rem; background: #1a1a1a; border-radius: 0.5rem; }
-    a { color: #3b82f6; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    </style>
-    <script>
-        tailwind.config = {{
-            darkMode: 'class',
-            theme: {{
-                extend: {{
-                    colors: {{
-                        'edge-bg': '#0d0d0d',
-                        'edge-surface': '#161616',
-                        'edge-elevated': '#1f1f1f',
-                    }}
-                }}
-            }}
-        }}
-    </script>
-    <link rel="stylesheet" href="{css_path}style.css">
-    <style>
-        .lazy-image {{ opacity: 0; transition: opacity 0.3s; }}
-        .lazy-image.loaded {{ opacity: 1; }}
-    </style>
-</head>
-<body class="bg-[#0f0f0f] text-gray-100 min-h-screen">
-    <!-- Top Bar -->
-    <div class="bg-[#0f0f0f]/50 backdrop-blur-sm border-b border-gray-900/30 py-2">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="w-full sm:w-auto flex-1">
-                    <div class="relative flex items-center bg-[#161616]/50 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-800/20">
-                        <span class="text-gray-400 mr-2">🔍</span>
-                        <input type="text" placeholder="Search articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full sm:w-64" id="searchInput">
-                    </div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <a href="/admin" id="hamburgerMenuLink" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors inline-flex items-center justify-center w-10 h-10" title="Admin Panel">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </a>
-                    <script>
-                        // Update hamburger menu link based on session
-                        (function() {{
-                            fetch('/api/session-check')
-                                .then(response => response.json())
-                                .then(data => {{
-                                    const link = document.getElementById('hamburgerMenuLink');
-                                    if (data.logged_in && data.zip_code) {{
-                                        link.href = `/admin/${{data.zip_code}}`;
-                                    }} else {{
-                                        link.href = '/admin';
-                                    }}
-                                }})
-                                .catch(err => {{
-                                    console.error('Error checking session:', err);
-                                }});
-                        }})();
-                    </script>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Navigation -->
-    <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="text-xl font-semibold text-blue-400">FRNA</div>
-                {nav_tabs}
-            </div>
-        </div>
-    </nav>
-    
-    <!-- Main Content -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="mb-8">
-            <h1 class="text-3xl lg:text-4xl font-bold text-center mb-2" style="color: #0078d4;">📅 Upcoming City Meetings</h1>
-            <p class="text-center text-gray-400 mb-4">{locale_name} Official Calendar</p>
-        </div>
-        
-        {meetings_month_html}
-        
-        <!-- Footer Note -->
-        <p class="text-center text-gray-600 text-sm mt-8">
-            Source: <a href="https://www.fallriverma.gov/calendar.php" target="_blank" class="text-blue-400 hover:text-blue-300">Fall River Official Calendar</a> • 
-            <a href="{home_path}index.html" class="text-blue-400 hover:text-blue-300">← Back to FRNA</a>
-        </p>
-    </main>
-    
-    <!-- Load main.js for search functionality -->
-    <script src="{home_path}js/main.js"></script>
-</body>
-</html>'''
-        
-        output_file = os.path.join(output_path, "meetings.html")
-        with open(output_file, "w", encoding="utf-8", errors='replace') as f:
-            f.write(meetings_html)
-        
-        logger.info(f"Generated meetings page: {output_file}")
-    
-    def _generate_meetings_month_view(self, meetings: List[Dict]) -> str:
-        """Generate monthly calendar view for meetings"""
-        if not meetings:
-            return '''
-        <div class="text-center py-12">
-            <div class="text-6xl mb-4">📅</div>
-            <h2 class="text-2xl font-bold text-gray-300 mb-2">No Upcoming Meetings</h2>
-            <p class="text-gray-500">Check back soon for scheduled city meetings and board sessions.</p>
-        </div>'''
-
-        # Group meetings by month
-        months = OrderedDict()
-        day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        
-        for meeting in meetings:
-            dt = meeting.get('datetime_obj')
-            if not isinstance(dt, datetime):
-                continue
-            
-            # Get month start date
-            month_start = dt.replace(day=1).date()
-            month_key = month_start.isoformat()[:7]  # YYYY-MM
-            
-            if month_key not in months:
-                months[month_key] = {
-                    "start": month_start,
-                    "meetings_by_date": {}
-                }
-            
-            meeting_date = dt.date()
-            if meeting_date not in months[month_key]["meetings_by_date"]:
-                months[month_key]["meetings_by_date"][meeting_date] = []
-            months[month_key]["meetings_by_date"][meeting_date].append(meeting)
-        
-        # Generate HTML for each month
-        month_sections = []
-        for idx, (month_key, month_data) in enumerate(months.items()):
-            month_start = month_data["start"]
-            # Calculate first day of month and what day of week it falls on
-            first_day = month_start
-            # Get first Monday before or on the 1st (for calendar grid)
-            first_weekday = first_day.weekday()  # 0=Monday, 6=Sunday
-            calendar_start = first_day - timedelta(days=first_weekday)
-            
-            # Calculate last day of month
-            if month_start.month == 12:
-                last_day = datetime(month_start.year + 1, 1, 1).date() - timedelta(days=1)
-            else:
-                last_day = datetime(month_start.year, month_start.month + 1, 1).date() - timedelta(days=1)
-            
-            # Calculate last day to show in calendar (last Sunday)
-            last_weekday = last_day.weekday()
-            calendar_end = last_day + timedelta(days=(6 - last_weekday))
-            
-            month_label = month_start.strftime('%B %Y')
-            
-            section = [f'''
-        <div class="meetings-month-section" data-month-index="{idx}" data-month-label="{month_label}">
-            <div class="mb-6">
-                <h2 class="text-2xl font-bold text-gray-200 text-center">{month_label}</h2>
-            </div>
-            <div class="grid grid-cols-7 gap-2 mb-4">
-                <!-- Day headers -->
-                {''.join([f'<div class="text-center text-xs font-semibold text-gray-500 py-2">{{day}}</div>' for day in day_names])}
-            </div>
-            <div class="grid grid-cols-7 gap-2">''']
-
-            # Generate calendar days
-            current_date = calendar_start
-            while current_date <= calendar_end:
-                is_current_month = current_date.month == month_start.month
-                day_meetings = month_data["meetings_by_date"].get(current_date, [])
-                
-                day_class = "bg-[#0f0f0f]/60" if is_current_month else "bg-[#0a0a0a]/40 opacity-60"
-                text_class = "text-gray-300" if is_current_month else "text-gray-600"
-                
-                day_block = [f'''
-                <div class="{day_class} rounded-lg p-2 border border-gray-800/50 min-h-[120px]">
-                    <div class="text-xs font-semibold {text_class} mb-2">{current_date.day}</div>''']
-                
-                if day_meetings:
-                    for meeting in day_meetings[:3]:  # Limit to 3 meetings per day for space
-                        agenda_url = meeting.get('agenda_url') or "https://www.fallriverma.gov/#calendar"
-                        ics_url = meeting.get('ics_url', '#')
-                        time_str = meeting.get('time_formatted', '')
-                        day_block.append(f'''
-                    <div class="bg-[#161616] rounded p-2 mb-1 border border-gray-800/30 text-xs">
-                        <div class="text-blue-400 font-semibold text-[10px] mb-1 truncate" title="{meeting['title']}">{meeting['title'][:30]}{'...' if len(meeting['title']) > 30 else ''}</div>
-                        <div class="text-gray-400 text-[10px] mb-1">{time_str}</div>
-                        <div class="flex gap-1 flex-wrap">
-                            <a href="{agenda_url}" target="_blank" rel="noopener" class="text-blue-400 text-[10px] hover:text-blue-300 underline">Agenda</a>
-                            <a href="{ics_url}" download class="text-blue-300 text-[10px] hover:text-blue-200 underline">+Cal</a>
-                        </div>
-                    </div>''')
-                    if len(day_meetings) > 3:
-                        day_block.append(f'<div class="text-gray-500 text-[10px] text-center">+{len(day_meetings) - 3} more</div>')
-                
-                day_block.append('</div>')
-                section.append(''.join(day_block))
-                
-                current_date += timedelta(days=1)
-            
-            section.append('''
-            </div>
-        </div>''')
-            month_sections.append(''.join(section))
-        
-        nav = '''
-        <div class="flex items-center justify-between gap-4 mb-6">
-            <button type="button" onclick="changeMeetingMonth(-1)" class="px-4 py-2 rounded-lg border border-gray-800 text-sm text-gray-100 hover:border-blue-500 hover:text-blue-400">← Previous Month</button>
-            <div class="text-sm text-gray-300" id="meetingsMonthLabel">Month</div>
-            <button type="button" onclick="changeMeetingMonth(1)" class="px-4 py-2 rounded-lg border border-gray-800 text-sm text-gray-100 hover:border-blue-500 hover:text-blue-400">Next Month →</button>
-        </div>
-'''
-
-        script = '''
-        <script>
-            (function() {
-                const sections = document.querySelectorAll('.meetings-month-section');
-                const label = document.getElementById('meetingsMonthLabel');
-                let current = 0;
-
-                function showMonth(index) {
-                    sections.forEach((section, idx) => {
-                        section.style.display = idx === index ? 'block' : 'none';
-                    });
-                    if (label && sections[index]) {
-                        label.textContent = sections[index].dataset.monthLabel;
-                    }
-                }
-
-                window.changeMeetingMonth = function(delta) {
-                    current = Math.min(Math.max(current + delta, 0), sections.length - 1);
-                    showMonth(current);
-                };
-
-                if (sections.length) {
-                    showMonth(0);
-                }
-            })();
-        </script>'''
-
-        return f'''
-        {nav}
-        {"".join(month_sections)}
-        {script}
-        '''
     
     def _format_article_for_display(self, article: Dict, show_images: bool = True) -> Dict:
         """Format article for display in templates"""

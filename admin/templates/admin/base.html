@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -8,6 +9,48 @@
     <title>{% block title %}Admin Dashboard{% if zip_code %} - Zip {{ zip_code }}{% endif %}{% endblock %} - Fall River News</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Light theme (Main Admin) */
+        body.main-admin {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+        body.main-admin .header {
+            background: #ffffff;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+        }
+        body.main-admin .header a {
+            color: #0078d4;
+        }
+        body.main-admin .container {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+        body.main-admin .controls,
+        body.main-admin .articles-list,
+        body.main-admin .settings-container {
+            background: #ffffff;
+            border-color: #e9ecef;
+        }
+        body.main-admin .settings-section {
+            background: #f8f9fa;
+            border-color: #e9ecef;
+        }
+        body.main-admin .tabs {
+            border-bottom-color: #e9ecef;
+        }
+        body.main-admin .tab-btn {
+            color: #6c757d;
+        }
+        body.main-admin .article-item {
+            border-bottom-color: #e9ecef;
+        }
+
+        /* Dark theme (Zip Admin) - default */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #2a2a2a;
@@ -16,15 +59,49 @@
         .header {
             background: #1a1a1a;
             color: white;
+            border-bottom: 1px solid #404040;
             padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #404040;
         }
-        .header h1 { font-size: 1.5rem; color: #0078d4; }
+        .header h1 {
+            font-size: 1.5rem;
+            color: #0078d4;
+        }
         .header a {
             color: white;
+        }
+
+        /* Common styles */
+        .header {
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--header-bg);
+            color: var(--header-text);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            color: #0078d4;
+        }
+        .header a {
+            color: var(--header-link);
+        }
+
+        /* Action icon styling - perfect emoji rendering */
+        .action-icon {
+            font-size: 1.6rem !important;
+            line-height: 1 !important;
+            padding: 0.35rem;
+            border-radius: 0.35rem;
+            transition: all 0.2s ease;
+        }
+        .action-icon:hover {
+            transform: scale(1.25);
+        }
             text-decoration: none;
             padding: 0.5rem 1rem;
             background: #0078d4;
@@ -39,7 +116,6 @@
             padding: 2rem;
         }
         .controls {
-            background: #252525;
             padding: 1.5rem;
             border-radius: 8px;
             margin-bottom: 2rem;
@@ -47,7 +123,13 @@
             gap: 1rem;
             align-items: center;
             flex-wrap: wrap;
+            background: #252525;
             border: 1px solid #404040;
+        }
+
+        body.main-admin .controls {
+            background: #ffffff;
+            border-color: #e9ecef;
         }
         .toggle-switch {
             display: flex;
@@ -106,11 +188,16 @@
             background: #106ebe;
         }
         .articles-list {
-            background: #252525;
             border-radius: 8px;
             overflow: visible;
             max-height: none;
+            background: #252525;
             border: 1px solid #404040;
+        }
+
+        body.main-admin .articles-list {
+            background: #ffffff;
+            border-color: #e9ecef;
         }
         .article-item {
             display: flex;
@@ -118,6 +205,10 @@
             padding: 1rem;
             border-bottom: 1px solid #404040;
             gap: 1rem;
+        }
+
+        body.main-admin .article-item {
+            border-bottom-color: #e9ecef;
         }
         .article-item:last-child {
             border-bottom: none;
@@ -245,6 +336,11 @@
         .article-item.rejected {
             opacity: 0.6;
             background: #3d2817;
+        }
+        .article-item.auto-filtered {
+            opacity: 0.7;
+            background: rgba(156, 39, 176, 0.1);
+            border-left: 3px solid #9c27b0;
         }
         .badge-container {
             color: white;
@@ -391,11 +487,14 @@
             margin-bottom: 1.5rem;
             border-bottom: 2px solid #404040;
         }
+
+        body.main-admin .tabs {
+            border-bottom-color: #e9ecef;
+        }
         .tab-btn {
             padding: 0.75rem 1.5rem;
             background: transparent;
             border: none;
-            color: #b0b0b0;
             cursor: pointer;
             font-size: 1rem;
             font-weight: 600;
@@ -406,13 +505,22 @@
             position: relative;
             z-index: 10;
             transition: color 0.2s;
+            color: #b0b0b0;
+        }
+
+        body.main-admin .tab-btn {
+            color: #6c757d;
         }
         .tab-btn:hover {
             color: #0078d4;
         }
         .tab-btn.active {
             color: #0078d4;
+            {% if is_main_admin %}
             border-bottom-color: #0078d4;
+            {% else %}
+            border-bottom-color: #0078d4;
+            {% endif %}
         }
         .tab-btn:visited {
             color: #b0b0b0;
@@ -535,17 +643,27 @@
             margin-left: 1rem;
         }
         .settings-container {
-            background: #252525;
             border-radius: 8px;
             padding: 2rem;
+            background: #252525;
             border: 1px solid #404040;
+        }
+
+        body.main-admin .settings-container {
+            background: #ffffff;
+            border-color: #e9ecef;
         }
         .settings-section {
             padding: 1.5rem;
-            background: #1a1a1a;
-            border: 1px solid #404040;
             border-radius: 8px;
             margin-bottom: 1.5rem;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+        }
+
+        body.main-admin .settings-section {
+            background: #f8f9fa;
+            border-color: #e9ecef;
         }
         .settings-section h3 {
             margin-bottom: 1rem;
@@ -582,7 +700,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>{% if zip_code %}Zip {{ zip_code }} - {% endif %}Admin Dashboard</h1>
+        <h1>{% if is_main_admin_view %}Main Admin Dashboard{% elif zip_code %}Zip {{ zip_code }} - Admin Dashboard{% else %}Admin Dashboard{% endif %}</h1>
         <div style="display: flex; gap: 1rem; align-items: center;">
             <a href="/">Home</a>
             <a href="/admin/logout">Logout</a>
@@ -590,14 +708,23 @@
     </div>
     
     <div class="container" id="admin-container" data-zip-code="{{ zip_code or '' }}">
-        <div class="tabs">
+        {% block tabs %}{% endblock %}
+            {% if is_main_admin_view and not zip_code %}
+            <!-- Global Admin Tabs -->
+            <a href="/admin?tab=overview" class="tab-btn {{ 'active' if active_tab == 'overview' else '' }}">🏠 Overview</a>
+            <a href="/admin?tab=articles" class="tab-btn {{ 'active' if active_tab == 'articles' else '' }}">Articles</a>
+            <a href="/admin?tab=sources" class="tab-btn {{ 'active' if active_tab == 'sources' else '' }}">Sources</a>
+            <a href="/admin?tab=stats" class="tab-btn {{ 'active' if active_tab == 'stats' else '' }}">📊 Stats</a>
+            <a href="/admin?tab=settings" class="tab-btn {{ 'active' if active_tab == 'settings' else '' }}">⚙️ Settings</a>
+            {% else %}
+            <!-- Zip-specific Admin Tabs -->
             <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=articles" class="tab-btn {{ 'active' if active_tab == 'articles' else '' }}">Articles</a>
-            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=trash" class="tab-btn {{ 'active' if active_tab == 'trash' else '' }}">🗑️ Trash</a>
             <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=sources" class="tab-btn {{ 'active' if active_tab == 'sources' else '' }}">Sources</a>
             <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=stats" class="tab-btn {{ 'active' if active_tab == 'stats' else '' }}">📊 Stats</a>
             <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=relevance" class="tab-btn {{ 'active' if active_tab == 'relevance' else '' }}">🎯 Relevance</a>
             <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=categories" class="tab-btn {{ 'active' if active_tab == 'categories' else '' }}">📂 Categories</a>
             <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=settings" class="tab-btn {{ 'active' if active_tab == 'settings' else '' }}">⚙️ Settings</a>
+            {% endif %}
         </div>
         
         {% block content %}{% endblock %}

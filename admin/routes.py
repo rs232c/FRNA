@@ -2,6 +2,7 @@
 Admin routes - Flask route handlers for admin interface
 """
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory, send_file
+from werkzeug.datastructures import ImmutableMultiDict
 from functools import wraps
 import os
 import logging
@@ -9,6 +10,7 @@ import threading
 import subprocess
 import sys
 import time
+import secrets
 from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
@@ -87,7 +89,7 @@ app.secret_key = flask_secret_key
 # Security: Configure secure session cookies
 @app.after_request
 def after_request(response):
-    """Add CORS headers and disable caching for admin pages"""
+    """Add CORS headers, UTF-8 encoding, and disable caching for admin pages"""
     # Security: Only allow specific origins instead of wildcard
     ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',')
     origin = request.headers.get('Origin')
@@ -95,6 +97,8 @@ def after_request(response):
         response.headers.add('Access-Control-Allow-Origin', origin)
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    # Force UTF-8 encoding for all admin pages
+    response.headers['Content-Type'] = 'text/html; charset=utf-8'
     response.headers.add('Access-Control-Allow-Credentials', 'true')
 
     # Prevent ALL caching for admin pages
@@ -239,17 +243,29 @@ def session_check():
 # Website routes (serve static files)
 @app.route('/')
 def index():
-    """Serve main website index - redirects to default zip code (02720) which resolves to city directory"""
+    """Serve main website index - serves city_fall-river-ma directly"""
     logger.info("Index route called")
     zip_code = request.args.get('zip_code')
     if zip_code and validate_zip_code(zip_code):
         logger.info(f"Redirecting to zip code: {zip_code}")
         return redirect(f'/{zip_code}')
 
-    # Default to 02720 (Fall River) which resolves to city_fall-river-ma
-    default_zip = '02720'
-    logger.info(f"Redirecting to default zip code: {default_zip}")
-    return redirect(f'/{default_zip}')
+    # Serve city_fall-river-ma index directly as the main page
+    try:
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        city_index_path = os.path.join(project_root, 'build', 'city_fall-river-ma', 'index.html')
+        logger.info(f"Root route: checking city path {city_index_path}, exists: {os.path.exists(city_index_path)}")
+        if os.path.exists(city_index_path):
+            logger.info("Serving city_fall-river-ma index as main page")
+            return send_file(city_index_path)
+
+        # Fallback to default zip code redirect
+        default_zip = '02720'
+        logger.info(f"City index not found, redirecting to default zip code: {default_zip}")
+        return redirect(f'/{default_zip}')
+    except Exception as e:
+        logger.error(f"Error serving main index: {e}")
+        return "Error loading page", 500
 
 
 @app.route('/category/<path:category_slug>')
@@ -270,6 +286,186 @@ def category_page(category_slug):
         return "Category page not found", 404
 
 
+@app.route('/admin/main', strict_slashes=False)
+@login_required
+def admin_main():
+    """Global admin dashboard - shows all zip codes and global settings"""
+    try:
+        # For global admin, show all zips
+        zip_code = None  # None means all zips
+        tab = request.args.get('tab', 'overview')  # Default to overview tab for global view
+        print(f"DEBUG: tab parameter = '{tab}', request.args = {dict(request.args)}")
+        page = int(request.args.get('page', 1))
+        category_filter = request.args.get('category', 'all')
+        source_filter = request.args.get('source', '')
+        search_filter = request.args.get('search', '').strip()
+        date_range_filter = request.args.get('date_range', '')
+
+        # Get data for ALL zip codes
+        articles, total_count = get_articles(
+            zip_code=None,  # None means all zips
+            limit=50,
+            offset=(page - 1) * 50,
+            category=category_filter if category_filter != 'all' else None,
+            search=search_filter
+        )
+
+        rejected_articles = get_rejected_articles(zip_code=None)
+        sources_config = get_sources()
+        stats = get_stats(zip_code=None)  # Get stats for all zips
+        settings = get_settings()
+
+        # Get additional metadata
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Last regeneration time
+            cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('last_regeneration_time',))
+            last_regeneration = cursor.fetchone()
+            last_regeneration = last_regeneration[0] if last_regeneration else None
+
+            # Latest ingestion time
+            cursor.execute('SELECT MAX(ingested_at) FROM articles')
+            latest_ingestion = cursor.fetchone()
+            latest_ingestion = latest_ingestion[0] if latest_ingestion and latest_ingestion[0] else None
+
+        # Calculate pagination
+        total_pages = (total_count + 49) // 50  # Ceiling division
+        has_next = page < total_pages
+        has_prev = page > 1
+
+        # Get rejected article features for display
+        rejected_features = []
+        for article in rejected_articles[:10]:  # Show first 10
+            if article.get('is_auto_filtered'):
+                reason = "Auto-filtered"
+            elif article.get('is_rejected'):
+                reason = "Manually rejected"
+            else:
+                reason = "Unknown"
+            rejected_features.append({
+                'title': article.get('title', '')[:50],
+                'reason': reason,
+                'url': article.get('url', '')
+            })
+
+        # Get category stats for the categories tab
+        category_stats = []
+        try:
+            with get_db() as conn:
+                cursor = conn.cursor()
+
+                # First ensure categories table exists and has default categories
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS categories (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT UNIQUE NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+
+                # Insert default categories if table is empty
+                cursor.execute('SELECT COUNT(*) FROM categories')
+                count = cursor.fetchone()[0]
+                if count == 0:
+                    default_categories = ['News', 'Sports', 'Business', 'Crime', 'Events', 'Food', 'Schools', 'Local News', 'Obituaries', 'Weather']
+                    for cat in default_categories:
+                        try:
+                            cursor.execute('INSERT INTO categories (name) VALUES (?)', (cat,))
+                        except:
+                            pass  # Ignore if category already exists
+
+                conn.commit()
+
+                # Get all categories with article counts (all zips)
+                cursor.execute('''
+                    SELECT
+                        c.id,
+                        c.name,
+                        COUNT(a.id) as article_count,
+                        COUNT(CASE WHEN a.published >= date('now', '-7 days') THEN 1 END) as recent_count
+                    FROM categories c
+                    LEFT JOIN articles a ON c.name = a.category
+                    GROUP BY c.id, c.name
+                    ORDER BY c.name
+                ''')
+
+                for row in cursor.fetchall():
+                    category_stats.append({
+                        'id': row[0],
+                        'name': row[1],
+                        'article_count': row[2],
+                        'recent_count': row[3]
+                    })
+
+        except Exception as e:
+            logger.error(f"Error getting category stats: {e}")
+            category_stats = []
+
+        # Cache busting
+        cache_bust = int(time.time())
+
+        # Relevance config
+        relevance_config = WEBSITE_CONFIG.get('relevance', {})
+
+        # All enabled zips
+        enabled_zips = ['02720', '02721', '02722', '02723', '02724', '02725', '02726', '02842']
+
+        # #region agent log
+        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({
+                "id": f"log_{int(time.time()*1000)}_admin_main_render",
+                "timestamp": int(time.time()*1000),
+                "location": "admin/routes.py:413",
+                "message": "Rendering admin/main_dashboard.html template",
+                "data": {
+                    "zip_code": 'main',
+                    "is_main_admin": True,
+                    "active_tab": tab,
+                    "total_count": total_count,
+                    "page": page,
+                    "settings_keys": list(settings.keys()) if settings else [],
+                    "stats_keys": list(stats.keys()) if stats else []
+                },
+                "sessionId": "debug-session",
+                "runId": "hypothesis_test",
+                "hypothesisId": "template_data"
+            }) + '\n')
+        # #endregion
+
+        return render_template('admin/global_dashboard.html',
+            zip_code='',  # Empty string indicates global view
+            is_main_admin=True,  # Global admin view
+            active_tab=tab,
+            articles=articles,
+            rejected_articles=rejected_articles,
+            stats=stats,
+            settings=settings,
+            sources=sources_config,
+            version=VERSION,
+            last_regeneration=last_regeneration,
+            latest_ingestion=latest_ingestion,
+            rejected_features=rejected_features,
+            cache_bust=cache_bust,
+            relevance_config=relevance_config,
+            enabled_zips=enabled_zips,
+            category_stats=category_stats,
+            page=page,
+            total_pages=total_pages,
+            has_next=has_next,
+            has_prev=has_prev,
+            total_count=total_count,
+            category_filter=category_filter,
+            source_filter=source_filter,
+            date_range_filter=date_range_filter,
+            search_filter=search_filter
+        )
+
+    except Exception as e:
+        logger.error(f"Error in admin_main: {e}", exc_info=True)
+        return f"Error loading main admin dashboard: {e}", 500
+
+
 @app.route('/<zip_code>')
 def zip_page(zip_code):
     """Serve zip-specific index page - resolves to city-based directory"""
@@ -277,19 +473,30 @@ def zip_page(zip_code):
         return "Invalid zip code", 404
     try:
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        
+
+        # Special handling for 02720 - always serve city_fall-river-ma
+        if zip_code == '02720':
+            city_index_path = os.path.join(project_root, 'build', 'city_fall-river-ma', 'index.html')
+            logger.info(f"Zip {zip_code}: serving city path {city_index_path}, exists: {os.path.exists(city_index_path)}")
+            if os.path.exists(city_index_path):
+                logger.info(f"Serving city_fall-river-ma index for zip {zip_code}")
+                return send_file(city_index_path)
+
         # Try city-based directory first (preferred)
         if get_city_state_for_zip:
             city_state = get_city_state_for_zip(zip_code)
+            logger.info(f"Zip {zip_code} resolved to city_state: {city_state}")
             if city_state:
                 # Convert "Fall River, MA" to "fall-river-ma"
                 city_slug = city_state.lower().replace(", ", "-").replace(" ", "-")
                 city_index_path = os.path.join(project_root, 'build', f'city_{city_slug}', 'index.html')
+                logger.info(f"Trying to serve city index: {city_index_path}, exists: {os.path.exists(city_index_path)}")
                 if os.path.exists(city_index_path):
                     return send_file(city_index_path)
-        
+
         # Fallback to zip-based directory
         zip_index_path = os.path.join(project_root, 'build', f'zip_{zip_code}', 'index.html')
+        logger.info(f"Falling back to zip path: {zip_index_path}, exists: {os.path.exists(zip_index_path)}")
         if os.path.exists(zip_index_path):
             return send_file(zip_index_path)
         
@@ -466,11 +673,169 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/admin', strict_slashes=False)
+@app.route('/test', methods=['GET'])
+def test_route():
+    return "TEST ROUTE WORKS"
+
+@app.route('/testadmin', methods=['GET'])
+def test_admin():
+    return "ADMIN ROUTE WORKS"
+
+@app.route('/admin', methods=['GET'])
 @login_required
-def admin_redirect():
-    """Redirect /admin to blueprint route /admin/"""
-    return redirect('/admin/', code=301)
+def admin_dashboard():
+    """Global admin dashboard - shows all zip codes and global settings"""
+    try:
+        # For global admin, show all zips
+        zip_code = None  # None means all zips
+        tab = request.args.get('tab', 'overview')  # Default to overview tab for global view
+        page = int(request.args.get('page', 1))
+        category_filter = request.args.get('category', 'all')
+        source_filter = request.args.get('source', '')
+        search_filter = request.args.get('search', '').strip()
+        date_range_filter = request.args.get('date_range', '')
+
+        # Get data for ALL zip codes
+        articles, total_count = get_articles(
+            zip_code=None,  # None means all zips
+            limit=50,
+            offset=(page - 1) * 50,
+            category=category_filter if category_filter != 'all' else None,
+            search=search_filter
+        )
+
+        rejected_articles = get_rejected_articles(zip_code=None)
+        sources_config = get_sources()
+        stats = get_stats(zip_code=None)  # Stats for all zips
+        settings = get_settings()
+
+        # Get additional metadata
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Last regeneration time
+            cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('last_regeneration_time',))
+            last_regeneration = cursor.fetchone()
+            last_regeneration = last_regeneration[0] if last_regeneration else None
+
+            # Latest ingestion time
+            cursor.execute('SELECT MAX(ingested_at) FROM articles')
+            latest_ingestion = cursor.fetchone()
+            latest_ingestion = latest_ingestion[0] if latest_ingestion and latest_ingestion[0] else None
+
+        # Calculate pagination
+        total_pages = (total_count + 49) // 50  # Ceiling division
+        has_next = page < total_pages
+        has_prev = page > 1
+
+        # Get rejected article features for display
+        rejected_features = []
+        for article in rejected_articles[:10]:  # Show first 10
+            if article.get('is_auto_filtered'):
+                reason = "Auto-filtered"
+            elif article.get('is_rejected'):
+                reason = "Manually rejected"
+            else:
+                reason = "Unknown"
+            rejected_features.append({
+                'title': article.get('title', '')[:50],
+                'reason': reason,
+                'url': article.get('url', '')
+            })
+
+        # Get category stats for the categories tab
+        category_stats = []
+        try:
+            with get_db() as conn:
+                cursor = conn.cursor()
+
+                # First ensure categories table exists and has default categories
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS categories (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT UNIQUE NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+
+                # Insert default categories if table is empty
+                cursor.execute('SELECT COUNT(*) FROM categories')
+                count = cursor.fetchone()[0]
+                if count == 0:
+                    default_categories = ['News', 'Sports', 'Business', 'Crime', 'Events', 'Food', 'Schools', 'Local News', 'Obituaries', 'Weather']
+                    for cat in default_categories:
+                        try:
+                            cursor.execute('INSERT INTO categories (name) VALUES (?)', (cat,))
+                        except:
+                            pass  # Ignore if category already exists
+
+                conn.commit()
+
+                # Get all categories with article counts (all zips)
+                cursor.execute('''
+                    SELECT
+                        c.id,
+                        c.name,
+                        COUNT(a.id) as article_count,
+                        COUNT(CASE WHEN a.published >= date('now', '-7 days') THEN 1 END) as recent_count
+                    FROM categories c
+                    LEFT JOIN articles a ON c.name = a.category
+                    GROUP BY c.id, c.name
+                    ORDER BY c.name
+                ''')
+
+                for row in cursor.fetchall():
+                    category_stats.append({
+                        'id': row[0],
+                        'name': row[1],
+                        'article_count': row[2],
+                        'recent_count': row[3]
+                    })
+
+        except Exception as e:
+            logger.error(f"Error getting category stats: {e}")
+            category_stats = []
+
+        # Cache busting
+        cache_bust = int(time.time())
+
+        # Relevance configuration
+        relevance_config = WEBSITE_CONFIG.get('relevance', {})
+
+        # All enabled zips for the overview
+        enabled_zips = ['02720', '02721', '02722', '02723', '02724', '02725', '02726', '02842']
+
+        return render_template('admin/global_dashboard.html',
+            zip_code=None,  # None indicates global view
+            is_main_admin=True,  # Global admin view
+            active_tab=tab,
+            articles=articles,
+            rejected_articles=rejected_articles,
+            stats=stats,
+            settings=settings,
+            sources=sources_config,
+            version=VERSION,
+            last_regeneration=last_regeneration,
+            latest_ingestion=latest_ingestion,
+            rejected_features=rejected_features,
+            cache_bust=cache_bust,
+            relevance_config=relevance_config,
+            enabled_zips=enabled_zips,
+            category_stats=category_stats,
+            page=page,
+            total_pages=total_pages,
+            has_next=has_next,
+            has_prev=has_prev,
+            total_count=total_count,
+            category_filter=category_filter,
+            source_filter=source_filter,
+            date_range_filter=date_range_filter,
+            search_filter=search_filter
+        )
+
+    except Exception as e:
+        logger.error(f"Error in admin_dashboard: {e}", exc_info=True)
+        return f"Error loading global admin dashboard: {e}", 500
 
 
 @app.route('/Sortable.min.js')
@@ -516,205 +881,66 @@ def spa_category_routes():
 
 @login_required
 @app.route('/admin/', methods=['GET'])
-def admin_main_dashboard():
-    """Main admin dashboard"""
-    try:
-        zip_code = request.args.get('zip_code')
-        tab = request.args.get('tab', 'articles')
-        page = int(request.args.get('page', 1))
-        category_filter = request.args.get('category', 'all')
-        source_filter = request.args.get('source', '')
-        search_filter = request.args.get('search', '').strip()
-        date_range_filter = request.args.get('date_range', '')
-
-        # Validate inputs
-        if zip_code and not validate_zip_code(zip_code):
-            zip_code = None
-
-        # Get data for dashboard
-        articles, total_count = get_articles(
-            zip_code=zip_code,
-            limit=50,
-            offset=(page - 1) * 50,
-            category=category_filter if category_filter != 'all' else None,
-            search=search_filter
-        )
-
-        rejected_articles = get_rejected_articles(zip_code=zip_code)
-        sources_config = get_sources()
-        stats = get_stats(zip_code=zip_code)
-        settings = get_settings()
-
-        # Get additional metadata
-        with get_db() as conn:
-            cursor = conn.cursor()
-
-            # Last regeneration time
-            cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('last_regeneration_time',))
-            last_regeneration = cursor.fetchone()
-            last_regeneration = last_regeneration[0] if last_regeneration else None
-
-            # Latest ingestion time
-            cursor.execute('SELECT MAX(ingested_at) FROM articles')
-            latest_ingestion = cursor.fetchone()
-            latest_ingestion = latest_ingestion[0] if latest_ingestion and latest_ingestion[0] else None
-
-        # Calculate pagination
-        total_pages = (total_count + 49) // 50  # Ceiling division
-        has_next = page < total_pages
-        has_prev = page > 1
-
-        # Get rejected article features for display
-        rejected_features = []
-        for article in rejected_articles[:5]:  # Show only first 5
-            features = []
-            if hasattr(article, 'title') and article.get('title'):
-                # Extract potential rejection features from title
-                title_lower = article['title'].lower()
-                if any(word in title_lower for word in ['meeting', 'agenda', 'minutes']):
-                    features.append('meeting')
-                if any(word in title_lower for word in ['obituary', 'died', 'passed']):
-                    features.append('obituary')
-                if any(word in title_lower for word in ['weather', 'forecast', 'temperature']):
-                    features.append('weather')
-            rejected_features.append(features)
-
-        logger.info(f"About to get category stats for zip_code={zip_code}")
-        # Get category stats for the categories tab
-        logger.info(f"Getting category stats for zip_code={zip_code}")
-        category_stats = []
-        try:
-            with get_db() as conn:
-                cursor = conn.cursor()
-                logger.info("Got database connection")
-
-                # First ensure categories table exists and has default categories
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS categories (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT UNIQUE NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                ''')
-                logger.info("Ensured categories table exists")
-
-                # Insert default categories if table is empty
-                cursor.execute('SELECT COUNT(*) FROM categories')
-                count = cursor.fetchone()[0]
-                logger.info(f"Found {count} existing categories")
-                if count == 0:
-                    default_categories = ['News', 'Sports', 'Business', 'Crime', 'Events', 'Food', 'Schools', 'Local News', 'Obituaries', 'Weather']
-                    for cat in default_categories:
-                        try:
-                            cursor.execute('INSERT INTO categories (name) VALUES (?)', (cat,))
-                            logger.info(f"Inserted category: {cat}")
-                        except Exception as e:
-                            logger.info(f"Category {cat} already exists: {e}")
-
-                conn.commit()
-                logger.info("Committed category insertions")
-
-                if zip_code:
-                    cursor.execute('''
-                        SELECT
-                            c.id,
-                            c.name,
-                            COUNT(a.id) as article_count,
-                            COUNT(CASE WHEN a.published >= date('now', '-7 days') THEN 1 END) as recent_count
-                        FROM categories c
-                        LEFT JOIN articles a ON c.name = a.category AND a.zip_code = ?
-                        GROUP BY c.id, c.name
-                        ORDER BY c.name
-                    ''', (zip_code,))
-                else:
-                    cursor.execute('''
-                        SELECT
-                            c.id,
-                            c.name,
-                            COUNT(a.id) as article_count,
-                            COUNT(CASE WHEN a.published >= date('now', '-7 days') THEN 1 END) as recent_count
-                        FROM categories c
-                        LEFT JOIN articles a ON c.name = a.category
-                        GROUP BY c.id, c.name
-                        ORDER BY c.name
-                    ''')
-
-                for row in cursor.fetchall():
-                    category_stats.append({
-                        'id': row[0],
-                        'name': row[1],
-                        'article_count': row[2],
-                        'recent_count': row[3]
-                    })
-
-            logger.info(f"Found {len(category_stats)} categories for zip_code={zip_code}")
-
-        except Exception as e:
-            logger.error(f"Error getting category stats: {e}")
-            category_stats = []
-
-        # Cache busting
-        cache_bust = datetime.now().strftime('%Y%m%d%H%M%S')
-
-        # Relevance config (placeholder for now)
-        relevance_config = {}
-
-        # Enabled zips (placeholder for now)
-        enabled_zips = ['02720', '02721', '02722', '02723', '02724', '02725', '02726', '02842']
-
-        return render_template('admin/main_dashboard.html',
-            articles=articles,
-            settings=settings,
-            sources=sources_config,
-            version=VERSION,
-            last_regeneration=last_regeneration,
-            latest_ingestion=latest_ingestion,
-            stats=stats,
-            rejected_features=rejected_features,
-            active_tab=tab,
-            cache_bust=cache_bust,
-            relevance_config=relevance_config,
-            zip_code=zip_code,
-            enabled_zips=enabled_zips,
-            category_stats=category_stats,
-            page=page,
-            total_pages=total_pages,
-            has_next=has_next,
-            has_prev=has_prev,
-            total_count=total_count,
-            category_filter=category_filter,
-            source_filter=source_filter,
-            date_range_filter=date_range_filter,
-        search_filter=search_filter
-        )
-
-    except Exception as e:
-        logger.error(f"Error in admin_zip_dashboard for {zip_code}: {e}")
-        return f"Admin dashboard error for {zip_code}: {str(e)}", 500
+def admin_slash_redirect():
+    """Redirect /admin/ to /admin for consistency"""
+    return redirect('/admin', code=302)
 
 
-@login_required
 @app.route('/admin/<zip_code>', methods=['GET'])
+@login_required
 def admin_zip_dashboard(zip_code):
     """Admin dashboard for specific zip code"""
-    logger.info(f"admin_zip_dashboard called with zip_code={zip_code}")
+    # #region agent log
+    import json
+    import time
+    with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+        f.write(json.dumps({
+            "id": f"log_{int(time.time()*1000)}_zip_dashboard_entry",
+            "timestamp": int(time.time()*1000),
+            "location": "admin/routes.py:750",
+            "message": f"admin_zip_dashboard called with zip_code={zip_code}",
+            "data": {
+                "zip_code": zip_code,
+                "is_valid": validate_zip_code(zip_code),
+                "session_logged_in": session.get('logged_in'),
+                "session_is_main_admin": session.get('is_main_admin'),
+                "session_zip_code": session.get('zip_code')
+            },
+            "sessionId": "debug-session",
+            "runId": "hypothesis_test",
+            "hypothesisId": "route_conflict"
+        }) + '\n')
+    # #endregion
+
     try:
-        logger.info(f"Starting admin_zip_dashboard for {zip_code}")
+        # Validate zip code
         if not validate_zip_code(zip_code):
+            # #region agent log
+            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                f.write(json.dumps({
+                    "id": f"log_{int(time.time()*1000)}_zip_invalid",
+                    "timestamp": int(time.time()*1000),
+                    "location": "admin/routes.py:767",
+                    "message": f"Invalid zip code: {zip_code}",
+                    "data": {"zip_code": zip_code},
+                    "sessionId": "debug-session",
+                    "runId": "hypothesis_test",
+                    "hypothesisId": "route_conflict"
+                }) + '\n')
+            # #endregion
             return "Invalid zip code", 404
 
         # Set this zip code in session for convenience
         session['zip_code'] = zip_code
 
-        tab = request.args.get('tab', 'articles')
+        tab = request.args.get('tab', 'articles')  # Default to articles tab for zip-specific
         page = int(request.args.get('page', 1))
         category_filter = request.args.get('category', 'all')
         source_filter = request.args.get('source', '')
         search_filter = request.args.get('search', '').strip()
         date_range_filter = request.args.get('date_range', '')
 
-        # Get data for dashboard filtered to this zip code
-        logger.info(f"Calling get_articles for zip_code={zip_code}")
+        # Get data for dashboard filtered to this specific zip code
         articles, total_count = get_articles(
             zip_code=zip_code,
             limit=50,
@@ -722,42 +948,26 @@ def admin_zip_dashboard(zip_code):
             category=category_filter if category_filter != 'all' else None,
             search=search_filter
         )
-        logger.info(f"get_articles returned {len(articles)} articles")
 
         rejected_articles = get_rejected_articles(zip_code=zip_code)
-        logger.info(f"Got {len(rejected_articles)} rejected articles")
-        logger.info("Calling get_sources")
         sources_config = get_sources()
-        logger.info("Calling get_stats")
-        stats = get_stats(zip_code=zip_code)
-        logger.info("Calling get_settings")
+        stats = get_stats(zip_code=zip_code)  # Get stats for this zip only
         settings = get_settings()
-        logger.info("All data calls completed")
-        logger.info("About to get additional metadata")
 
         # Get additional metadata
-        logger.info("Opening database connection for metadata")
         with get_db() as conn:
             cursor = conn.cursor()
-            logger.info("Got database cursor for metadata")
 
             # Last regeneration time
-            logger.info("Querying last regeneration time")
             cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('last_regeneration_time',))
             last_regeneration = cursor.fetchone()
             last_regeneration = last_regeneration[0] if last_regeneration else None
-            logger.info(f"Last regeneration: {last_regeneration}")
 
             # Latest ingestion time
-            logger.info("Querying latest ingestion time")
-            cursor.execute('SELECT MAX(ingested_at) FROM articles')
+            cursor.execute('SELECT MAX(ingested_at) FROM articles WHERE zip_code = ?', (zip_code,))
             latest_ingestion = cursor.fetchone()
             latest_ingestion = latest_ingestion[0] if latest_ingestion and latest_ingestion[0] else None
-            logger.info(f"Latest ingestion: {latest_ingestion}")
 
-            logger.info("Metadata queries completed")
-
-        logger.info("About to calculate pagination")
         # Calculate pagination
         total_pages = (total_count + 49) // 50  # Ceiling division
         has_next = page < total_pages
@@ -765,17 +975,18 @@ def admin_zip_dashboard(zip_code):
 
         # Get rejected article features for display
         rejected_features = []
-        for article in rejected_articles[:5]:  # Show only first 5
-            features = []
-            if hasattr(article, 'title') and article.get('title'):
-                # Extract potential rejection features from title
-                title_lower = article['title'].lower()
-                if any(word in title_lower for word in ['meeting', 'agenda', 'minutes']):
-                    features.append('meeting')
-                if any(word in title_lower for word in ['obituary', 'died', 'passed']):
-                    features.append('obituary')
-                if len(features) > 0:
-                    rejected_features.append({'title': article['title'], 'features': features})
+        for article in rejected_articles[:10]:  # Show first 10
+            if article.get('is_auto_filtered'):
+                reason = "Auto-filtered"
+            elif article.get('is_rejected'):
+                reason = "Manually rejected"
+            else:
+                reason = "Unknown"
+            rejected_features.append({
+                'title': article.get('title', '')[:50],
+                'reason': reason,
+                'url': article.get('url', '')
+            })
 
         # Get category stats for the categories tab
         category_stats = []
@@ -804,30 +1015,18 @@ def admin_zip_dashboard(zip_code):
 
                 conn.commit()
 
-                if zip_code:
-                    cursor.execute('''
-                        SELECT
-                            c.id,
-                            c.name,
-                            COUNT(a.id) as article_count,
-                            COUNT(CASE WHEN a.published >= date('now', '-7 days') THEN 1 END) as recent_count
-                        FROM categories c
-                        LEFT JOIN articles a ON c.name = a.category AND a.zip_code = ?
-                        GROUP BY c.id, c.name
-                        ORDER BY c.name
-                    ''', (zip_code,))
-                else:
-                    cursor.execute('''
-                        SELECT
-                            c.id,
-                            c.name,
-                            COUNT(a.id) as article_count,
-                            COUNT(CASE WHEN a.published >= date('now', '-7 days') THEN 1 END) as recent_count
-                        FROM categories c
-                        LEFT JOIN articles a ON c.name = a.category
-                        GROUP BY c.id, c.name
-                        ORDER BY c.name
-                    ''')
+                # Get categories for this zip code
+                cursor.execute('''
+                    SELECT
+                        c.id,
+                        c.name,
+                        COUNT(a.id) as article_count,
+                        COUNT(CASE WHEN a.published >= date('now', '-7 days') THEN 1 END) as recent_count
+                    FROM categories c
+                    LEFT JOIN articles a ON c.name = a.category AND a.zip_code = ?
+                    GROUP BY c.id, c.name
+                    ORDER BY c.name
+                ''', (zip_code,))
 
                 for row in cursor.fetchall():
                     category_stats.append({
@@ -841,15 +1040,17 @@ def admin_zip_dashboard(zip_code):
             category_stats = []
 
         # Cache busting
-        cache_bust = str(int(time.time()))
+        cache_bust = int(time.time())
 
         # Relevance configuration
         relevance_config = WEBSITE_CONFIG.get('relevance', {})
 
+        # All enabled zips
         enabled_zips = ['02720', '02721', '02722', '02723', '02724', '02725', '02726', '02842']
 
         return render_template('admin/main_dashboard.html',
-            zip_code=zip_code,
+            zip_code=zip_code,  # Pass the actual zip code for zip-specific admin
+            is_main_admin=False,  # Flag to indicate this is zip-specific admin view
             active_tab=tab,
             articles=articles,
             rejected_articles=rejected_articles,
@@ -872,11 +1073,11 @@ def admin_zip_dashboard(zip_code):
             category_filter=category_filter,
             source_filter=source_filter,
             date_range_filter=date_range_filter,
-        search_filter=search_filter
+            search_filter=search_filter
         )
 
     except Exception as e:
-        logger.error(f"Error in admin_zip_dashboard for {zip_code}: {e}")
+        logger.error(f"Error in admin_zip_dashboard for {zip_code}: {e}", exc_info=True)
         return f"Admin dashboard error for {zip_code}: {str(e)}", 500
 
 
@@ -964,16 +1165,26 @@ def admin_articles_page(zip_code):
         return f"Admin articles page error for {zip_code}: {str(e)}", 500
 
 
-@login_required
-@app.route('/admin/api/get-rejected-articles', methods=['GET', 'OPTIONS'])
-def get_rejected_articles_route():
-    """Get rejected articles"""
-    zip_code = request.args.get('zip_code')
-    if zip_code and not validate_zip_code(zip_code):
-        zip_code = None
 
-    articles = get_rejected_articles(zip_code=zip_code)
-    return jsonify({'articles': articles})
+
+@login_required
+@app.route('/admin/api/reject-article', methods=['POST', 'OPTIONS'])
+def reject_article():
+    """Reject/trash an article"""
+    data = request.get_json() if request.is_json else request.form
+    article_id = data.get('article_id')
+    zip_code = data.get('zip_code')
+
+    if not article_id:
+        return jsonify({'error': 'Missing article_id'}), 400
+
+    try:
+        from .services import trash_article
+        trash_article(article_id, zip_code or '02720')
+        return jsonify({'success': True, 'message': 'Article rejected'})
+    except Exception as e:
+        logger.error(f"Error rejecting article {article_id}: {e}")
+        return jsonify({'error': 'Database error'}), 500
 
 
 @login_required
@@ -1254,9 +1465,40 @@ def bayesian_stats():
 
 
 @login_required
-@app.route('/admin/api/settings', methods=['GET', 'OPTIONS'])
+@app.route('/admin/api/settings', methods=['GET', 'POST', 'OPTIONS'])
 def get_settings_api():
-    """Get admin settings"""
+    """Get or update admin settings"""
+    if request.method == 'POST':
+        # Handle setting updates
+        data = request.get_json() if request.is_json else request.form
+        key = data.get('key')
+        value = data.get('value')
+        zip_code = data.get('zip_code')
+
+        if not key:
+            return jsonify({'success': False, 'error': 'Missing key parameter'}), 400
+
+        try:
+            with get_db() as conn:
+                cursor = conn.cursor()
+
+                # Check if setting exists
+                cursor.execute('SELECT value FROM admin_settings WHERE key = ?', (key,))
+                existing = cursor.fetchone()
+
+                if existing:
+                    cursor.execute('UPDATE admin_settings SET value = ? WHERE key = ?', (value, key))
+                else:
+                    cursor.execute('INSERT INTO admin_settings (key, value) VALUES (?, ?)', (key, value))
+
+                conn.commit()
+                return jsonify({'success': True, 'message': f'Setting {key} updated'})
+
+        except Exception as e:
+            logger.error(f"Error updating setting {key}: {e}")
+            return jsonify({'success': False, 'error': 'Database error'}), 500
+
+    # GET request - return all settings
     try:
         settings = get_settings()
         return jsonify(settings)
@@ -1265,24 +1507,6 @@ def get_settings_api():
         return jsonify({'error': 'Database error'}), 500
 
 
-@login_required
-@app.route('/admin/api/reject-article', methods=['POST', 'OPTIONS'])
-def reject_article():
-    """Reject/trash an article"""
-    data = request.get_json() if request.is_json else request.form
-    article_id = data.get('article_id')
-    zip_code = data.get('zip_code')
-
-    if not article_id:
-        return jsonify({'error': 'Missing article_id'}), 400
-
-    try:
-        from .services import trash_article
-        trash_article(article_id, zip_code or '02720')
-        return jsonify({'success': True, 'message': 'Article rejected'})
-    except Exception as e:
-        logger.error(f"Error rejecting article {article_id}: {e}")
-        return jsonify({'error': 'Database error'}), 500
 
 
 @login_required
@@ -1325,37 +1549,6 @@ def off_target():
         return jsonify({'error': 'Database error'}), 500
 
 
-@login_required
-@app.route('/admin/api/get-all-trash', methods=['GET', 'OPTIONS'])
-def get_all_trash():
-    """Get all trashed articles"""
-    zip_code = request.args.get('zip_code')
-    if zip_code and not validate_zip_code(zip_code):
-        zip_code = None
-
-    with get_db() as conn:
-        cursor = conn.cursor()
-
-        query = '''
-            SELECT a.*, COALESCE(am.is_rejected, 0) as is_rejected,
-                   COALESCE(am.is_featured, 0) as is_featured
-            FROM articles a
-            LEFT JOIN article_management am ON a.id = am.article_id
-            WHERE a.trashed = 1
-        '''
-        params = []
-
-        if zip_code:
-            query += ' AND a.zip_code = ?'
-            params.append(zip_code)
-
-        query += ' ORDER BY a.id DESC'
-
-        cursor.execute(query, params)
-        columns = [desc[0] for desc in cursor.description]
-        articles = [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-        return jsonify({'articles': articles})
 
 
 @login_required
@@ -1566,6 +1759,122 @@ def recategorize_all():
 
 
 @login_required
+@app.route('/admin/api/rerun-relevance-scoring', methods=['POST', 'OPTIONS'])
+def rerun_relevance_scoring():
+    """Rerun relevance scoring for all articles"""
+    try:
+        from utils.relevance_calculator import calculate_relevance_score_with_tags
+        from utils.bayesian_learner import BayesianLearner
+        import sqlite3
+        from config import DATABASE_CONFIG
+
+        # Get zip_code from request
+        zip_code = request.get_json().get('zip_code')
+
+        # Connect to database and get relevance threshold
+        conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+        cursor = conn.cursor()
+
+        # Get relevance threshold from admin_settings
+        cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('relevance_threshold',))
+        threshold_row = cursor.fetchone()
+        relevance_threshold = float(threshold_row[0]) if threshold_row else 10.0
+
+        # Clear existing auto-filtered status for re-evaluation
+        if zip_code:
+            cursor.execute('UPDATE article_management SET is_auto_filtered = 0, auto_reject_reason = NULL WHERE zip_code = ? AND is_auto_filtered = 1', (zip_code,))
+        else:
+            cursor.execute('UPDATE article_management SET is_auto_filtered = 0, auto_reject_reason = NULL WHERE is_auto_filtered = 1')
+
+        # Get all articles (including previously auto-filtered ones for re-evaluation)
+        if zip_code:
+            cursor.execute('SELECT id, title, content, source FROM articles WHERE zip_code = ?', (zip_code,))
+        else:
+            cursor.execute('SELECT id, title, content, source FROM articles')
+
+        articles = cursor.fetchall()
+        processed_count = 0
+        filtered_count = 0
+
+        logger.info(f"Starting relevance rerun for {len(articles)} articles with threshold {relevance_threshold}")
+
+        learner = BayesianLearner()
+
+        for article_row in articles:
+            article_id, title, content, source = article_row
+            article = {
+                'title': title,
+                'content': content or '',
+                'source': source
+            }
+
+            # Calculate relevance score
+            try:
+                relevance_score, tag_info = calculate_relevance_score_with_tags(article, zip_code=zip_code)
+            except Exception as e:
+                logger.warning(f"Error calculating relevance for article {article_id}: {e}")
+                continue
+
+            # Update relevance score in database
+            cursor.execute('UPDATE articles SET relevance_score = ? WHERE id = ?', (relevance_score, article_id))
+
+            # Check if it should be auto-filtered
+            should_filter = False
+            reason = ""
+
+            # Check relevance threshold (exclude obituaries)
+            article_category = (article.get('category', '') or '').lower()
+            is_obituary = 'obituar' in article_category
+
+            if relevance_score < relevance_threshold and not is_obituary:
+                should_filter = True
+                reason = f"Relevance score {relevance_score:.1f} below threshold {relevance_threshold}"
+                logger.info(f"Filtering article {article_id}: score {relevance_score:.1f} < {relevance_threshold}, category: {article_category}")
+
+            # Check Bayesian filtering
+            if not should_filter:
+                try:
+                    bayesian_should_filter, probability, reasons = learner.should_filter(article, threshold=0.7)
+                    if bayesian_should_filter:
+                        should_filter = True
+                        reason_str = "; ".join(reasons[:3]) if reasons else "High similarity to previously rejected articles"
+                        reason = f"Bayesian filter: {reason_str}"
+                except Exception as e:
+                    logger.warning(f"Error in Bayesian filtering for article {article_id}: {e}")
+
+            # Auto-filter if needed
+            if should_filter:
+                cursor.execute('''
+                    INSERT OR REPLACE INTO article_management
+                    (article_id, enabled, is_auto_filtered, auto_reject_reason, zip_code)
+                    VALUES (?, 0, 1, ?, ?)
+                ''', (article_id, reason, zip_code or "02720"))
+                filtered_count += 1
+
+            processed_count += 1
+
+            if not should_filter:
+                logger.debug(f"Keeping article {article_id}: score {relevance_score:.1f}, category: {article.get('category', '')}")
+
+        conn.commit()
+        conn.close()
+
+        kept_count = processed_count - filtered_count
+
+        return jsonify({
+            'success': True,
+            'message': f'Processed {processed_count} articles, auto-filtered {filtered_count}',
+            'processed_count': processed_count,
+            'auto_rejected_count': filtered_count,
+            'kept_count': kept_count
+        })
+
+    except Exception as e:
+        logger.error(f"Error in rerun relevance scoring: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@login_required
 @app.route('/admin/api/recalculate-categories', methods=['POST', 'OPTIONS'])
 def recalculate_categories():
     """Recalculate category relevance scores"""
@@ -1611,11 +1920,29 @@ def serve_website(filename):
 
         # Check if the file exists
         if os.path.exists(file_path) and not os.path.isdir(file_path):
-            return send_file(file_path)
+            response = send_file(file_path)
+
+            # FORCE NO-CACHE for HTML files to prevent caching hell
+            if filename.endswith('.html'):
+                response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
+                response.headers['Pragma'] = 'no-cache'
+                response.headers['Expires'] = '0'
+                response.headers['Last-Modified'] = datetime.now().strftime('%a, %d %b %Y %H:%M:%S GMT')
+                response.headers['ETag'] = f'no-cache-{int(datetime.now().timestamp())}'
+                response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+
+            return response
         else:
             # SPA fallback: serve index.html for client-side routes
-            # This fixes routes like /obituaries, /news, /events, etc.
-            return send_from_directory(build_dir, 'index.html')
+            # FORCE NO-CACHE for index.html fallback to prevent caching issues
+            response = send_from_directory(build_dir, 'index.html')
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            response.headers['Last-Modified'] = datetime.now().strftime('%a, %d %b %Y %H:%M:%S GMT')
+            response.headers['ETag'] = f'no-cache-{int(datetime.now().timestamp())}'
+            response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+            return response
     except (ValueError, OSError):
         return "File not found", 404
 

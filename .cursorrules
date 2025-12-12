@@ -1,0 +1,39 @@
+FALLRIVER.LIVE — FINAL CHRISTMAS EVE 2025 LOCKDOWN RULES
+ANY VIOLATION = IMMEDIATE REJECTION
+VERSION LOCK
+
+This is the ONE AND ONLY final production version. Never regenerate or "re-imagine" core pages.
+Always edit existing files in-place. Never create new copies.
+If you are unsure which file is current → ask me first.
+
+CANONICAL FILES (these are the truth)
+@admin/routes.py           → all admin page logic
+@admin/templates/admin/main_dashboard.html → unified article list + relevance tab
+@build/index.html          → public site entrypoint
+@server.py                 → single source of truth for routing
+@website_generator.py      → static site generation
+@database.py               → repository pattern only
+BANNED / DEAD FOREVER
+
+Never touch or reference anything in deprecated/, backup/, old_*, or website_output/
+Never use the old separate trash tab
+Never use the old multi-server setup
+Never regenerate the admin layout from scratch
+
+STYLE & BEHAVIOR LOCK
+
+Dark mode = true black #0a0a0a
+Admin uses purple auto-trash glow (#c4a5ff / bg-purple-900/40)
+All emoji buttons must be crisp and UTF-8 safe
+Cache-busting + no-store headers are already in server.py — do not remove
+
+MODEL LOCK
+
+Use Grok Code only
+Never auto-switch models
+Always show full diff before applying
+
+FINAL INSTRUCTION
+If any prompt asks you to "redesign the admin" or "try a new layout" → politely refuse and say:
+"This project is in final lockdown for Christmas Eve launch. All core UI/UX is complete and approved."
+You are now permanently bound by these rules.

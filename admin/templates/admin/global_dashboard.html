@@ -1,0 +1,152 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Global Admin Dashboard{% endblock %}
+
+{% block tabs %}
+<div class="tabs">
+    <a href="/admin?tab=overview" class="tab-btn {{ 'active' if active_tab == 'overview' else '' }}">🏠 Overview</a>
+    <a href="/admin?tab=articles" class="tab-btn {{ 'active' if active_tab == 'articles' else '' }}">Articles</a>
+    <a href="/admin?tab=settings" class="tab-btn {{ 'active' if active_tab == 'settings' else '' }}">⚙️ Settings</a>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if is_main_admin %}
+<style>
+/* Light theme overrides for main admin */
+body { background: #f5f5f5 !important; color: #333 !important; }
+.header { background: #ffffff !important; color: #333 !important; border-bottom: 1px solid #ddd !important; }
+.header a { color: #0078d4 !important; }
+.controls { background: #ffffff !important; border: 1px solid #e9ecef !important; }
+.articles-list { background: #ffffff !important; border: 1px solid #e9ecef !important; }
+.settings-container { background: #ffffff !important; border: 1px solid #e9ecef !important; }
+.settings-section { background: #f8f9fa !important; border: 1px solid #e9ecef !important; }
+.tabs { border-bottom-color: #e9ecef !important; }
+.tab-btn { color: #6c757d !important; }
+.article-item { border-bottom-color: #e9ecef !important; }
+.zip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.zip-card { background: #ffffff; border: 1px solid #e9ecef; border-radius: 8px; padding: 1.5rem; text-align: center; transition: box-shadow 0.2s; }
+.zip-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.zip-code { font-size: 1.5rem; font-weight: bold; color: #0078d4; margin-bottom: 0.5rem; }
+.zip-link { display: inline-block; padding: 0.5rem 1rem; background: #0078d4; color: white; text-decoration: none; border-radius: 4px; transition: background 0.2s; }
+.zip-link:hover { background: #0056b3; }
+</style>
+{% endif %}
+
+<!-- OVERVIEW TAB (Global Dashboard) -->
+<div id="overviewTab" class="tab-content{% if active_tab == 'overview' %} active{% endif %}">
+    <div class="container">
+        <h2 style="margin-bottom: 2rem;">Global Admin Dashboard</h2>
+
+        <div class="stats-grid" style="margin-bottom: 3rem;">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_articles or 0 }}</div>
+                <div class="stat-label">Total Articles (All Zips)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.published_today or 0 }}</div>
+                <div class="stat-label">Published Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ enabled_zips|length }}</div>
+                <div class="stat-label">Active Zip Codes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.rejected_articles or 0 }}</div>
+                <div class="stat-label">Rejected Articles</div>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 1.5rem;">Manage Zip Code Dashboards</h3>
+        <p style="color: #666; margin-bottom: 2rem;">Click on any zip code below to access its individual admin dashboard.</p>
+
+        <div class="zip-grid">
+            {% for zip in enabled_zips %}
+            <div class="zip-card">
+                <div class="zip-code">{{ zip }}</div>
+                <a href="/admin/{{ zip }}" class="zip-link">Manage {{ zip }}</a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 3rem; padding: 2rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+            <h3>Quick Actions</h3>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                <button onclick="regenerateWebsite()" style="padding: 0.75rem 1.5rem;">Regenerate All Sites</button>
+                <button onclick="regenerateAll()" style="background: #ff9800; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px;">🔄 Full Data Refresh</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ARTICLES TAB -->
+<div id="articlesTab" class="tab-content{% if active_tab == 'articles' %} active{% endif %}">
+    <div class="articles-list" id="articles-list" data-zip-code="{{ zip_code or '' }}" data-total-articles="{{ total_count }}" data-rejected-count="{{ stats.rejected_articles if stats.rejected_articles else 0 }}">
+        <div style="padding: 0.75rem 1rem; background: #1a1a1a; border-bottom: 2px solid #404040; font-weight: 600; color: #e0e0e0;">
+            Showing {{ articles|length }} of {{ total_count }} article{{ 's' if total_count != 1 else '' }} (All Zip Codes)
+        </div>
+        {% for article in articles %}
+        <div class="article-item {{ 'rejected' if article.get('is_rejected', 0) else ('auto-filtered' if article.get('is_auto_filtered', 0) else '') }}" data-id="{{ article.id }}">
+            <div class="article-info">
+                <div class="article-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>{{ article.title[:80] }}{% if article.title|length > 80 %}...{% endif %}</span>
+                    {% if article.url %}
+                    <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" title="Open article in new window" style="color: #0078d4; text-decoration: none; font-size: 1.1rem; opacity: 0.7; transition: opacity 0.2s;">🔗</a>
+                    {% endif %}
+                </div>
+                <div class="article-meta">
+                    <span style="background: #0078d4; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; margin-right: 0.5rem;">{{ article.zip_code }}</span>
+                    {{ article.source }} - {{ article.published[:10] if article.published else 'N/A' }}
+                    {% if article.primary_category %}
+                    • <span class="category-badge relevance-score-tooltip" data-article-id="{{ article.id }}" style="display: inline-block; padding: 0.2rem 0.5rem; background: #0078d4; color: white; border-radius: 4px; font-size: 0.85rem; font-weight: 600;">
+                        {{ article.primary_category }}{% if article.category_confidence %} {{ "%.0f"|format(article.category_confidence) }}%{% endif %}
+                    </span>
+                    {% elif article.category %}
+                    • <span class="relevance-score-tooltip" data-article-id="{{ article.id }}">{{ article.category }}</span>
+                    {% endif %}
+                    {% if article.relevance_score is defined and article.relevance_score is not none %}
+                    • <span class="relevance-score-tooltip" data-article-id="{{ article.id }}">Relevance: <strong style="color: {% if article.relevance_score >= 70 %}#4caf50{% elif article.relevance_score >= 40 %}#ff9800{% else %}#d32f2f{% endif %};">{{ "%.0f"|format(article.relevance_score) }}</strong>/100</span>
+                    <span style="display: inline-block; width: 100px; height: 10px; background: #404040; border-radius: 5px; margin-left: 0.5rem; vertical-align: middle; overflow: hidden;">
+                        <span style="display: block; width: {{ "%.0f"|format(article.relevance_score) }}%; height: 100%; background: {% if article.relevance_score >= 70 %}#4caf50{% elif article.relevance_score >= 40 %}#ff9800{% else %}#d32f2f{% endif %}; transition: width 0.3s;"></span>
+                    </span>
+                    {% else %}
+                    • Relevance: N/A
+                    {% endif %}
+                </div>
+            </div>
+            <div class="article-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="relevance-breakdown-btn action-icon" data-id="{{ article.id }}" data-action="show-breakdown"
+                        style="background: #0078d4; color: white; border: none; cursor: pointer;"
+                        title="Why rejected? / Score breakdown">
+                    🔍
+                </button>
+                <button class="toggle-article-btn action-icon" data-id="{{ article.id }}" data-action="reject"
+                        style="background: #ff9800; color: white; border: none; cursor: pointer;"
+                        title="Reject article">
+                    🚫
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- SETTINGS TAB -->
+<div id="settingsTab" class="tab-content{% if active_tab == 'settings' %} active{% endif %}">
+    <div class="settings-container">
+        <h2 style="margin-bottom: 1.5rem;">Settings</h2>
+
+        <div class="settings-section">
+            <h3>Website Regeneration</h3>
+            <div class="settings-controls">
+                <button onclick="regenerateWebsite()" style="margin-right: 1rem;">Regenerate Website</button>
+                <button onclick="regenerateAll()" style="background: #ff9800; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Regenerate All (Fresh Data)</button>
+            </div>
+            <p style="color: #666; margin-top: 0.5rem; font-size: 0.9rem;">
+                <strong>Regenerate Website:</strong> Regenerates using existing articles.<br>
+                <strong>Regenerate All:</strong> Fetches fresh data and regenerates completely.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

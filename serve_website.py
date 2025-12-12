@@ -53,29 +53,30 @@ class RegeneratingHTTPRequestHandler(SimpleHTTPRequestHandler):
     
     def do_GET(self):
         """Handle GET requests - check if regeneration needed"""
-        # Handle root path - redirect to default zip 02720
+        # Handle root path - serve main index.html
         if self.path == '/' or self.path == '':
-            self.send_response(302)
-            self.send_header('Location', '/02720')
-            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            self.send_header('Pragma', 'no-cache')
-            self.send_header('Expires', '0')
-            self.end_headers()
-            return
-        
+            self.path = '/index.html'
+
         # Handle API proxy endpoint
         if self.path.startswith('/api/proxy-rss'):
             self._handle_rss_proxy()
             return
-        
+
+        # For any other path that doesn't exist, serve the main index.html
+        # This handles /02720 and any other zip codes by serving the single page
+        requested_path = os.path.join(self.directory, self.path.lstrip('/'))
+        if not os.path.exists(requested_path):
+            self.path = '/index.html'
+
         # Check if we need to regenerate (non-blocking)
         if self._should_regenerate():
             # Trigger regeneration asynchronously - don't wait!
             self._trigger_regeneration_async()
-        
+
         # Serve the file immediately (don't wait for regeneration)
         return super().do_GET()
-    
+
+
     def _handle_rss_proxy(self):
         """Proxy RSS feeds to avoid CORS issues"""
         try:

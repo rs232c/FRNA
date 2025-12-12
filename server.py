@@ -46,7 +46,7 @@ if __name__ == '__main__':
     print("Admin credentials configured via environment variables")
     print("Automatic regeneration enabled for website pages")
 
-    app.run(host='127.0.0.1', port=8000, debug=False)
+    app.run(host='0.0.0.0', port=8000, debug=False)
 
 def _should_regenerate():
     """Check if website regeneration is needed"""
@@ -134,9 +134,13 @@ def add_cache_headers(response):
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
-    # Cache HTML files for 5 minutes (content changes frequently)
+    # NO CACHE for HTML files during development/debugging
     elif path.endswith('.html'):
-        response.headers['Cache-Control'] = 'public, max-age=300'
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        response.headers['Last-Modified'] = datetime.now().strftime('%a, %d %b %Y %H:%M:%S GMT')
+        response.headers['ETag'] = f'no-cache-{int(datetime.now().timestamp())}'
     # Cache JS, CSS, images for 1 hour (static assets)
     elif any(path.endswith(ext) for ext in ['.js', '.css', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.ico', '.webp']):
         response.headers['Cache-Control'] = 'public, max-age=3600'
@@ -159,4 +163,4 @@ if __name__ == '__main__':
     print("Admin credentials configured via environment variables")
     print("Automatic regeneration enabled for website pages")
 
-    app.run(host='127.0.0.1', port=8000, debug=False)
+    app.run(host='0.0.0.0', port=8000, debug=False)
