@@ -35,19 +35,20 @@
     </style>
 </head>
 <body class="bg-[#0a0a0a] text-gray-100 min-h-screen fouc-hidden">
-    <!-- Sticky Header -->
-    <header class="sticky top-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-gray-900/30 py-4 shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Single Row Layout: Badge Left | Search Center | Controls Right -->
-            <div class="flex items-center justify-between gap-4">
-                <!-- Left: Location Badge -->
-                <div class="text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg bg-purple-500/40 backdrop-blur-xl border border-white/10 flex-shrink-0">
-                    {{ location_badge_text }}
-                </div>
+    <!-- Sticky Navigation Bar (Header + Nav together) -->
+    <div class="sticky top-0 z-50">
+        <header class="bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-gray-900/30 py-3 shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Single Row Layout: Badge Left | Search Center | Controls Right -->
+                <div class="flex items-center justify-between gap-4">
+                    <!-- Left: Location Badge -->
+                    <div class="text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg bg-purple-500/40 backdrop-blur-xl border border-white/10 flex-shrink-0">
+                        {{ location_badge_text }}
+                    </div>
 
-                <!-- Center: Search Bar -->
-                <div class="flex-1 max-w-2xl mx-4">
-                    <div class="relative flex items-center bg-[#161616]/60 backdrop-blur-sm rounded-full px-4 py-4 border border-gray-800/30 focus-within:border-blue-500/60 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300">
+                    <!-- Center: Search Bar -->
+                    <div class="flex-1 max-w-2xl mx-4">
+                        <div class="relative flex items-center bg-[#161616]/60 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-800/30 focus-within:border-blue-500/60 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300">
                         <span class="text-gray-400 mr-2 text-lg">🔍</span>
                         <input type="text" placeholder="Search articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full" id="searchInput">
                         <button class="text-gray-400 hover:text-blue-400 transition-colors ml-2 p-1 rounded-full hover:bg-gray-800/50" onclick="toggleSearchFilters()" title="Advanced Filters">
@@ -99,8 +100,19 @@
                     </script>
                 </div>
             </div>
+        </header>
 
-                <!-- Advanced Search Filters -->
+        <!-- Navigation -->
+        <nav class="bg-[#0a0a0a]/80 backdrop-blur-md border-b border-gray-900/20 py-2">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-xl font-semibold text-blue-400">FRNA</div>
+                    {{ nav_tabs }}
+                </div>
+            </div>
+        </nav>
+
+        <!-- Advanced Search Filters -->
                 <div class="hidden w-full max-w-6xl mx-auto" id="searchFilters">
                     <div class="p-6 rounded-xl bg-[#161616]/60 backdrop-blur-sm border border-white/10 shadow-xl">
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -155,15 +167,7 @@
         </div>
     </header>
 
-    <!-- Navigation -->
-    <nav class="bg-[#0a0a0a]/80 backdrop-blur-md border-b border-gray-900/20 py-2 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="text-xl font-semibold text-blue-400">FRNA</div>
-                {{ nav_tabs }}
-            </div>
-        </div>
-    </nav>
+    </div>
 
     <!-- Mobile Menu Overlay -->
     <div id="mobileMenu" class="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xl hidden">
