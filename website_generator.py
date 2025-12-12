@@ -1532,7 +1532,7 @@ class WebsiteGenerator:
             }
             
             // Close on backdrop click
-            const backdrop = menu.querySelector('.backdrop-blur-sm');
+            const backdrop = menu.querySelector('div[onclick="closeHamburgerMenu()"]');
             if (backdrop) {
                 backdrop.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -1832,7 +1832,7 @@ class WebsiteGenerator:
                 </div>
                 <div class="flex items-center gap-3">
                     <!-- Hamburger Menu Button (Visible on All Screens - for category controls) -->
-                    <button id="mobileNavToggle" class="flex items-center gap-2 text-gray-200 hover:text-white px-3 py-2 rounded-lg hover:bg-[#161616]/50 transition-colors border border-gray-800" aria-label="Toggle navigation menu" title="Menu & Category Controls">
+                    <button id="mobileNavToggle" class="text-white hover:text-blue-300 transition-colors p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600 w-10 h-10 inline-flex items-center justify-center" aria-label="Toggle navigation menu" title="Menu & Category Controls">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                         </svg>
