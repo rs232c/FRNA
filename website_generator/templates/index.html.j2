@@ -46,7 +46,7 @@
                 </div>
 
                 <!-- Center: Search Bar -->
-                <div class="flex-1 max-w-2xl mx-4">
+                <div class="flex-1 max-w-2xl">
                     <div class="relative flex items-center bg-[#161616]/60 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-800/30 focus-within:border-blue-500/60 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300">
                         <span class="text-gray-400 mr-2 text-lg">🔍</span>
                         <input type="text" placeholder="Search articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full" id="searchInput">
@@ -59,23 +59,26 @@
                 </div>
 
                 <!-- Right: Controls (Settings, Hamburger, Weather) -->
-                <div class="flex items-center gap-2 flex-shrink-0">
-                    <a href="/admin" id="hamburgerMenuLink" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-[#161616]/50" title="Admin Panel">
+                <div class="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                    <!-- Admin link - hidden on mobile -->
+                    <a href="/admin" id="hamburgerMenuLink" class="hidden sm:flex text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-[#161616]/50" title="Admin Panel">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                             <circle cx="12" cy="12" r="3"/>
                         </svg>
                     </a>
+                    <!-- Hamburger menu - always visible -->
                     <button id="mobileNavToggle" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-[#161616]/50" aria-label="Toggle navigation menu" title="Menu & Category Controls">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                         </svg>
                     </button>
-                    <a href="{{ weather_station_url }}" target="_blank" rel="noopener" id="weatherPillHeader" class="flex items-center gap-2 rounded-lg px-3 py-2 bg-blue-500/40 backdrop-blur-xl border border-white/10 hover:bg-blue-500/50 transition-all">
-                        <span id="weatherIconHeader" class="text-lg">🌤️</span>
+                    <!-- Weather widget - hidden on small screens -->
+                    <a href="{{ weather_station_url }}" target="_blank" rel="noopener" id="weatherPillHeader" class="hidden sm:flex items-center gap-2 rounded-lg px-3 py-2 bg-blue-500/40 backdrop-blur-xl border border-white/10 hover:bg-blue-500/50 transition-all">
+                        <span id="weatherIconHeader" class="text-lg">{{ weather_icon }}</span>
                         <div class="text-white">
-                            <div id="weatherTempHeader" class="font-bold text-xs leading-tight">--°F</div>
-                            <div id="weatherConditionHeader" class="text-blue-100 text-xs">Clear</div>
+                            <div id="weatherTempHeader" class="font-bold text-xs leading-tight">{{ weather.temperature if weather.temperature else '--°F' }}</div>
+                            <div id="weatherConditionHeader" class="text-blue-100 text-xs">{{ weather.condition if weather.condition else 'Loading...' }}</div>
                         </div>
                     </a>
                     <script>
