@@ -308,6 +308,21 @@ def get_stats(zip_code=None):
             cursor.execute('SELECT COUNT(*) FROM articles')
         stats['total_articles'] = cursor.fetchone()[0]
 
+        # Active articles (not rejected)
+        if zip_code:
+            cursor.execute('''
+                SELECT COUNT(*) FROM articles a
+                LEFT JOIN article_management am ON a.id = am.article_id
+                WHERE a.zip_code = ? AND (am.is_rejected IS NULL OR am.is_rejected = 0)
+            ''', (zip_code,))
+        else:
+            cursor.execute('''
+                SELECT COUNT(*) FROM articles a
+                LEFT JOIN article_management am ON a.id = am.article_id
+                WHERE am.is_rejected IS NULL OR am.is_rejected = 0
+            ''')
+        stats['active_articles'] = cursor.fetchone()[0]
+
         # Rejected articles
         if zip_code:
             cursor.execute('''
@@ -319,25 +334,100 @@ def get_stats(zip_code=None):
             cursor.execute('SELECT COUNT(*) FROM article_management WHERE is_rejected = 1')
         stats['rejected_articles'] = cursor.fetchone()[0]
 
-        # Featured articles
+        # Top stories (is_top_story = 1)
         if zip_code:
             cursor.execute('''
                 SELECT COUNT(*) FROM article_management am
                 JOIN articles a ON am.article_id = a.id
-                WHERE am.is_featured = 1 AND a.zip_code = ?
+                WHERE am.is_top_story = 1 AND a.zip_code = ?
             ''', (zip_code,))
         else:
-            cursor.execute('SELECT COUNT(*) FROM article_management WHERE is_featured = 1')
-        stats['featured_articles'] = cursor.fetchone()[0]
+            cursor.execute('SELECT COUNT(*) FROM article_management WHERE is_top_story = 1')
+        stats['top_stories'] = cursor.fetchone()[0]
 
-        # Recent articles (last 24 hours)
-        yesterday = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        # Disabled articles (is_featured = 0 and not top story)
         if zip_code:
-            cursor.execute('SELECT COUNT(*) FROM articles WHERE published >= ? AND zip_code = ?',
-                         (yesterday.isoformat(), zip_code))
+            cursor.execute('''
+                SELECT COUNT(*) FROM article_management am
+                JOIN articles a ON am.article_id = a.id
+                WHERE am.is_featured = 0 AND am.is_top_story = 0 AND a.zip_code = ?
+            ''', (zip_code,))
         else:
-            cursor.execute('SELECT COUNT(*) FROM articles WHERE published >= ?', (yesterday.isoformat(),))
-        stats['recent_articles'] = cursor.fetchone()[0]
+            cursor.execute('SELECT COUNT(*) FROM article_management WHERE is_featured = 0 AND is_top_story = 0')
+        stats['disabled_articles'] = cursor.fetchone()[0]
+
+        # Articles last 7 days
+        if zip_code:
+            cursor.execute('SELECT COUNT(*) FROM articles WHERE published >= date(\'now\', \'-7 days\') AND zip_code = ?', (zip_code,))
+        else:
+            cursor.execute('SELECT COUNT(*) FROM articles WHERE published >= date(\'now\', \'-7 days\')')
+        stats['articles_last_7_days'] = cursor.fetchone()[0]
+
+        # Articles by source
+        if zip_code:
+            cursor.execute('''
+                SELECT source, COUNT(*) as count
+                FROM articles
+                WHERE zip_code = ?
+                GROUP BY source
+                ORDER BY count DESC
+                LIMIT 10
+            ''', (zip_code,))
+        else:
+            cursor.execute('''
+                SELECT source, COUNT(*) as count
+                FROM articles
+                GROUP BY source
+                ORDER BY count DESC
+                LIMIT 10
+            ''')
+        stats['articles_by_source'] = [{'source': row[0], 'count': row[1]} for row in cursor.fetchall()]
+
+        # Articles by category
+        if zip_code:
+            cursor.execute('''
+                SELECT category, COUNT(*) as count
+                FROM articles
+                WHERE zip_code = ? AND category IS NOT NULL AND category != ''
+                GROUP BY category
+                ORDER BY count DESC
+                LIMIT 10
+            ''', (zip_code,))
+        else:
+            cursor.execute('''
+                SELECT category, COUNT(*) as count
+                FROM articles
+                WHERE category IS NOT NULL AND category != ''
+                GROUP BY category
+                ORDER BY count DESC
+                LIMIT 10
+            ''')
+        stats['articles_by_category'] = [{'category': row[0], 'count': row[1]} for row in cursor.fetchall()]
+
+        # Source fetch stats (if available)
+        try:
+            if zip_code:
+                cursor.execute('''
+                    SELECT source, COUNT(*) as count, MAX(published) as last_fetch
+                    FROM articles
+                    WHERE zip_code = ?
+                    GROUP BY source
+                    ORDER BY last_fetch DESC
+                ''', (zip_code,))
+            else:
+                cursor.execute('''
+                    SELECT source, COUNT(*) as count, MAX(published) as last_fetch
+                    FROM articles
+                    GROUP BY source
+                    ORDER BY last_fetch DESC
+                ''')
+            source_stats = cursor.fetchall()
+            stats['source_fetch_stats'] = [
+                {'source': row[0], 'count': row[1], 'last_fetch': row[2][:16] if row[2] else 'Never'}
+                for row in source_stats
+            ]
+        except:
+            stats['source_fetch_stats'] = []
 
         return stats
 
