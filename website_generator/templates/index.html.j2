@@ -59,14 +59,8 @@
                     </div>
                 </div>
 
-                <!-- Right: Controls (Settings, Hamburger, Weather) -->
+                <!-- Right: Controls (Hamburger, Weather) -->
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    <a href="/admin" id="hamburgerMenuLink" class="text-gray-400 hover:text-white transition-colors py-4 px-2 rounded-lg hover:bg-[#161616]/50" title="Admin Panel">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                    </a>
                     <button id="mobileNavToggle" class="text-gray-400 hover:text-white transition-colors py-4 px-2 rounded-lg hover:bg-[#161616]/50" aria-label="Toggle navigation menu" title="Menu & Category Controls">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -79,25 +73,6 @@
                             <div id="weatherConditionHeader" class="text-blue-100 text-xs">Clear</div>
                         </div>
                     </a>
-                    <script>
-                        console.log('[FRNA] ✅ Navigation buttons initialized');
-                        // Update admin link based on session
-                        (function() {
-                            fetch('/api/session-check')
-                                .then(response => response.json())
-                                .then(data => {
-                                    const link = document.getElementById('hamburgerMenuLink');
-                                    if (data.logged_in && data.zip_code) {
-                                        link.href = `/admin/${data.zip_code}`;
-                                    } else {
-                                        link.href = '/admin';
-                                    }
-                                })
-                                .catch(err => {
-                                    console.error('Error checking session:', err);
-                                });
-                        })();
-                    </script>
                 </div>
             </div>
         </header>
@@ -169,13 +144,12 @@
 
     </div>
 
-    <!-- Mobile Menu Overlay -->
+    <!-- Mobile Menu Overlay - Full Screen with Desktop Categories -->
     <div id="mobileMenu" class="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xl hidden">
-        <div class="fixed top-0 right-0 w-80 h-full bg-[#0a0a0a]/95 backdrop-blur-xl border-l border-gray-800/50 transform translate-x-full transition-transform duration-300 ease-in-out" id="mobileMenuPanel">
-            <div class="flex flex-col h-full">
-                <!-- Header -->
-                <div class="flex items-center justify-between p-6 border-b border-gray-800/50">
-                    <h2 class="text-xl font-bold text-white">Navigation</h2>
+        <div class="fixed inset-0 flex items-center justify-center">
+            <div class="bg-[#0a0a0a]/95 backdrop-blur-xl border border-gray-800/50 rounded-2xl max-w-md w-full mx-4 max-h-[80vh] overflow-hidden transform scale-95 transition-all duration-300" id="mobileMenuPanel">
+                <!-- Close button top-right -->
+                <div class="flex justify-end p-4">
                     <button id="closeMobileMenu" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -183,34 +157,54 @@
                     </button>
                 </div>
 
-                <!-- Menu Content -->
-                <div class="flex-1 overflow-y-auto p-6">
-                    <!-- Categories -->
-                    <div class="mb-8">
-                        <h3 class="text-lg font-semibold text-gray-300 mb-4">Categories</h3>
-                        <div class="space-y-2">
-                            <a href="index.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🏠 Home</a>
-                            <a href="category/local-news.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">📰 Local News</a>
-                            <a href="category/crime.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🚔 Crime</a>
-                            <a href="category/sports.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">⚽ Sports</a>
-                            <a href="category/obituaries.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">⚱️ Obituaries</a>
-                            <a href="category/food.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🍽️ Food</a>
-                            <a href="category/schools.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🏫 Schools</a>
-                            <a href="category/events.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">📅 Events</a>
-                            <a href="category/meetings.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🏛️ Meetings</a>
-                            <a href="category/entertainment.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🎬 Entertainment</a>
-                            <a href="category/business.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">💼 Business</a>
-                            <a href="category/weather.html" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🌤️ Weather</a>
-                        </div>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="border-t border-gray-800/50 pt-6">
-                        <h3 class="text-lg font-semibold text-gray-300 mb-4">Actions</h3>
-                        <div class="space-y-2">
-                            <a href="/admin" class="block px-4 py-3 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 rounded-lg transition-colors">⚙️ Admin Panel</a>
-                            <button onclick="toggleSearchFilters()" class="w-full text-left px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🔍 Search Filters</button>
-                        </div>
+                <!-- Categories Grid - Same as Desktop -->
+                <div class="px-6 pb-6">
+                    <h2 class="text-xl font-bold text-white mb-6 text-center">Categories</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Local -->
+                        <a href="index.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-white font-bold bg-blue-500/20 border border-blue-500/40 text-center hover:bg-blue-500/30">
+                            Local
+                        </a>
+                        <!-- Police & Fire -->
+                        <a href="category/crime.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
+                            Police & Fire
+                        </a>
+                        <!-- Sports -->
+                        <a href="category/sports.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
+                            Sports
+                        </a>
+                        <!-- Obituaries -->
+                        <a href="category/obituaries.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
+                            Obituaries
+                        </a>
+                        <!-- Food & Drink -->
+                        <a href="category/food.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
+                            Food & Drink
+                        </a>
+                        <!-- Media -->
+                        <a href="category/entertainment.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
+                            Media
+                        </a>
+                        <!-- Scanner -->
+                        <a href="category/scanner.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
+                            Scanner
+                        </a>
+                        <!-- Meetings -->
+                        <a href="category/meetings.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
+                            Meetings
+                        </a>
+                        <!-- Submit Tip -->
+                        <a href="index.html#submit" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
+                            Submit Tip
+                        </a>
+                        <!-- Lost & Found -->
+                        <a href="index.html#lost-found" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
+                            Lost & Found
+                        </a>
+                        <!-- Events -->
+                        <a href="category/events.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
+                            Events
+                        </a>
                     </div>
                 </div>
             </div>
@@ -591,8 +585,8 @@
     
     <!-- Generation Timestamp Badge (Bottom-Right) -->
     <div class="fixed bottom-4 right-4 z-50 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-mono shadow-lg bg-[#161616]/60 backdrop-blur-sm border border-white/5">
-        <div>Generated: {{ generation_timestamp or "TEMPLATE_NOT_WORKING" }} (type: {{ generation_timestamp|type if generation_timestamp else 'undefined' }})</div>
-        {% if last_db_update %}<div>DB Updated: {{ last_db_update }} (type: {{ last_db_update|type }})</div>{% else %}<div>DB Updated: TEMPLATE_NOT_WORKING</div>{% endif %}
+        <div>Generated: {{ generation_timestamp or "TEMPLATE_NOT_WORKING" }}</div>
+        {% if last_db_update %}<div>DB Updated: {{ last_db_update }}</div>{% else %}<div>DB Updated: TEMPLATE_NOT_WORKING</div>{% endif %}
     </div>
 </body>
 </html>

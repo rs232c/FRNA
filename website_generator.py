@@ -432,8 +432,7 @@ class WebsiteGenerator:
 
         Args:
         """
-        logger.error(f"STARTING _generate_index with {len(articles)} articles")
-        logger.error("RIGHT AFTER STARTING")
+        logger.info(f"_generate_index called with {len(articles)} articles")
         logger.info(f"_generate_index called with {len(articles)} articles")
         logger.error(f"settings is: {type(settings)}")
         show_images_val = settings.get('show_images', '1')
@@ -673,10 +672,111 @@ class WebsiteGenerator:
                 weather_station_url = self.weather_ingestor.get_station_url(lookup_zip or '02720')
             except Exception as e:
                 logger.warning(f"Could not get weather station URL from ingestor: {e}")
-        
+
         # Get weather icon based on condition
         weather_icon = self._get_weather_icon(weather.get('current', {}).get('condition', ''))
         weather_api_key = ""
+
+        # Get last database update time for enabled articles
+        last_db_update = None
+        try:
+            with self.get_db_cursor() as cursor:
+                cursor.execute('SELECT MAX(created_at) FROM articles')
+                row = cursor.fetchone()
+                if row and row[0]:
+                    dt = datetime.fromisoformat(row[0])
+                    last_db_update = dt.strftime("%B %d, %Y at %I:%M %p")
+                else:
+                    last_db_update = "No articles yet"
+        except Exception as e:
+            logger.warning(f"Could not get last DB update time: {e}")
+            last_db_update = "Recently"
+
+        # Format articles and enrich with source data
+        formatted_articles = []
+        if articles:
+            for article in articles:
+                formatted = self._format_article_for_display(article, show_images) if hasattr(self, '_format_article_for_display') else article.copy()
+                formatted_articles.append(formatted)
+
+        # CRITICAL FIX: Sort formatted articles by publication date (newest first)
+        formatted_articles.sort(key=lambda x: (
+            -parse_timestamp(x.get('_top_story_updated_at', '1970-01-01T00:00:00')),  # Newest clicked first (negative for descending)
+            x.get('_display_order', 999),  # Then by display order
+            -parse_timestamp(x.get('published', x.get('created_at', '1970-01-01')))  # Then by publication date
+        ), reverse=True)
+
+        # Get hero articles for index page
+        hero_articles = formatted_articles[:3] if formatted_articles else []  # Top 3 articles as heroes
+
+        # Get trending articles
+        try:
+            trending_articles = self._get_trending_articles(formatted_articles, limit=5)
+        except (AttributeError, ImportError):
+            trending_articles = formatted_articles[:5]  # Fallback
+
+        # Latest stories (different from trending)
+        latest_stories = formatted_articles[:5]
+
+        # Newest articles
+        newest_articles = formatted_articles[:10]
+
+        # Entertainment articles
+        entertainment_articles = [a for a in formatted_articles if 'entertainment' in (a.get('category') or '')][:5]
+
+        # Top article
+        top_article = formatted_articles[0] if formatted_articles else None
+
+        # Current time and generation timestamp
+        current_time = datetime.now().strftime("%I:%M %p")
+        generation_timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+
+        # Get template
+        template = self._get_index_template(zip_code, city_state, formatted_articles, {'show_images': show_images})
+
+        logger.error("TEMPLATE CONTEXT CREATION STARTING")
+        # Create template context
+        template_context = {
+            'title': title,
+            'description': description,
+            'articles': formatted_articles,
+            'hero_articles': hero_articles,
+            'trending_articles': trending_articles,
+            'latest_stories': latest_stories,
+            'newest_articles': newest_articles,
+            'entertainment_articles': entertainment_articles,
+            'top_article': top_article,
+            'weather': weather,
+            'current_year': datetime.now().year,
+            'current_time': current_time,
+            'generation_timestamp': generation_timestamp,
+            'last_db_update': last_db_update,
+            'nav_tabs': nav_tabs,
+            'unique_sources': unique_sources,
+            'location_badge_text': location_badge_text,
+            'zip_code': zip_code or "02720",
+            'weather_station_url': weather_station_url,
+            'weather_api_key': weather_api_key,
+            'weather_icon': weather_icon,
+            'zip_pin_editable': zip_pin_editable,
+            'show_images': show_images
+        }
+
+        # Render template
+        try:
+            html = template.render(**template_context)
+            logger.info(f"Template rendered successfully, HTML length: {len(html)}")
+        except Exception as e:
+            logger.error(f"TEMPLATE RENDERING FAILED: {e}")
+            import traceback
+            logger.error(f"TRACEBACK: {traceback.format_exc()}")
+            logger.error(f"Template type: {type(template)}")
+            logger.error(f"Template context keys: {list(template_context.keys())[:10]}")
+            # Fallback to simple HTML
+            html = f"<html><body><h1>{title}</h1><p>Template error: {e}</p><p>Generated at {datetime.now()}</p></body></html>"
+
+        with open(os.path.join(self.output_dir, "index.html"), "w", encoding="utf-8", errors='replace') as f:
+            f.write(html)
 
 
     def _get_nav_tabs(self, active_page: str = "home", zip_code: Optional[str] = None, is_category_page: bool = False) -> str:
@@ -986,9 +1086,53 @@ class WebsiteGenerator:
                 if row and row[0]:
                     dt = datetime.fromisoformat(row[0])
                     last_db_update = dt.strftime("%B %d, %Y at %I:%M %p")
+                else:
+                    last_db_update = "No articles yet"
         except Exception as e:
             logger.warning(f"Could not get last DB update time: {e}")
             last_db_update = "Recently"
+
+        # Format articles and enrich with source data
+        formatted_articles = []
+        if articles:
+            for article in articles:
+                formatted = self._format_article_for_display(article, show_images) if hasattr(self, '_format_article_for_display') else article.copy()
+                formatted_articles.append(formatted)
+
+        # CRITICAL FIX: Sort formatted articles by publication date (newest first)
+        formatted_articles.sort(key=lambda x: (
+            -parse_timestamp(x.get('_top_story_updated_at', '1970-01-01T00:00:00')),  # Newest clicked first (negative for descending)
+            x.get('_display_order', 999),  # Then by display order
+            -parse_timestamp(x.get('published', x.get('created_at', '1970-01-01')))  # Then by publication date
+        ), reverse=True)
+
+        # Get hero articles for index page
+        hero_articles = formatted_articles[:3] if formatted_articles else []  # Top 3 articles as heroes
+
+        # Get trending articles
+        try:
+            trending_articles = self._get_trending_articles(formatted_articles, limit=5)
+        except (AttributeError, ImportError):
+            trending_articles = formatted_articles[:5]  # Fallback
+
+        # Latest stories (different from trending)
+        latest_stories = formatted_articles[:5]
+
+        # Newest articles
+        newest_articles = formatted_articles[:10]
+
+        # Entertainment articles
+        entertainment_articles = [a for a in formatted_articles if 'entertainment' in (a.get('category') or '')][:5]
+
+        # Top article
+        top_article = formatted_articles[0] if formatted_articles else None
+
+        # Current time and generation timestamp
+        current_time = datetime.now().strftime("%I:%M %p")
+        generation_timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+
+        # Get template
+        template = self._get_index_template(zip_code, city_state, formatted_articles, {'show_images': show_images})
 
         logger.error("TEMPLATE CONTEXT CREATION STARTING")
         # Create template context
@@ -1191,7 +1335,7 @@ class WebsiteGenerator:
         # Get Broadcastify feed ID from config
         feed_id = SCANNER_CONFIG.get("feed_id", "33717")
         
-        # Build scanner page HTML - SIMPLE TEST FIRST
+        # Build scanner page HTML with proper navigation
         scanner_html = '''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1200,76 +1344,36 @@ class WebsiteGenerator:
     <title>Live Police & Fire Scanner</title>
     <meta name="description" content="Live police and fire scanner audio and call transcripts for Fall River, MA — Real-time emergency communications">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Fallback CSS in case Tailwind CDN fails -->
     <style>
-    /* Critical fallback styles */
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #e0e0e0; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
-    .grid { display: grid; gap: 1rem; }
-    .flex { display: flex; }
-    .hidden { display: none; }
-    .block { display: block; }
-    .text-center { text-align: center; }
-    .p-4 { padding: 1rem; }
-    .m-4 { margin: 1rem; }
-    .bg-gray-800 { background: #2a2a2a; }
-    .text-white { color: white; }
-    .rounded { border-radius: 0.25rem; }
-    article { margin-bottom: 1rem; padding: 1rem; background: #1a1a1a; border-radius: 0.5rem; }
-    a { color: #3b82f6; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    </style>
-    <script>
-        tailwind.config = {{
-        }}
-    </script>
-    <link rel="stylesheet" href="{css_path}style.css">
-    <style>
-        .lazy-image {{ opacity: 0; transition: opacity 0.3s; }}
-        .lazy-image.loaded {{ opacity: 1; }}
-
-        /* Broadcastify iframe styling */
-        .broadcastify-iframe {{
+        body { background: #0a0a0a; color: #e0e0e0; }
+        .broadcastify-iframe {
             background: #1a1a1a;
             border-radius: 8px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-        }}
-
-        .broadcastify-container {{
-            position: relative;
-            background: rgba(26, 26, 26, 0.8);
-            border-radius: 8px;
-            padding: 8px;
-        }}
-
-        .transcript-container {{
-            position: relative;
-            background: rgba(26, 26, 26, 0.8);
-            border-radius: 8px;
-            padding: 8px;
-        }}
-
-        /* Ensure iframes are responsive */
-        @media (max-width: 768px) {{
-            .broadcastify-iframe {{
-                height: 300px !important;
-            }}
-        }}
+        }
+        .grid { display: grid; gap: 1rem; }
+        .flex { display: flex; }
+        .hidden { display: none; }
+        .block { display: block; }
+        .text-center { text-align: center; }
+        .p-4 { padding: 1rem; }
+        .m-4 { margin: 1rem; }
+        .bg-gray-800 { background: #2a2a2a; }
+        .text-white { color: white; }
+        .rounded { border-radius: 0.25rem; }
+        article { margin-bottom: 1rem; padding: 1rem; background: #1a1a1a; border-radius: 0.5rem; }
+        a { color: #3b82f6; text-decoration: none; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
-<body class="bg-[#0f0f0f] text-gray-100 min-h-screen">
-    <!-- Top Bar -->
-    <div class="bg-[#0f0f0f]/50 backdrop-blur-sm border-b border-gray-900/30 py-2">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        </div>
-    </div>
-    
+<body class="bg-[#0a0a0a] text-gray-100 min-h-screen">
     <!-- Navigation -->
     <nav class="bg-[#0f0f0f]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+''' + nav_tabs + '''
         </div>
     </nav>
-    
+
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="max-w-4xl mx-auto">
@@ -1279,39 +1383,13 @@ class WebsiteGenerator:
                 <p class="text-gray-400 text-lg">Real-time audio feed from Fall River emergency services</p>
             </div>
 
-            <!-- Scanner Info Box -->
-            <div class="bg-gray-800/50 rounded-lg p-6 mb-8 border border-gray-700/30">
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <h3 class="text-xl font-semibold text-blue-400 mb-3">📻 Audio Feed</h3>
-                        <p class="text-gray-300 text-sm mb-4">Live police and fire department communications from Fall River and surrounding areas.</p>
-                        <div class="text-xs text-gray-500 space-y-1">
-                            <div>• FRPD Channels 1, 2, 3</div>
-                            <div>• FRFD Channels 1, 2</div>
-                            <div>• FR EMS, Tiverton PD/FD</div>
-                            <div>• Westport PD/FD, Bristol County Wide</div>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-semibold text-green-400 mb-3">📝 Call Transcripts</h3>
-                        <p class="text-gray-300 text-sm mb-4">Real-time text transcripts of radio communications for easy reading.</p>
-                        <div class="text-xs text-gray-500 space-y-1">
-                            <div>• Instant text conversion</div>
-                            <div>• Searchable call history</div>
-                            <div>• Location information</div>
-                            <div>• Call type identification</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Broadcastify Audio Player -->
             <div class="bg-gray-900/80 rounded-lg p-6 mb-6 border border-gray-700/30">
                 <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
                     <span class="text-2xl mr-3">🔊</span>
                     Live Audio Feed
                 </h2>
-                <div class="broadcastify-container">
+                <div style="background: rgba(26, 26, 26, 0.8); border-radius: 8px; padding: 8px;">
                     <iframe
                         src="https://www.broadcastify.com/listen/feed/856/web"
                         style="width: 100%; height: 400px; border: none; border-radius: 8px;"
@@ -1330,7 +1408,7 @@ class WebsiteGenerator:
                     <span class="text-2xl mr-3">📋</span>
                     Live Call Transcripts
                 </h2>
-                <div class="transcript-container">
+                <div style="background: rgba(26, 26, 26, 0.8); border-radius: 8px; padding: 8px;">
                     <iframe
                         src="https://www.broadcastify.com/listen/ctfeed/856/web"
                         style="width: 100%; height: 500px; border: none; border-radius: 8px;"
@@ -1342,31 +1420,8 @@ class WebsiteGenerator:
                     Real-time text transcripts • Updated live as calls come in
                 </p>
             </div>
-
-            <!-- Usage Notes -->
-            <div class="mt-8 bg-blue-900/20 rounded-lg p-4 border border-blue-500/20">
-                <h3 class="text-lg font-semibold text-blue-300 mb-2">📋 Usage Notes</h3>
-                <ul class="text-sm text-gray-300 space-y-1">
-                    <li>• Audio may require user interaction to start due to browser autoplay policies</li>
-                    <li>• Transcripts update in real-time as calls are received</li>
-                    <li>• Feed covers multiple police and fire departments in the region</li>
-                    <li>• All content is provided by Broadcastify volunteer listeners</li>
-                </ul>
-            </div>
         </div>
     </main>
-    
-    <!-- Load main.js for search functionality -->
-    <script src="{home_path}js/main.js"></script>
-    
-    <!-- Auto-play script for Broadcastify player -->
-    <script>
-        // Attempt to trigger autoplay when page loads
-        // Note: Browser autoplay policies may prevent this from working
-        // Users may need to interact with the page first
-        (function() {{
-        }})();
-    </script>
 </body>
 </html>'''
         
@@ -1376,37 +1431,6 @@ class WebsiteGenerator:
         with open(output_file, "w", encoding="utf-8", errors='replace') as f:
             f.write(scanner_html)
         logger.info(f"Successfully wrote scanner page: {output_file}")
-    
-    def _format_article_for_display(self, article: Dict, show_images: bool = True) -> Dict:
-        """Format article for display in templates"""
-        
-        formatted = article.copy()
-        
-        # Format date
-        published = article.get('published', '')
-        if published:
-            try:
-                dt = datetime.fromisoformat(published.replace('Z', '+00:00').split('+')[0].split('.')[0])
-                formatted['formatted_date'] = dt.strftime('%B %d, %Y at %I:%M %p')
-            except Exception as e:
-                logger.warning(f"Could not format article date: {e}")
-                formatted['formatted_date'] = published[:10] if len(published) >= 10 else published
-        else:
-            formatted['formatted_date'] = 'Date unknown'
-        
-        # Source display
-        formatted['source_display'] = article.get('source_display', article.get('source', 'Unknown Source'))
-        
-        # Preserve reading_time if it exists
-        if 'reading_time' not in formatted and article.get('reading_time'):
-            formatted['reading_time'] = article.get('reading_time')
-
-        # Add source gradients and styling
-        formatted['source_gradient'] = self._get_source_gradient(article.get('source', ''))
-        formatted['source_glow_color'] = self._get_source_glow_color(article.get('source', ''))
-        formatted['source_initials'] = article.get('source', '')[:2].upper()
-
-        return formatted
 
     def _get_source_gradient(self, source: str) -> str:
         """Get gradient classes for a source"""
