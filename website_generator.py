@@ -176,13 +176,23 @@ class WebsiteGenerator:
 
         logger.info("Step 5/6: Generating category pages...")
         # Generate category pages for all categories
-        categories_to_generate = ['business', 'crime', 'events', 'food', 'local-news', 'meetings', 'obituaries', 'scanner', 'schools', 'sports', 'weather']
+        categories_to_generate = ['business', 'crime', 'events', 'food', 'local-news', 'meetings', 'obituaries', 'schools', 'sports', 'weather']
         for category_slug in categories_to_generate:
             try:
                 self._generate_category_page(category_slug, enabled_articles, weather, admin_settings, zip_code)
                 logger.info(f"  ✓ Generated {category_slug} category page")
             except Exception as e:
                 logger.error(f"Failed to generate {category_slug} category page: {e}")
+
+        # Generate scanner page separately
+        logger.info("About to generate scanner page...")
+        try:
+            self._generate_scanner_page(weather, admin_settings, zip_code, city_state)
+            logger.info("  ✓ Generated scanner page")
+        except Exception as e:
+            logger.error(f"Failed to generate scanner page: {e}")
+            import traceback
+            logger.error(f"Scanner generation traceback: {traceback.format_exc()}")
 
         logger.info("Step 6/6: Generating CSS and JS files...")
         self._generate_css()
@@ -230,7 +240,17 @@ class WebsiteGenerator:
         
         # Always copy static JS files in incremental updates to ensure weather.js is current
         self._copy_static_js_files()
-        
+
+        # Generate scanner page
+        logger.info("About to generate scanner page...")
+        try:
+            self._generate_scanner_page(weather, admin_settings, zip_code)
+            logger.info("  ✓ Generated scanner page")
+        except Exception as e:
+            logger.error(f"Failed to generate scanner page: {e}")
+            import traceback
+            logger.error(f"Scanner generation traceback: {traceback.format_exc()}")
+
         logger.info(f"Incremental update complete in {self.output_dir}")
     
     def _get_last_generated_article_id(self) -> int:
@@ -425,79 +445,7 @@ class WebsiteGenerator:
         else:
             show_images = bool(show_images_val)
 
-        logger.error("About to skip to template rendering")
-        # TEMP: Skip article processing and go straight to template rendering
-        # Format articles with gradients and metadata
-        formatted_articles = []
-        if articles:
-            for article in articles[:30]:  # Show more articles in the grid
-                formatted = self._format_article_for_display(article, show_images)
-                formatted_articles.append(formatted)
-        hero_articles = formatted_articles[:3]
-        trending_articles = formatted_articles[:5]
-        latest_stories = formatted_articles[:5]
-        newest_articles = formatted_articles[:10]
-        entertainment_articles = [a for a in formatted_articles if 'entertainment' in (a.get('category') or '')][:5]
-        top_article = formatted_articles[0] if formatted_articles else None
-        weather = {}
-        current_time = "12:00 PM"
-        generation_timestamp = "Test timestamp"
-        last_db_update = "Recently"
-        nav_tabs = self._get_nav_tabs("home", zip_code)
-        unique_sources = []
-        location_badge_text = "Fall River · 02720"
-        weather_station_url = ""
-        weather_api_key = ""
-        weather_icon = "☀️"
-        zip_pin_editable = False
-        title = "Test Title"
-        description = "Test Description"
-        locale_name = "Test Location"
-
-        logger.error("TEMPLATE CONTEXT CREATION STARTING")
-        # Create template context
-        template_context = {
-            'title': title,
-            'description': description,
-            'articles': formatted_articles,
-            'hero_articles': hero_articles,
-            'trending_articles': trending_articles,
-            'latest_stories': latest_stories,
-            'newest_articles': newest_articles,
-            'entertainment_articles': entertainment_articles,
-            'top_article': top_article,
-            'weather': weather,
-            'current_year': 2025,
-            'current_time': current_time,
-            'generation_timestamp': generation_timestamp,
-            'last_db_update': last_db_update,
-            'nav_tabs': nav_tabs,
-            'unique_sources': unique_sources,
-            'location_badge_text': location_badge_text,
-            'zip_code': "02720",
-            'weather_station_url': weather_station_url,
-            'weather_api_key': weather_api_key,
-            'weather_icon': weather_icon,
-            'zip_pin_editable': zip_pin_editable,
-            'show_images': show_images
-        }
-
-        logger.error("Getting template")
-        # Render template
-        template = self._get_index_template(None, None, formatted_articles, {'show_images': '1'})
-        logger.error("Rendering template")
-        try:
-            html = template.render(**template_context)
-            logger.error(f"Template rendered, length: {len(html)}")
-        except Exception as e:
-            logger.error(f"Template rendering failed: {e}")
-            html = f"<html><body><h1>Template Error</h1><p>{e}</p></body></html>"
-
-        logger.error("Writing file")
-        with open(os.path.join(self.output_dir, "index.html"), "w", encoding="utf-8", errors='replace') as f:
-            f.write(html)
-        logger.error("File written, returning")
-        return
+        # Process articles normally with proper timestamps
 
         # Always lead with latest news on home page
         # Separate articles by category
@@ -1076,6 +1024,8 @@ class WebsiteGenerator:
         logger.error(f"Got template: {type(template)}")
         logger.error("About to render template")
         logger.error("ABOUT TO CALL template.render()")
+        logger.error(f"template_context generation_timestamp: {template_context.get('generation_timestamp', 'NOT_SET')}")
+        logger.error(f"template_context last_db_update: {template_context.get('last_db_update', 'NOT_SET')}")
         try:
             html = template.render(**template_context)
             logger.info(f"Template rendered successfully, HTML length: {len(html)}")
@@ -1107,11 +1057,104 @@ class WebsiteGenerator:
 
         logger.info(f"Generated category page: {output_file} ({len(formatted_articles)} articles)")
     
+    def _generate_category_page(self, category_slug: str, articles: List[Dict], weather: Dict, settings: Dict, zip_code: Optional[str] = None):
+        """Generate category page using template system"""
+        # Determine paths
+        if zip_code:
+            output_path = os.path.join(self.output_dir, "category")
+            home_path = "../"
+            css_path = "../css/"
+            locale = f"{zip_code} area"  # Will be resolved properly by template
+        else:
+            output_path = os.path.join(self.output_dir, "category")
+            home_path = "../"
+            css_path = "../css/"
+            locale = self.locale
+
+        os.makedirs(output_path, exist_ok=True)
+
+        # Filter articles by category
+        category_articles = [a for a in articles if a.get('category') == category_slug]
+
+        # Get template
+        if self.use_file_templates and self.jinja_env:
+            try:
+                template = self.jinja_env.get_template("category.html.j2")
+                logger.info(f"Using category.html.j2 template for {category_slug}")
+            except Exception as e:
+                logger.warning(f"Failed to load category.html.j2 template: {e}")
+                return
+        else:
+            logger.warning("File templates not available for category generation")
+            return
+
+        # Prepare template context
+        current_time = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+        generation_timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+
+        # Get category display name
+        category_names = {
+            'business': 'Business',
+            'crime': 'Police & Fire',
+            'events': 'Events',
+            'food': 'Food & Drink',
+            'local-news': 'Local News',
+            'meetings': 'Meetings',
+            'obituaries': 'Obituaries',
+            'scanner': 'Scanner',
+            'schools': 'Schools',
+            'sports': 'Sports',
+            'weather': 'Weather'
+        }
+        category_name = category_names.get(category_slug, category_slug.title())
+
+        template_context = {
+            'category_slug': category_slug,
+            'category_name': category_name,
+            'title': self.title,
+            'locale': locale,
+            'articles': category_articles[:50],  # Limit to 50 articles per category
+            'hero_articles': category_articles[:5] if len(category_articles) >= 5 else category_articles,
+            'trending_articles': category_articles[:10] if len(category_articles) >= 10 else category_articles,
+            'weather': weather,
+            'settings': settings,
+            'home_path': home_path,
+            'css_path': css_path,
+            'current_time': current_time,
+            'generation_timestamp': generation_timestamp,
+            'current_year': datetime.now().year,
+            'location_badge_text': f"{locale.split(',')[0] if ',' in locale else locale} · {zip_code or '02720'}",
+            'show_images': settings.get('show_images', '1') == '1',
+            'weather_station_url': weather.get('station_url', '#'),
+            'weather_icon': '☀️',  # Default icon
+            'nav_tabs': self._get_nav_tabs(f"category-{category_slug}", zip_code, is_category_page=True),
+            'last_db_update': getattr(self, 'last_db_update', None)
+        }
+
+        # Render template
+        try:
+            logger.info(f"Rendering category template for {category_slug} with context keys: {list(template_context.keys())}")
+            html = template.render(**template_context)
+            output_file = os.path.join(output_path, f"{category_slug}.html")
+            with open(output_file, "w", encoding="utf-8", errors='replace') as f:
+                f.write(html)
+            logger.info(f"Generated category page: {output_file}")
+        except Exception as e:
+            logger.error(f"Failed to render category template for {category_slug}: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+
     def _generate_scanner_page(self, weather: Dict, settings: Dict, zip_code: Optional[str] = None, city_state: Optional[str] = None):
         """Generate scanner page with embedded Broadcastify feed
-        
+
         Args:
         """
+        logger.info(f"_generate_scanner_page called with zip_code={zip_code}, city_state={city_state}")
+
+        # DEBUG: Write a test file to see if this function is called
+        with open("C:\\FRNA\\scanner_debug.txt", "w") as f:
+            f.write(f"Scanner generation called at {datetime.now()} for zip_code={zip_code}")
+
         # Phase 6: Resolve city name for dynamic title
         locale_name = LOCALE  # Default to "Fall River, MA"
         if city_state:
@@ -1148,14 +1191,14 @@ class WebsiteGenerator:
         # Get Broadcastify feed ID from config
         feed_id = SCANNER_CONFIG.get("feed_id", "33717")
         
-        # Build scanner page HTML
-        scanner_html = f'''<!DOCTYPE html>
+        # Build scanner page HTML - SIMPLE TEST FIRST
+        scanner_html = '''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Police & Fire Scanner — {locale_name}</title>
-    <meta name="description" content="Live police and fire scanner audio and call transcript for {locale_name}">
+    <title>Live Police & Fire Scanner</title>
+    <meta name="description" content="Live police and fire scanner audio and call transcripts for Fall River, MA — Real-time emergency communications">
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Fallback CSS in case Tailwind CDN fails -->
     <style>
@@ -1184,19 +1227,33 @@ class WebsiteGenerator:
     <style>
         .lazy-image {{ opacity: 0; transition: opacity 0.3s; }}
         .lazy-image.loaded {{ opacity: 1; }}
-        /* Dark mode filter for Broadcastify iframes */
+
+        /* Broadcastify iframe styling */
         .broadcastify-iframe {{
+            background: #1a1a1a;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }}
-        /* Darken the iframe container with dark background */
+
         .broadcastify-container {{
+            position: relative;
+            background: rgba(26, 26, 26, 0.8);
+            border-radius: 8px;
+            padding: 8px;
         }}
-        /* Optional: Add a subtle dark overlay effect */
-        .broadcastify-container::before {{
-        }}
-        /* Center content in transcript iframe */
+
         .transcript-container {{
+            position: relative;
+            background: rgba(26, 26, 26, 0.8);
+            border-radius: 8px;
+            padding: 8px;
         }}
-        .transcript-container iframe {{
+
+        /* Ensure iframes are responsive */
+        @media (max-width: 768px) {{
+            .broadcastify-iframe {{
+                height: 300px !important;
+            }}
         }}
     </style>
 </head>
@@ -1216,6 +1273,86 @@ class WebsiteGenerator:
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="max-w-4xl mx-auto">
+            <!-- Scanner Header -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-gray-100 mb-4">Live Police & Fire Scanner</h1>
+                <p class="text-gray-400 text-lg">Real-time audio feed from Fall River emergency services</p>
+            </div>
+
+            <!-- Scanner Info Box -->
+            <div class="bg-gray-800/50 rounded-lg p-6 mb-8 border border-gray-700/30">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-xl font-semibold text-blue-400 mb-3">📻 Audio Feed</h3>
+                        <p class="text-gray-300 text-sm mb-4">Live police and fire department communications from Fall River and surrounding areas.</p>
+                        <div class="text-xs text-gray-500 space-y-1">
+                            <div>• FRPD Channels 1, 2, 3</div>
+                            <div>• FRFD Channels 1, 2</div>
+                            <div>• FR EMS, Tiverton PD/FD</div>
+                            <div>• Westport PD/FD, Bristol County Wide</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-green-400 mb-3">📝 Call Transcripts</h3>
+                        <p class="text-gray-300 text-sm mb-4">Real-time text transcripts of radio communications for easy reading.</p>
+                        <div class="text-xs text-gray-500 space-y-1">
+                            <div>• Instant text conversion</div>
+                            <div>• Searchable call history</div>
+                            <div>• Location information</div>
+                            <div>• Call type identification</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Broadcastify Audio Player -->
+            <div class="bg-gray-900/80 rounded-lg p-6 mb-6 border border-gray-700/30">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                    <span class="text-2xl mr-3">🔊</span>
+                    Live Audio Feed
+                </h2>
+                <div class="broadcastify-container">
+                    <iframe
+                        src="https://www.broadcastify.com/listen/feed/856/web"
+                        style="width: 100%; height: 400px; border: none; border-radius: 8px;"
+                        class="broadcastify-iframe"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                <p class="text-xs text-gray-500 mt-3 text-center">
+                    Audio player powered by Broadcastify.com • Click to enable autoplay
+                </p>
+            </div>
+
+            <!-- Call Transcript Feed -->
+            <div class="bg-gray-900/80 rounded-lg p-6 border border-gray-700/30">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                    <span class="text-2xl mr-3">📋</span>
+                    Live Call Transcripts
+                </h2>
+                <div class="transcript-container">
+                    <iframe
+                        src="https://www.broadcastify.com/listen/ctfeed/856/web"
+                        style="width: 100%; height: 500px; border: none; border-radius: 8px;"
+                        class="broadcastify-iframe"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                <p class="text-xs text-gray-500 mt-3 text-center">
+                    Real-time text transcripts • Updated live as calls come in
+                </p>
+            </div>
+
+            <!-- Usage Notes -->
+            <div class="mt-8 bg-blue-900/20 rounded-lg p-4 border border-blue-500/20">
+                <h3 class="text-lg font-semibold text-blue-300 mb-2">📋 Usage Notes</h3>
+                <ul class="text-sm text-gray-300 space-y-1">
+                    <li>• Audio may require user interaction to start due to browser autoplay policies</li>
+                    <li>• Transcripts update in real-time as calls are received</li>
+                    <li>• Feed covers multiple police and fire departments in the region</li>
+                    <li>• All content is provided by Broadcastify volunteer listeners</li>
+                </ul>
+            </div>
         </div>
     </main>
     
@@ -1234,10 +1371,11 @@ class WebsiteGenerator:
 </html>'''
         
         output_file = os.path.join(output_path, "scanner.html")
+        logger.info(f"About to write scanner page to: {output_file}")
+        logger.info(f"HTML length: {len(scanner_html)}")
         with open(output_file, "w", encoding="utf-8", errors='replace') as f:
             f.write(scanner_html)
-
-        logger.info(f"Generated scanner page: {output_file}")
+        logger.info(f"Successfully wrote scanner page: {output_file}")
     
     def _format_article_for_display(self, article: Dict, show_images: bool = True) -> Dict:
         """Format article for display in templates"""
@@ -1355,7 +1493,7 @@ class WebsiteGenerator:
         
         This ensures files like weather.js are always up to date during regeneration.
         """
-        public_js_dir = Path("public_deprecate") / "js"
+        public_js_dir = Path("public") / "js"
         output_js_dir = Path(self.output_dir) / "js"
         
         if not public_js_dir.exists():
@@ -1366,16 +1504,7 @@ class WebsiteGenerator:
         output_js_dir.mkdir(parents=True, exist_ok=True)
         
         # List of static JS files to copy (files that aren't generated from Python)
-        static_files = [
-            "weather.js",
-            "storage.js",
-            "categorizer.js",
-            "news-fetcher.js",
-            "article-renderer.js",
-            "tabs.js",
-            "stats.js",
-            "zip-router.js"
-        ]
+        static_files = ["weather.js"]
         
         for filename in static_files:
             src_file = public_js_dir / filename
