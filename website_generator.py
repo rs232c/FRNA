@@ -1315,11 +1315,11 @@ class WebsiteGenerator:
     </div>
     
     <!-- Custom Hamburger Menu - Side Drawer Overlay -->
-    <div id="mobileNavMenu" class="hidden fixed inset-0 z-[100] transition-opacity duration-300" style="opacity: 0;">
+    <div id="mobileNavMenu" class="hidden fixed inset-0 z-[1000] transition-opacity duration-300" style="opacity: 0;">
         <!-- Backdrop -->
-        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" onclick="closeHamburgerMenu()"></div>
+        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999]" onclick="closeHamburgerMenu()"></div>
         <!-- Side Drawer -->
-        <div id="hamburgerDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-[#161616] shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-out" style="transform: translateX(100%);" onclick="event.stopPropagation()">
+        <div id="hamburgerDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-[#161616] shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-out z-[1000]" style="transform: translateX(100%);" onclick="event.stopPropagation()">
             <!-- Header -->
             <div class="sticky top-0 bg-gradient-to-r from-[#161616] to-[#1a1a1a] border-b border-gray-800/50 p-5 flex items-center justify-between z-10 shadow-lg">
                 <div class="flex items-center gap-3">
