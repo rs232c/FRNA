@@ -560,7 +560,7 @@ class ArticleDatabase:
     
     def save_articles(self, articles: List[Dict], zip_code: Optional[str] = None) -> List[int]:
         """Save articles to database with zip-specific filtering, return list of new article IDs
-        
+
         Args:
             articles: List of article dicts to save
             zip_code: Optional zip code for zip-specific filtering and relevance calculation
@@ -569,6 +569,24 @@ class ArticleDatabase:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             new_ids = []
+
+            # Apply semantic deduplication to the batch
+            try:
+                from utils.semantic_deduplication import SemanticDeduplicator
+                deduplicator = SemanticDeduplicator()
+                unique_articles, duplicates = deduplicator.deduplicate_batch(articles, threshold=0.75)
+
+                if duplicates:
+                    logger.info(f"Semantic deduplication removed {len(duplicates)} duplicate articles")
+                    for dup in duplicates[:5]:  # Log first 5 duplicates
+                        logger.debug(f"Duplicate: '{dup['article'].get('title', '')[:50]}...' similar to existing article")
+
+                articles = unique_articles  # Use deduplicated list
+
+            except ImportError:
+                logger.warning("Semantic deduplication module not available, skipping")
+            except Exception as e:
+                logger.warning(f"Error during semantic deduplication: {e}, proceeding without it")
             
             for article in articles:
                 try:
@@ -708,6 +726,42 @@ class ArticleDatabase:
                         # Use zip_code from article or parameter
                         article_zip = article.get("zip_code") or zip_code
                         relevance_score = calculate_relevance_score(article, zip_code=article_zip)
+
+                    # Track source performance for dynamic credibility learning
+                    try:
+                        from utils.dynamic_source_credibility import DynamicSourceCredibility
+                        from utils.content_quality import ContentQualityAnalyzer
+
+                        credibility_system = DynamicSourceCredibility()
+                        quality_analyzer = ContentQualityAnalyzer()
+
+                        # Get quality score
+                        quality_analysis = quality_analyzer.calculate_quality_score(article)
+                        quality_score = quality_analysis['quality_score']
+
+                        # Determine if article will be enabled (rough approximation)
+                        # Check if article should be enabled based on relevance threshold
+                        relevance_threshold = 11.0  # Default, can be overridden from admin_settings
+                        try:
+                            threshold_cursor = conn.cursor()
+                            threshold_cursor.execute('SELECT value FROM admin_settings WHERE key = "relevance_threshold"')
+                            threshold_result = threshold_cursor.fetchone()
+                            if threshold_result and threshold_result[0]:
+                                relevance_threshold = float(threshold_result[0])
+                        except:
+                            pass  # Use default
+
+                        is_enabled = relevance_score >= relevance_threshold
+
+                        # Update source performance
+                        credibility_system.update_source_performance(
+                            source, relevance_score, quality_score, is_enabled, zip_code
+                        )
+
+                    except ImportError:
+                        pass  # Optional feature
+                    except Exception as e:
+                        logger.debug(f"Error tracking source performance: {e}")
                     
                     # Calculate local focus score
                     local_focus_score = None
@@ -777,20 +831,47 @@ class ArticleDatabase:
                                 state_abbrev = "MA"
                                 city_state = "Fall River, MA"
                     
-                    # Predict categories using category classifier
+                    # Predict categories using smart categorizer (enhanced)
                     primary_category = article.get("primary_category")
                     secondary_category = article.get("secondary_category")
                     category_confidence = article.get("category_confidence")
                     category_override = article.get("category_override", 0)
-                    
+
                     if not primary_category and article_zip:
                         try:
-                            from utils.category_classifier import CategoryClassifier
-                            classifier = CategoryClassifier(article_zip)
-                            primary_category, category_confidence, secondary_category, _ = classifier.predict_category(article)
-                            logger.debug(f"Predicted categories for article: {primary_category} ({category_confidence:.1%}), {secondary_category}")
+                            # Try smart categorizer first (with learning capabilities)
+                            from utils.smart_categorizer import SmartCategorizer
+                            categorizer = SmartCategorizer(article_zip)
+                            predicted_category, confidence_score, all_scores = categorizer.categorize_article(article)
+
+                            # Convert to format expected by rest of system
+                            primary_category = predicted_category.replace('-', ' ').title()  # local-news -> Local News
+                            category_confidence = confidence_score / 100.0  # Convert to 0-1 scale
+                            secondary_category = primary_category  # Default secondary to primary
+
+                            # Find second best category if confidence is low
+                            if confidence_score < 60 and len(all_scores) > 1:
+                                sorted_scores = sorted(all_scores.items(), key=lambda x: x[1], reverse=True)
+                                if len(sorted_scores) > 1:
+                                    second_best = sorted_scores[1][0]
+                                    secondary_category = second_best.replace('-', ' ').title()
+
+                            logger.debug(f"Smart categorized article: {primary_category} ({category_confidence:.1%}), secondary: {secondary_category}")
+
+                        except ImportError:
+                            # Fall back to original classifier
+                            try:
+                                from utils.category_classifier import CategoryClassifier
+                                classifier = CategoryClassifier(article_zip)
+                                primary_category, category_confidence, secondary_category, _ = classifier.predict_category(article)
+                                logger.debug(f"Fallback categorized article: {primary_category} ({category_confidence:.1%}), {secondary_category}")
+                            except Exception as e:
+                                logger.warning(f"Error predicting category: {e}, defaulting to News")
+                                primary_category = "News"
+                                secondary_category = "News"
+                                category_confidence = 0.5
                         except Exception as e:
-                            logger.warning(f"Error predicting category: {e}, defaulting to News")
+                            logger.warning(f"Error in smart categorization: {e}, falling back to News")
                             primary_category = "News"
                             secondary_category = "News"
                             category_confidence = 0.5

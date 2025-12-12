@@ -32,47 +32,178 @@
 
         /* Ensure dark theme is applied immediately */
         html.dark body { background: #0a0a0a !important; color: #ffffff !important; }
+
+        /* Enhanced FOUC prevention - hide everything until ready */
+        html {
+            visibility: hidden;
+            opacity: 0;
+        }
+
+        html.loaded {
+            visibility: visible;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Layout stability - prevent layout shift with aspect ratios */
+        .article-image {
+            aspect-ratio: 4/3;
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+        }
+
+        /* Premium loading states */
+        .loading-shimmer {
+            background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.1) 50%, transparent 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        /* Premium animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8), 0 0 40px rgba(59, 130, 246, 0.4); }
+        }
+
+        /* Premium micro-interactions */
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .animate-slide-in-right {
+            animation: slideInRight 0.4s ease-out forwards;
+        }
+
+        .animate-pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        /* Premium skeleton loader */
+        .skeleton-card {
+            background: linear-gradient(90deg, #161616 25%, #1a1a1a 50%, #161616 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        /* Enhanced glassmorphism utility classes */
+        .glass-subtle {
+            background: rgba(22, 22, 22, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow:
+                0 8px 32px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .glass-strong {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow:
+                0 20px 40px rgba(0,0,0,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        /* Subtle depth with layered shadows */
+        .depth-1 { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
+        .depth-2 { box-shadow: 0 3px 6px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.12); }
+        .depth-3 { box-shadow: 0 10px 20px rgba(0,0,0,0.15), 0 3px 6px rgba(0,0,0,0.10); }
+        .depth-4 { box-shadow: 0 15px 25px rgba(0,0,0,0.15), 0 5px 10px rgba(0,0,0,0.05); }
+        .depth-5 { box-shadow: 0 20px 40px rgba(0,0,0,0.2), 0 8px 16px rgba(0,0,0,0.1); }
+
+        /* Enhanced mobile menu animations */
+        #mobileMenu {
+            transition: opacity 0.3s ease;
+        }
+
+        #mobileMenuPanel {
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Premium focus states */
+        .focus-ring:focus {
+            outline: none;
+            ring: 2px;
+            ring-color: rgba(59, 130, 246, 0.5);
+            ring-offset: 2px;
+        }
     </style>
 </head>
-<body class="bg-[#0a0a0a] text-gray-100 min-h-screen fouc-hidden">
-    <!-- Sticky Navigation Bar (Header + Nav together) -->
-    <div class="sticky top-0 z-50">
-        <header class="bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-gray-900/30 py-3 shadow-lg">
+<body class="bg-[#0a0a0a] font-sans text-white/90 min-h-screen fouc-hidden">
+    <!-- Sticky Navigation Bar (Header + Nav together) - becomes fixed on scroll -->
+    <div class="sticky top-0 z-[999] bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-gray-900/30 shadow-lg transition-all duration-300" id="headerNav">
+        <header class="py-4">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <!-- Single Row Layout: Badge Left | Search Center | Controls Right -->
-                <div class="flex items-center justify-between gap-4">
+                <!-- Perfect Single Row Layout: Badge Left | Search Center | Controls Right -->
+                <div class="flex items-center justify-between min-h-[64px] gap-6">
                     <!-- Left: Location Badge -->
-                    <div class="text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg bg-purple-500/40 backdrop-blur-xl border border-white/10 flex-shrink-0">
-                        {{ location_badge_text }}
+                    <div class="flex items-center px-4 py-2.5 rounded-full text-sm font-semibold shadow-lg bg-purple-500/20 backdrop-blur-xl border border-white/10 flex-shrink-0 hover:bg-purple-500/30 transition-all duration-300 hover:scale-105">
+                        <span class="text-purple-300 mr-2">📍</span>
+                        <span class="text-white">{{ location_badge_text }}</span>
                     </div>
 
-                    <!-- Center: Search Bar -->
-                    <div class="flex-1 max-w-2xl mx-4">
-                        <div class="relative flex items-center bg-[#161616]/60 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-800/30 focus-within:border-blue-500/60 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300">
-                        <span class="text-gray-400 mr-2 text-lg">🔍</span>
-                        <input type="text" placeholder="Search articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full" id="searchInput">
-                        <button class="text-gray-400 hover:text-blue-400 transition-colors ml-2 p-1 rounded-full hover:bg-gray-800/50" onclick="toggleSearchFilters()" title="Advanced Filters">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                    <!-- Center: Enhanced Search Bar -->
+                    <div class="flex-1 max-w-2xl mx-6">
+                        <div class="relative group">
+                            <!-- Subtle background glow on focus -->
+                            <div class="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 rounded-full blur-lg opacity-0 group-focus-within:opacity-100 transition-all duration-300"></div>
+                            <div class="relative bg-[#161616]/80 backdrop-blur-xl rounded-full px-6 py-3 border border-white/10 focus-within:border-blue-400/50 focus-within:ring-2 focus-within:ring-blue-400/20 transition-all duration-300 hover:border-white/20">
+                                <div class="flex items-center">
+                                    <span class="text-gray-400 mr-3 text-lg">🔍</span>
+                                    <input type="text" placeholder="Search Fall River news..." class="bg-transparent border-none outline-none text-white placeholder-gray-400 flex-1 w-full text-sm" id="searchInput">
+                                    <button class="text-gray-400 hover:text-blue-400 transition-colors ml-3 p-2 rounded-full hover:bg-gray-800/50" onclick="toggleSearchFilters()" title="Advanced Filters">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Premium Controls -->
+                    <div class="flex items-center gap-3 flex-shrink-0">
+                        <a href="{{ weather_station_url }}" target="_blank" rel="noopener" id="weatherPillHeader" class="flex items-center gap-2 rounded-xl px-4 py-2.5 bg-blue-500/20 backdrop-blur-xl border border-white/10 hover:bg-blue-500/30 transition-all duration-300 hover:scale-105">
+                            <span id="weatherIconHeader" class="text-lg">🌤️</span>
+                            <div class="text-white hidden sm:block">
+                                <div id="weatherTempHeader" class="font-bold text-sm leading-tight">--°F</div>
+                                <div id="weatherConditionHeader" class="text-blue-200 text-xs">Clear</div>
+                            </div>
+                        </a>
+                        <button id="mobileNavToggle" class="text-gray-400 hover:text-white transition-colors p-3 rounded-xl hover:bg-[#161616]/50 md:hidden" aria-label="Toggle navigation menu" title="Menu & Category Controls">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                             </svg>
                         </button>
                     </div>
-                </div>
-
-                <!-- Right: Controls (Hamburger, Weather) -->
-                <div class="flex items-center gap-2 flex-shrink-0">
-                    <button id="mobileNavToggle" class="text-gray-400 hover:text-white transition-colors py-4 px-2 rounded-lg hover:bg-[#161616]/50" aria-label="Toggle navigation menu" title="Menu & Category Controls">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </button>
-                    <a href="{{ weather_station_url }}" target="_blank" rel="noopener" id="weatherPillHeader" class="flex items-center gap-2 rounded-lg px-3 py-4 bg-blue-500/40 backdrop-blur-xl border border-white/10 hover:bg-blue-500/50 transition-all">
-                        <span id="weatherIconHeader" class="text-lg">🌤️</span>
-                        <div class="text-white">
-                            <div id="weatherTempHeader" class="font-bold text-xs leading-tight">--°F</div>
-                            <div id="weatherConditionHeader" class="text-blue-100 text-xs">Clear</div>
-                        </div>
-                    </a>
                 </div>
             </div>
         </header>
@@ -144,67 +275,150 @@
 
     </div>
 
-    <!-- Mobile Menu Overlay - Full Screen with Desktop Categories -->
-    <div id="mobileMenu" class="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xl hidden">
-        <div class="fixed inset-0 flex items-center justify-center">
-            <div class="bg-[#0a0a0a]/95 backdrop-blur-xl border border-gray-800/50 rounded-2xl max-w-md w-full mx-4 max-h-[80vh] overflow-hidden transform scale-95 transition-all duration-300" id="mobileMenuPanel">
-                <!-- Close button top-right -->
-                <div class="flex justify-end p-4">
-                    <button id="closeMobileMenu" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
+    <!-- Premium Mobile Menu Drawer -->
+    <div id="mobileMenu" class="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
+        <!-- Enhanced backdrop with animation -->
+        <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" onclick="closeMobileMenu()"></div>
 
-                <!-- Categories Grid - Same as Desktop -->
-                <div class="px-6 pb-6">
-                    <h2 class="text-xl font-bold text-white mb-6 text-center">Categories</h2>
-                    <div class="grid grid-cols-2 gap-3">
-                        <!-- Local -->
-                        <a href="index.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-white font-bold bg-blue-500/20 border border-blue-500/40 text-center hover:bg-blue-500/30">
-                            Local
+        <!-- Premium drawer panel with enhanced animations -->
+        <div class="absolute top-0 right-0 h-full w-80 bg-[#0a0a0a]/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl transform translate-x-full transition-all duration-500 ease-out" id="mobileMenuPanel">
+            <!-- Premium header -->
+            <div class="flex items-center justify-between p-6 border-b border-white/10 bg-gradient-to-r from-purple-500/10 to-blue-500/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">F</span>
+                    </div>
+                    <h2 class="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Fall River</h2>
+                </div>
+                <button id="closeMobileMenu" class="text-gray-400 hover:text-white transition-all duration-300 p-3 rounded-xl hover:bg-white/10 hover:scale-110">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Enhanced categories section -->
+            <div class="px-6 py-6 overflow-y-auto h-full pb-24">
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                        <span class="w-1 h-4 bg-gradient-to-b from-blue-400 to-purple-400 rounded-full"></span>
+                        Category Controls
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4">Toggle categories on/off to customize your feed</p>
+                </div>
+                <div class="space-y-4 animate-slide-in-right">
+                    <!-- Local - Always Enabled (Essential) -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl bg-gradient-to-r from-blue-500/15 to-blue-500/5 transition-all duration-300">
+                        <a href="/" class="flex-1 px-4 py-3 rounded-lg transition-all duration-300 text-white font-semibold bg-blue-500/25 border border-blue-500/40 text-left hover:bg-blue-500/50 hover:scale-[1.02] hover:shadow-lg hover:shadow-blue-500/20">
+                            <div class="flex items-center gap-3">
+                                <span class="text-blue-400">🏠</span>
+                                <span>Local News</span>
+                                <span class="ml-auto text-xs font-medium px-2 py-1 rounded-full bg-blue-500/30 text-blue-200 border border-blue-400/30">Always On</span>
+                            </div>
                         </a>
-                        <!-- Police & Fire -->
-                        <a href="category/crime.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
-                            Police & Fire
+                        <div class="ml-4 flex items-center">
+                            <div class="w-12 h-6 bg-blue-500 rounded-full flex items-center justify-end px-1 shadow-inner">
+                                <div class="w-5 h-5 bg-white rounded-full shadow-md"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Police & Fire -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="/category/crime" class="flex-1 px-4 py-3 rounded-lg transition-all duration-300 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-red-500/30 hover:bg-red-500/10 text-left hover:scale-[1.02]" id="link-crime">
+                            <div class="flex items-center gap-3">
+                                <span class="text-red-400">🚔</span>
+                                <span>Police & Fire</span>
+                            </div>
                         </a>
-                        <!-- Sports -->
-                        <a href="category/sports.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
-                            Sports
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-crime" checked>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-400/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500 peer-checked:after:bg-white shadow-inner"></div>
+                        </label>
+                    </div>
+                    <!-- Sports -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="/category/sports" class="flex-1 px-4 py-3 rounded-lg transition-all duration-300 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-green-500/30 hover:bg-green-500/10 text-left hover:scale-[1.02]" id="link-sports">
+                            <div class="flex items-center gap-3">
+                                <span class="text-green-400">⚽</span>
+                                <span>Sports</span>
+                            </div>
                         </a>
-                        <!-- Obituaries -->
-                        <a href="category/obituaries.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
-                            Obituaries
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-sports" checked>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-400/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500 peer-checked:after:bg-white shadow-inner"></div>
+                        </label>
+                    </div>
+                    <!-- Obituaries -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="/category/obituaries" class="flex-1 px-4 py-3 rounded-lg transition-all duration-300 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-purple-500/30 hover:bg-purple-500/10 text-left hover:scale-[1.02]" id="link-obituaries">
+                            <div class="flex items-center gap-3">
+                                <span class="text-purple-400">🕊️</span>
+                                <span>Obituaries</span>
+                            </div>
                         </a>
-                        <!-- Food & Drink -->
-                        <a href="category/food.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
-                            Food & Drink
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-obituaries" checked>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-400/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500 peer-checked:after:bg-white shadow-inner"></div>
+                        </label>
+                    </div>
+
+                    <!-- Food & Drink -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="/category/food" class="flex-1 px-4 py-3 rounded-lg transition-all duration-300 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-orange-500/30 hover:bg-orange-500/10 text-left hover:scale-[1.02]" id="link-food">
+                            <div class="flex items-center gap-3">
+                                <span class="text-orange-400">🍽️</span>
+                                <span>Food & Drink</span>
+                            </div>
                         </a>
-                        <!-- Media -->
-                        <a href="category/entertainment.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
-                            Media
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-food" checked>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-400/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 peer-checked:after:bg-white shadow-inner"></div>
+                        </label>
+                    </div>
+
+                    <!-- Media -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="/category/entertainment" class="flex-1 px-4 py-3 rounded-lg transition-all duration-300 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-pink-500/30 hover:bg-pink-500/10 text-left hover:scale-[1.02]" id="link-entertainment">
+                            <div class="flex items-center gap-3">
+                                <span class="text-pink-400">🎬</span>
+                                <span>Media & Entertainment</span>
+                            </div>
                         </a>
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-entertainment" checked>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-400/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500 peer-checked:after:bg-white shadow-inner"></div>
+                        </label>
+                    </div>
                         <!-- Scanner -->
-                        <a href="category/scanner.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
-                            Scanner
-                        </a>
+                        <div class="flex items-center justify-between">
+                            <a href="/category/scanner" class="flex-1 px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-left" id="link-scanner">
+                                Scanner
+                            </a>
+                            <label class="ml-3 relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" id="toggle-scanner" checked>
+                                <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-400 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-600 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600 peer-checked:after:bg-white"></div>
+                            </label>
+                        </div>
                         <!-- Meetings -->
-                        <a href="category/meetings.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
-                            Meetings
-                        </a>
-                        <!-- Submit Tip -->
-                        <a href="index.html#submit" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
-                            Submit Tip
-                        </a>
-                        <!-- Lost & Found -->
-                        <a href="index.html#lost-found" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
-                            Lost & Found
-                        </a>
+                        <div class="flex items-center justify-between">
+                            <a href="/category/meetings" class="flex-1 px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-left" id="link-meetings">
+                                Meetings
+                            </a>
+                            <label class="ml-3 relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" id="toggle-meetings" checked>
+                                <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-400 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-600 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600 peer-checked:after:bg-white"></div>
+                            </label>
+                        </div>
                         <!-- Events -->
-                        <a href="category/events.html" class="px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-center">
-                            Events
-                        </a>
+                        <div class="flex items-center justify-between">
+                            <a href="/category/events" class="flex-1 px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-left" id="link-events">
+                                Events
+                            </a>
+                            <label class="ml-3 relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" id="toggle-events" checked>
+                                <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-400 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-600 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600 peer-checked:after:bg-white"></div>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -242,7 +456,7 @@
                                     {% endif %}
                                     <!-- Content overlay at bottom -->
                                     <div class="absolute bottom-0 left-0 right-0 p-6 lg:p-8 pb-12 lg:pb-16">
-                                        <h2 class="text-2xl lg:text-3xl font-bold text-white mb-3 line-clamp-5 group-hover:text-blue-300 transition-colors leading-tight">
+                                        <h2 class="font-bold text-2xl mb-3 line-clamp-5 group-hover:text-blue-300 transition-colors leading-tight">
                                             {{ hero_article.title }}
                                         </h2>
                                         <div class="flex items-center gap-3 text-sm text-gray-200">
@@ -272,7 +486,7 @@
                                     {% endif %}
                                     <!-- Content overlay at bottom -->
                                     <div class="absolute bottom-0 left-0 right-0 p-6 lg:p-8 pb-12 lg:pb-16 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
-                                        <h2 class="text-2xl lg:text-3xl font-bold text-white mb-3 line-clamp-5 group-hover:text-blue-300 transition-colors leading-tight">
+                                        <h2 class="font-bold text-2xl mb-3 line-clamp-5 group-hover:text-blue-300 transition-colors leading-tight">
                                             {{ hero_article.title }}
                                         </h2>
                                         <div class="flex items-center gap-3 text-sm text-gray-200">
@@ -321,9 +535,12 @@
             <!-- Narrow Trending Sidebar (35% - 4 columns) -->
             <aside class="lg:col-span-4">
                 <div class="rounded-xl p-6" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);">
-                    <div class="flex items-center gap-2 mb-6">
-                        <span class="text-2xl">🔥</span>
-                        <h3 class="text-lg font-bold text-gray-100">Trending in Fall River</h3>
+                    <div class="text-center mb-6">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <span class="text-2xl">🔥</span>
+                            <h3 class="font-bold text-xl text-gray-100">Trending in Fall River</h3>
+                        </div>
+                        <div class="w-16 h-0.5 bg-gradient-to-r from-transparent via-orange-500 to-transparent mx-auto"></div>
                     </div>
                     <div class="space-y-4">
                         {% if trending_articles %}
@@ -351,41 +568,54 @@
                             </a>
                             {% endfor %}
                         {% else %}
-                            <p class="text-gray-400 text-sm">No trending articles yet.</p>
+                            <!-- Skeleton loader for trending articles -->
+                            {% for i in range(5) %}
+                            <div class="flex items-start gap-3 pb-3 border-b border-gray-800/30 last:border-0 -mx-2 px-2 animate-pulse">
+                                <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-700"></div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="h-4 bg-gray-700 rounded mb-2"></div>
+                                    <div class="h-3 bg-gray-800 rounded w-3/4"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         {% endif %}
                     </div>
                 </div>
             </aside>
         </div>
         
-        <!-- Newest Articles Tile -->
+        <!-- Premium Newest Articles Section -->
         {% if newest_articles %}
-        <div class="mb-8">
-            <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800/30">
-                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span class="text-green-400 text-lg">●</span>
-                    <span>Newest Articles</span>
+        <div class="mb-12">
+            <div class="bg-[#161616]/80 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-2xl">
+                <h2 class="font-bold text-3xl mb-6 flex items-center gap-3">
+                    <span class="text-green-400 text-xl animate-pulse">●</span>
+                    <span class="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">Newest Articles</span>
                 </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                     {% for article in newest_articles[:4] %}
-                    <a href="{{ article.url }}" target="_blank" rel="noopener" class="group">
-                        <div class="bg-[#0f0f0f] rounded-lg overflow-hidden border border-gray-800/20 hover:border-blue-500/50 transition-all h-full flex flex-col">
+                    <a href="{{ article.url }}" target="_blank" rel="noopener" class="group animate-fade-in-up" style="animation-delay: {{ loop.index * 0.15 }}s;">
+                        <div class="bg-[#1a1a1a]/60 backdrop-blur-sm rounded-xl overflow-hidden border border-white/5 hover:border-blue-400/30 transition-all duration-500 h-full flex flex-col hover:scale-[1.02] hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10">
                             {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
-                            <div class="aspect-square rounded-t-lg overflow-hidden bg-gray-900">
-                                <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            <div class="aspect-[4/3] rounded-t-xl overflow-hidden bg-gray-900">
+                                <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" style="aspect-ratio: 4/3;">
+                                <!-- Subtle overlay -->
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </div>
                             {% else %}
-                            <div class="aspect-square rounded-t-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center relative overflow-hidden">
-                                <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
-                                <div class="text-2xl font-black text-white drop-shadow-lg relative z-10">{{ article.source_initials }}</div>
+                            <div class="aspect-[4/3] rounded-t-xl bg-gradient-to-br from-green-500/20 via-blue-500/20 to-purple-500/20 flex items-center justify-center relative overflow-hidden">
+                                <div class="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.03)_10px,rgba(255,255,255,0.03)_20px)]"></div>
+                                <div class="text-4xl font-black text-white/40 drop-shadow-lg relative z-10">{{ article.source_initials }}</div>
                             </div>
                             {% endif %}
-                            <div class="p-4 flex flex-col flex-1">
-                                <h3 class="text-sm font-semibold text-gray-100 line-clamp-2 mb-2 group-hover:text-blue-400 transition-colors leading-snug">
+                            <div class="p-5 flex flex-col flex-1">
+                                <h3 class="text-base font-semibold text-gray-100 line-clamp-2 mb-3 group-hover:text-blue-400 transition-colors duration-300 leading-snug">
                                     {{ article.title }}
                                 </h3>
-                                <div class="text-xs text-gray-500 mt-auto">
-                                    {{ article.source_display }} • {{ article._trending_date if article._trending_date else (article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else (article.formatted_date if article.formatted_date else 'Recently')) }}
+                                <div class="text-sm text-gray-400 mt-auto flex items-center gap-2">
+                                    <span class="text-xs px-2 py-1 rounded-full bg-white/5 text-gray-300">{{ article.source_display }}</span>
+                                    <span class="text-gray-500">•</span>
+                                    <span>{{ article._trending_date if article._trending_date else (article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else (article.formatted_date if article.formatted_date else 'Recently')) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -396,66 +626,72 @@
         </div>
         {% endif %}
         
-        <!-- Perfect Masonry Grid Below Hero (3-4 columns) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="articlesGrid">
+        <!-- Premium Article Grid (4:3 aspect ratio for better content display) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="articlesGrid">
             {% if articles and articles|length > 0 %}
                 {% for article in articles[:30] %}
-            <article class="group relative bg-[#161616]/40 backdrop-blur-sm rounded-xl overflow-hidden ring-1 ring-white/10 hover:ring-white/20 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}">
+            <article class="group relative bg-[#161616]/60 backdrop-blur-sm rounded-2xl overflow-hidden ring-1 ring-white/5 hover:ring-white/20 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-2 animate-fade-in-up" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}" style="animation-delay: {{ loop.index * 0.1 }}s;">
                 <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
                     {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
-                    <div class="relative aspect-square overflow-hidden rounded-t-xl">
-                        <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                        <!-- Dark overlay gradient bottom 40% -->
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
-                        <!-- Source badge in bottom-left -->
-                        <div class="absolute bottom-3 left-3 px-2 py-1 rounded-full text-xs font-semibold text-white bg-black/60 backdrop-blur-sm border border-white/20">
+                    <div class="relative aspect-[4/3] overflow-hidden rounded-t-2xl">
+                        <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy"
+                             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                             style="aspect-ratio: 4/3;">
+                        <!-- Premium gradient overlay -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 via-60% to-transparent opacity-80 group-hover:opacity-60 transition-opacity duration-500"></div>
+
+                        <!-- Premium source badge -->
+                        <div class="absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-blue-500/90 to-purple-500/90 backdrop-blur-sm border border-white/20 shadow-lg">
                             {{ article.source_initials }}
                         </div>
-                        <!-- Read time in bottom-right -->
+
+                        <!-- Premium read time badge -->
                         {% if article.reading_time %}
-                        <div class="absolute bottom-3 right-3 px-2 py-1 rounded-full text-xs font-medium text-white bg-black/60 backdrop-blur-sm border border-white/20">
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-medium text-white bg-black/70 backdrop-blur-sm border border-white/20 shadow-lg">
                             {{ article.reading_time }}
                         </div>
                         {% endif %}
-                        <!-- Title overlay -->
-                        <div class="absolute bottom-0 left-0 right-0 p-4">
-                            <h2 class="text-lg font-bold text-white mb-1 line-clamp-2 leading-tight">
+
+                        <!-- Enhanced title overlay with better typography -->
+                        <div class="absolute bottom-0 left-0 right-0 p-6">
+                            <h2 class="font-bold text-xl mb-2 line-clamp-3 leading-tight text-white drop-shadow-lg group-hover:text-blue-200 transition-colors duration-300">
                                 {{ article.title }}
                             </h2>
-                            <div class="text-xs text-gray-300">
+                            <div class="text-sm text-gray-200 drop-shadow-md">
                                 {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}
                             </div>
                         </div>
                     </div>
                     {% else %}
-                    <!-- Placeholder with gradient background -->
-                    <div class="relative aspect-square overflow-hidden rounded-t-xl bg-gradient-to-br {{ article.source_gradient }}">
-                        <!-- Subtle pattern overlay for texture -->
+                    <!-- Premium placeholder with modern gradient -->
+                    <div class="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20">
+                        <!-- Subtle texture overlay -->
                         <div class="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(45deg,transparent,transparent_20px,rgba(255,255,255,0.03)_20px,rgba(255,255,255,0.03)_40px)]"></div>
-                        <!-- Image placeholder icon centered -->
+
+                        <!-- Premium icon placeholder -->
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
+                            <div class="text-5xl font-black text-white/30 drop-shadow-2xl">{{ article.source_initials }}</div>
                         </div>
-                        <!-- Dark overlay gradient bottom 40% -->
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
-                        <!-- Source badge in bottom-left -->
-                        <div class="absolute bottom-3 left-3 px-2 py-1 rounded-full text-xs font-semibold text-white bg-black/60 backdrop-blur-sm border border-white/20">
+
+                        <!-- Premium gradient overlay -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 via-60% to-transparent opacity-80"></div>
+
+                        <!-- Premium badges -->
+                        <div class="absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-blue-500/90 to-purple-500/90 backdrop-blur-sm border border-white/20 shadow-lg">
                             {{ article.source_initials }}
                         </div>
-                        <!-- Read time in bottom-right -->
                         {% if article.reading_time %}
-                        <div class="absolute bottom-3 right-3 px-2 py-1 rounded-full text-xs font-medium text-white bg-black/60 backdrop-blur-sm border border-white/20">
+                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-medium text-white bg-black/70 backdrop-blur-sm border border-white/20 shadow-lg">
                             {{ article.reading_time }}
                         </div>
                         {% endif %}
-                        <!-- Title overlay -->
-                        <div class="absolute bottom-0 left-0 right-0 p-4">
-                            <h2 class="text-lg font-bold text-white mb-1 line-clamp-2 leading-tight">
+
+                        <!-- Enhanced title overlay -->
+                        <div class="absolute bottom-0 left-0 right-0 p-6">
+                            <h2 class="font-bold text-xl mb-2 line-clamp-3 leading-tight text-white drop-shadow-lg group-hover:text-blue-200 transition-colors duration-300">
                                 {{ article.title }}
                             </h2>
-                            <div class="text-xs text-gray-300">
+                            <div class="text-sm text-gray-200 drop-shadow-md">
                                 {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}
                             </div>
                         </div>
@@ -465,9 +701,17 @@
             </article>
                 {% endfor %}
             {% else %}
-            <div class="col-span-full text-center py-12">
-                <p class="text-gray-400">No articles found. Check back soon!</p>
-            </div>
+            <!-- Skeleton loader for articles grid -->
+            {% for i in range(12) %}
+            <article class="group relative bg-[#161616]/40 backdrop-blur-sm rounded-xl overflow-hidden ring-1 ring-white/10 animate-pulse">
+                <div class="relative aspect-square overflow-hidden rounded-t-xl bg-gray-700">
+                    <div class="absolute bottom-0 left-0 right-0 p-4">
+                        <div class="h-5 bg-gray-600 rounded mb-2"></div>
+                        <div class="h-3 bg-gray-700 rounded w-2/3"></div>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
             {% endif %}
         </div>
     </main>
@@ -477,7 +721,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 <div>
-                    <h4 class="text-lg font-bold text-gray-100 mb-3">Stay Informed</h4>
+                    <h4 class="font-bold text-2xl mb-3">Stay Informed</h4>
                     <p class="text-gray-400 text-sm mb-4">Get daily news updates delivered to your inbox.</p>
                     <form class="flex flex-col sm:flex-row gap-2" id="newsletterForm" onsubmit="handleNewsletterSignup(event)">
                         <input type="email" placeholder="Enter your email" class="flex-1 text-gray-100 rounded-lg px-4 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 outline-none bg-[#161616]/60 backdrop-blur-sm border border-white/10" id="newsletterEmail" required>
@@ -486,9 +730,14 @@
                     <div class="text-sm mt-2 min-h-[1.2rem]" id="newsletterMessage"></div>
                 </div>
                 <div>
-                    <h4 class="text-lg font-bold text-gray-100 mb-3">Quick Links</h4>
+                    <h4 class="font-bold text-2xl mb-3">Quick Links</h4>
                     <ul class="space-y-2">
-                        <li><a href="index.html" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Local</a></li>
+                        <li><a href="/" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Local</a></li>
+                        <li><a href="/category/crime" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Police & Fire</a></li>
+                        <li><a href="/category/sports" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Sports</a></li>
+                        <li><a href="/category/obituaries" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Obituaries</a></li>
+                        <li><a href="/category/food" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Food & Drink</a></li>
+                        <li><a href="/category/entertainment" class="text-gray-400 hover:text-blue-400 transition-colors text-sm">Media</a></li>
                     </ul>
                 </div>
             </div>
@@ -500,7 +749,7 @@
     
     <!-- Mobile Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-md border-t border-gray-900/30 px-4 py-2 flex justify-around items-center z-50 lg:hidden">
-        <a href="index.html" class="flex flex-col items-center gap-1 text-gray-400 hover:text-blue-400 transition-colors py-2 px-4 rounded-lg min-h-[44px] min-w-[44px]">
+        <a href="/" class="flex flex-col items-center gap-1 text-gray-400 hover:text-blue-400 transition-colors py-2 px-4 rounded-lg min-h-[44px] min-w-[44px]">
             <span class="text-xl">📍</span>
             <span class="text-xs">Local</span>
         </a>
@@ -517,42 +766,57 @@
         // Set weather API key for frontend before weather.js loads
         window.WEATHER_API_KEY = '{{ weather_api_key }}';
         
-        // #region agent log
-        // IMMEDIATE FOUC FIX - Show content ASAP, don't wait for scripts
+        // #region premium FOUC prevention
+        // ENHANCED FOUC FIX - Premium loading experience
         (function() {
             function revealContent() {
-                if (document.body && document.body.classList.contains('fouc-hidden')) {
-                    document.body.classList.add('loaded');
-                    try {
-                        fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({
-                                location: 'index.html.j2:revealContent',
-                                message: 'FOUC removed - content revealed',
-                                data: {readyState: document.readyState},
-                                timestamp: Date.now(),
-                                sessionId: 'debug-session',
-                                runId: 'run1',
-                                hypothesisId: 'C'
-                            })
-                        }).catch(() => {});
-                    } catch(e) {}
+                const html = document.documentElement;
+                const body = document.body;
+
+                // Remove loading classes and show content
+                html.classList.add('loaded');
+                if (body && body.classList.contains('fouc-hidden')) {
+                    body.classList.add('loaded');
                 }
+
+                // Add premium loading complete class
+                document.body.classList.add('premium-loaded');
+
+                try {
+                    fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            location: 'index.html.j2:revealContent',
+                            message: 'Premium FOUC removed - content revealed with animations',
+                            data: {readyState: document.readyState, timestamp: Date.now()},
+                            timestamp: Date.now(),
+                            sessionId: 'premium-session',
+                            runId: 'premium-run1',
+                            hypothesisId: 'PREMIUM'
+                        })
+                    }).catch(() => {});
+                } catch(e) {}
             }
-            
-            // Try immediately if DOM is ready
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+
+            // Multiple reveal triggers for robustness
+            if (document.readyState === 'complete') {
+                // DOM already loaded
+                setTimeout(revealContent, 50);
+            } else if (document.readyState === 'interactive') {
+                // DOM parsed but resources still loading
                 revealContent();
             } else {
-                // Wait for DOMContentLoaded (faster than window.load)
-                document.addEventListener('DOMContentLoaded', revealContent);
+                // DOM not ready yet
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(revealContent, 50);
+                });
             }
-            
-            // Fallback: show after 500ms no matter what
-            setTimeout(revealContent, 500);
+
+            // Ultimate fallback - force show after 1 second
+            setTimeout(revealContent, 1000);
         })();
-        // #endregion agent log
+        // #endregion premium FOUC prevention
     </script>
     <!-- Load scripts in dependency order -->
     <script src="js/storage.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load storage.js'); document.body.classList.add('loaded');"></script>
@@ -566,6 +830,80 @@
     <script src="js/zip-router.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load zip-router.js');"></script>
     <script>console.log('[FRNA] ✅ Page loaded with cache-busting - build:', '{{ current_time }}');</script>
     <script>
+        // Header scroll behavior - becomes fixed after scroll
+        let headerNav = document.getElementById('headerNav');
+        let lastScrollY = window.scrollY;
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 100) { // After 100px scroll
+                headerNav.classList.add('fixed', 'top-0', 'left-0', 'right-0');
+                headerNav.classList.remove('sticky');
+                document.body.classList.add('pt-16'); // Add padding when fixed
+            } else {
+                headerNav.classList.remove('fixed', 'top-0', 'left-0', 'right-0');
+                headerNav.classList.add('sticky');
+                document.body.classList.remove('pt-16'); // Remove padding when sticky
+            }
+            lastScrollY = window.scrollY;
+        });
+
+        // Updated mobile menu functions for drawer behavior
+        function openMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const panel = document.getElementById('mobileMenuPanel');
+
+            menu.classList.remove('hidden');
+            setTimeout(() => {
+                panel.classList.remove('translate-x-full');
+                panel.classList.add('translate-x-0');
+            }, 10);
+        }
+
+        function closeMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const panel = document.getElementById('mobileMenuPanel');
+
+            panel.classList.remove('translate-x-0');
+            panel.classList.add('translate-x-full');
+            setTimeout(() => {
+                menu.classList.add('hidden');
+            }, 300);
+        }
+
+        // Update mobile nav toggle to use new function
+        document.getElementById('mobileNavToggle').addEventListener('click', function() {
+            const menu = document.getElementById('mobileMenu');
+            if (menu.classList.contains('hidden')) {
+                openMobileMenu();
+            } else {
+                closeMobileMenu();
+            }
+        });
+
+        document.getElementById('closeMobileMenu').addEventListener('click', closeMobileMenu);
+
+        // Category toggle functionality
+        const categories = ['crime', 'sports', 'obituaries', 'food', 'entertainment', 'scanner', 'meetings', 'events'];
+
+        categories.forEach(category => {
+            const toggle = document.getElementById(`toggle-${category}`);
+            const link = document.getElementById(`link-${category}`);
+
+            if (toggle && link) {
+                toggle.addEventListener('change', function() {
+                    if (this.checked) {
+                        link.style.opacity = '1';
+                        link.style.pointerEvents = 'auto';
+                        link.classList.remove('opacity-50', 'pointer-events-none');
+                    } else {
+                        link.style.opacity = '0.5';
+                        link.style.pointerEvents = 'none';
+                        link.classList.add('opacity-50', 'pointer-events-none');
+                    }
+                });
+            }
+        });
+
         // Lazy image loading
         document.addEventListener('DOMContentLoaded', function() {
             const images = document.querySelectorAll('img[data-src]');

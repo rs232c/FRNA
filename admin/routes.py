@@ -337,6 +337,12 @@ def category_page(category_slug):
     if category_slug.endswith('.html'):
         category_slug = category_slug[:-5]
 
+    # Special handling for scanner - serve from zip-specific directory
+    if category_slug == 'scanner':
+        # Get current zip from session/cookies, default to 02720
+        zip_code = get_current_zip_from_request()
+        return serve_zip_category_page(zip_code, category_slug)
+
     # Calculate the correct path to the build directory
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     category_path = os.path.join(project_root, 'build', 'category', f'{category_slug}.html')

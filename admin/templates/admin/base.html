@@ -715,6 +715,56 @@
         .info-value {
             color: #e0e0e0;
         }
+
+        /* Premium admin enhancements */
+        .admin-card {
+            background: rgba(22, 22, 22, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow:
+                0 8px 32px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .admin-card:hover {
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow:
+                0 12px 40px rgba(0,0,0,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.15);
+        }
+
+        .admin-header {
+            background: linear-gradient(135deg, rgba(196, 165, 255, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Enhanced action buttons */
+        .action-icon {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .action-icon:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        /* Premium focus states */
+        .admin-focus:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(196, 165, 255, 0.3);
+        }
+
+        /* Admin purple glow for actions as per rules */
+        .admin-action-glow {
+            box-shadow: 0 0 20px rgba(196, 165, 255, 0.3);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .admin-action-glow:hover {
+            box-shadow: 0 0 30px rgba(196, 165, 255, 0.5), 0 0 40px rgba(196, 165, 255, 0.2);
+        }
     </style>
     <script src="/Sortable.min.js"></script>
     <script src="/static/admin/js/admin.js?v={{ cache_bust }}"></script>

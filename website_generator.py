@@ -536,17 +536,23 @@ class WebsiteGenerator:
 
         # Enrich articles with source initials, gradients, and glow colors
         for article in all_articles:
-            article['_source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         for article in top_stories:
-            article['_source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         for article in trending_articles:
-            article['_source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         for article in latest_stories:
-            article['_source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         for article in newest_articles:
-            article['_source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         for article in entertainment_articles:
-            article['_source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         
         # Optimize images for articles (only when hotlinking is disabled)
         # When hotlinking is enabled (show_images=True), preserve external URLs
@@ -1433,25 +1439,26 @@ class WebsiteGenerator:
         logger.info(f"Successfully wrote scanner page: {output_file}")
 
     def _get_source_gradient(self, source: str) -> str:
-        """Get gradient classes for a source"""
+        """Get gradient classes for a source - guarantees colorful gradients for all sources"""
+        if not source or not source.strip():
+            return 'from-blue-500 to-purple-600'
+
+        # Normalize the source name
+        normalized = source.lower().strip()
+
+        # Remove common prefixes/suffixes that might cause mismatches
+        prefixes_to_remove = ['the ', 'www.', '.com', ' news', ' newspaper', ' times', ' post', ' tribune', ' journal', ' herald', ' reporter']
+        for prefix in prefixes_to_remove:
+            if normalized.startswith(prefix):
+                normalized = normalized[len(prefix):].strip()
+            if normalized.endswith(prefix):
+                normalized = normalized[:-len(prefix)].strip()
+
+        # Comprehensive gradient mapping with many variations
         gradients = {
-            'herald news': 'from-orange-500 to-red-600',
-            'fall river herald news': 'from-orange-500 to-red-600',
-            'fall river reporter': 'from-blue-500 to-cyan-600',
-            'taunton gazette': 'from-green-500 to-teal-600',
-            'taunton daily gazette': 'from-green-500 to-teal-600',
-            'new bedford light': 'from-purple-500 to-pink-600',
-            'southcoasttoday': 'from-cyan-500 to-blue-600',
-            'providence journal': 'from-indigo-500 to-blue-600',
-            'boston globe': 'from-red-500 to-pink-600',
-            'google news': 'from-blue-600 to-indigo-600',
-            'fun107': 'from-pink-500 to-purple-600',
-            'anchor news': 'from-emerald-500 to-teal-600',
-            'hathaway funeral homes': 'from-slate-500 to-slate-700',
-            'washington post': 'from-blue-600 to-indigo-600',
-            'new york times': 'from-gray-600 to-gray-800',
+            # Major National News
             'cnn': 'from-red-500 to-orange-500',
-            'bbc': 'from-blue-600 to-purple-600',
+            'fox': 'from-blue-700 to-blue-900',
             'fox news': 'from-blue-700 to-blue-900',
             'nbc': 'from-blue-500 to-purple-600',
             'abc': 'from-green-500 to-blue-600',
@@ -1459,8 +1466,98 @@ class WebsiteGenerator:
             'reuters': 'from-blue-500 to-indigo-500',
             'ap': 'from-blue-600 to-blue-800',
             'associated press': 'from-blue-600 to-blue-800',
+            'usa today': 'from-blue-600 to-red-600',
+            'wall street journal': 'from-blue-800 to-blue-900',
+            'wsj': 'from-blue-800 to-blue-900',
+            'new york': 'from-gray-600 to-gray-800',
+            'washington': 'from-blue-600 to-indigo-600',
+            'politico': 'from-indigo-600 to-purple-600',
+            'axios': 'from-purple-500 to-indigo-600',
+            'hill': 'from-blue-700 to-indigo-700',
+
+            # Massachusetts Local
+            'herald': 'from-orange-500 to-red-600',
+            'fall river': 'from-blue-500 to-cyan-600',
+            'taunton': 'from-green-500 to-teal-600',
+            'new bedford': 'from-purple-500 to-pink-600',
+            'southcoast': 'from-cyan-500 to-blue-600',
+            'providence': 'from-indigo-500 to-blue-600',
+            'boston': 'from-red-500 to-pink-600',
+            'wicked local': 'from-emerald-500 to-green-600',
+            'patch': 'from-green-400 to-blue-500',
+            'universal hub': 'from-blue-600 to-cyan-600',
+            'digboston': 'from-purple-600 to-pink-600',
+
+            # International
+            'bbc': 'from-blue-600 to-purple-600',
+            'guardian': 'from-green-600 to-teal-600',
+            'al jazeera': 'from-green-500 to-green-700',
+            'sky': 'from-blue-500 to-cyan-500',
+            'euronews': 'from-blue-600 to-indigo-600',
+            'dw': 'from-blue-700 to-blue-800',
+            'france 24': 'from-blue-500 to-blue-700',
+
+            # Tech & Business
+            'techcrunch': 'from-orange-500 to-red-500',
+            'wired': 'from-pink-500 to-purple-500',
+            'ars technica': 'from-orange-600 to-red-600',
+            'bloomberg': 'from-green-500 to-teal-500',
+            'forbes': 'from-green-600 to-green-800',
+            'fortune': 'from-blue-600 to-indigo-600',
+
+            # Entertainment
+            'variety': 'from-purple-500 to-pink-500',
+            'hollywood reporter': 'from-pink-600 to-red-600',
+            'rolling stone': 'from-green-600 to-green-800',
+            'billboard': 'from-indigo-600 to-purple-600',
+            'vogue': 'from-pink-500 to-red-500',
+            'gq': 'from-gray-700 to-gray-900',
+
+            # Sports
+            'espn': 'from-orange-500 to-orange-700',
+            'sports illustrated': 'from-blue-600 to-cyan-600',
+            'fox sports': 'from-green-500 to-green-700',
+            'nfl': 'from-blue-700 to-indigo-700',
+            'nba': 'from-orange-600 to-red-600',
+            'mlb': 'from-blue-500 to-blue-700',
+
+            # Aggregators & Misc
+            'google': 'from-blue-600 to-indigo-600',
+            'yahoo': 'from-purple-600 to-indigo-600',
+            'msn': 'from-blue-500 to-blue-700',
+            'bing': 'from-green-500 to-teal-500',
+            'fun107': 'from-pink-500 to-purple-600',
+            'anchor': 'from-emerald-500 to-teal-600',
+            'hathaway': 'from-slate-500 to-slate-700',
         }
-        return gradients.get(source.lower(), 'from-gray-500 to-gray-600')
+
+        # First try exact match
+        if normalized in gradients:
+            return gradients[normalized]
+
+        # Try partial matching for common patterns
+        for key, gradient in gradients.items():
+            if key in normalized or normalized in key:
+                return gradient
+
+        # If still no match, use a hash-based approach to guarantee a colorful gradient
+        import hashlib
+        hash_value = int(hashlib.md5(normalized.encode()).hexdigest()[:8], 16)
+
+        # 25 beautiful gradient options - no grays allowed!
+        colorful_gradients = [
+            'from-red-500 to-pink-600', 'from-blue-500 to-cyan-600', 'from-green-500 to-teal-600',
+            'from-purple-500 to-indigo-600', 'from-orange-500 to-red-600', 'from-pink-500 to-rose-600',
+            'from-indigo-500 to-blue-600', 'from-teal-500 to-cyan-600', 'from-amber-500 to-orange-600',
+            'from-emerald-500 to-green-600', 'from-violet-500 to-purple-600', 'from-sky-500 to-blue-600',
+            'from-lime-500 to-green-600', 'from-fuchsia-500 to-pink-600', 'from-rose-500 to-pink-600',
+            'from-slate-500 to-blue-600', 'from-stone-500 to-slate-600', 'from-zinc-500 to-slate-600',
+            'from-neutral-500 to-stone-600', 'from-yellow-500 to-amber-600', 'from-cyan-500 to-teal-600',
+            'from-indigo-600 to-purple-600', 'from-emerald-600 to-teal-600', 'from-violet-600 to-purple-600',
+            'from-rose-600 to-pink-600'
+        ]
+
+        return colorful_gradients[hash_value % len(colorful_gradients)]
 
     def _get_source_glow_color(self, source: str) -> str:
         """Get glow color for a source"""

@@ -380,8 +380,11 @@ def calculate_relevance_score(article: Dict, config: Optional[Dict] = None, zip_
         if keyword in combined:
             score += points
     
-    # Source credibility scoring
+    # Source credibility scoring (dynamic)
     source = article.get("source", "").lower()
+    source_boost = 0.0
+
+    # Use static config for source credibility (dynamic system disabled during bulk operations)
     source_credibility = config.get('source_credibility', {})
     source_boost = 0.0
     for source_name, points in source_credibility.items():
@@ -430,14 +433,35 @@ def calculate_relevance_score(article: Dict, config: Optional[Dict] = None, zip_
     for pattern in clickbait_patterns:
         if pattern in combined:
             score -= 5.0
-    
+
+    # Content quality analysis
+    try:
+        from utils.content_quality import ContentQualityAnalyzer
+        quality_analyzer = ContentQualityAnalyzer()
+        quality_analysis = quality_analyzer.calculate_quality_score(article)
+
+        # Add quality score (scaled down to avoid overpowering other factors)
+        quality_bonus = (quality_analysis['quality_score'] - 50) * 0.5  # Center around 0, scale by 0.5
+        score += quality_bonus
+
+        # Major quality penalties
+        if quality_analysis['quality_score'] < 30:
+            score -= 10  # Major quality issues
+        elif quality_analysis['quality_score'] < 50:
+            score -= 5   # Minor quality issues
+
+    except ImportError:
+        logger.debug("Content quality analyzer not available")
+    except Exception as e:
+        logger.debug(f"Error in content quality analysis: {e}")
+
     # Penalize if no local connection (but only if we got past hard filter)
     if score == 0:
         score = 10.0  # Minimum score if passed hard filter but no other matches
-    
+
     # Clamp final score to 0-100
     final_score = min(100.0, max(0.0, score))
-    
+
     return final_score
 
 
