@@ -1355,7 +1355,7 @@ class WebsiteGenerator:
         
         This ensures files like weather.js are always up to date during regeneration.
         """
-        public_js_dir = Path("public") / "js"
+        public_js_dir = Path("public_deprecate") / "js"
         output_js_dir = Path(self.output_dir) / "js"
         
         if not public_js_dir.exists():
@@ -1366,7 +1366,16 @@ class WebsiteGenerator:
         output_js_dir.mkdir(parents=True, exist_ok=True)
         
         # List of static JS files to copy (files that aren't generated from Python)
-        static_files = ["weather.js"]
+        static_files = [
+            "weather.js",
+            "storage.js",
+            "categorizer.js",
+            "news-fetcher.js",
+            "article-renderer.js",
+            "tabs.js",
+            "stats.js",
+            "zip-router.js"
+        ]
         
         for filename in static_files:
             src_file = public_js_dir / filename
