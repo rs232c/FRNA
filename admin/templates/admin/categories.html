@@ -38,7 +38,7 @@
     <div class="relevance-container">
         <h2 style="margin-bottom: 1.5rem;">Category Classification System</h2>
         
-        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(33, 150, 243, 0.1); border-left: 4px solid #2196f3; border-radius: 8px; position: relative;">
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(33, 150, 243, 0.1); border-left: 4px solid #2196f3; border-radius: 8px; position: relative; max-width: 1000px; margin-left: auto; margin-right: auto;">
             <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="toggleExplanation('categoriesExplanation')">
                 <h3 style="margin: 0; color: #ffffff;">📚 How Category Classification Works</h3>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -70,7 +70,7 @@
             </div>
         </div>
         
-        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(255, 152, 0, 0.1); border-left: 4px solid #ff9800; border-radius: 8px;">
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(255, 152, 0, 0.1); border-left: 4px solid #ff9800; border-radius: 8px; max-width: 1000px; margin-left: auto; margin-right: auto;">
             <h3 style="margin-top: 0; margin-bottom: 1rem; color: #ffffff;">Recalculate All Category Data</h3>
             <button onclick="recalculateCategoryInfo()" style="padding: 0.75rem 1.5rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Recalculate All Category Data</button>
             <p style="margin-top: 0.5rem; color: #cccccc; font-size: 0.9rem;">
@@ -82,19 +82,19 @@
         </div>
         
         <!-- Keyword Management Section -->
-        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #1a1a1a; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #1a1a1a; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); max-width: 1000px; margin-left: auto; margin-right: auto;">
             <h3 style="margin-top: 0; margin-bottom: 1rem; color: #ffffff;">🔑 Category Keywords</h3>
             <p style="color: #cccccc; font-size: 0.9rem; margin-bottom: 1.5rem;">
                 Manage keywords for each category. Click the 🗑️ icon to delete keywords.
             </p>
 
-            <!-- Category Keywords List -->
-            <div id="categoriesKeywordsList">
+                <!-- Category Keywords List -->
+            <div id="categoriesKeywordsList" style="max-width: 1000px; margin: 0 auto;">
                 <p style="color: #cccccc; text-align: center; margin: 2rem 0;">Loading categories...</p>
             </div>
         </div>
 
-        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #1a1a1a; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #1a1a1a; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); max-width: 1000px; margin-left: auto; margin-right: auto;">
             <h3 style="margin-top: 0; margin-bottom: 1rem; color: #ffffff;">Category Statistics</h3>
             <div id="categoryStats" style="padding: 1rem; background: #252525; border-radius: 4px;">
                 <p style="color: #cccccc; text-align: center;">Loading statistics...</p>
@@ -153,7 +153,7 @@ function displayAllCategories(categoriesData) {
 
     categoriesData.forEach(category => {
         const categoryDiv = document.createElement('div');
-        categoryDiv.style.cssText = 'margin-bottom: 2rem; padding: 1rem; background: #252525; border-radius: 6px; border: 1px solid #404040;';
+        categoryDiv.style.cssText = 'margin-bottom: 2rem; padding: 1.5rem; background: #252525; border-radius: 8px; border: 1px solid #404040; max-width: 800px; margin-left: auto; margin-right: auto;';
 
         // Category header with add keyword input
         const headerDiv = document.createElement('div');
@@ -193,12 +193,12 @@ function displayAllCategories(categoriesData) {
 
         // Keywords container
         const keywordsContainer = document.createElement('div');
-        keywordsContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 0.5rem;';
+        keywordsContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin-top: 1rem;';
 
         if (category.keywords && category.keywords.length > 0) {
             category.keywords.forEach(keyword => {
                 const keywordTag = document.createElement('div');
-                keywordTag.style.cssText = 'display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; font-size: 0.85rem; color: #cccccc;';
+                keywordTag.style.cssText = 'display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.4rem 0.75rem; background: #1a1a1a; border: 1px solid #404040; border-radius: 6px; font-size: 0.9rem; color: #cccccc; transition: all 0.2s ease;';
 
                 const keywordText = document.createElement('span');
                 keywordText.textContent = keyword;
@@ -206,16 +206,18 @@ function displayAllCategories(categoriesData) {
 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = '🗑️';
-                deleteBtn.style.cssText = 'background: none; border: none; color: #ff4444; cursor: pointer; font-size: 0.8rem; padding: 0; margin-left: 0.25rem;';
+                deleteBtn.style.cssText = 'background: none; border: none; color: #ff4444; cursor: pointer; font-size: 0.9rem; padding: 0; margin-left: 0.25rem; transition: color 0.2s ease;';
+                deleteBtn.onmouseover = () => deleteBtn.style.color = '#ff6666';
+                deleteBtn.onmouseout = () => deleteBtn.style.color = '#ff4444';
                 deleteBtn.onclick = () => deleteKeyword(category.name, keyword);
                 keywordTag.appendChild(deleteBtn);
 
                 keywordsContainer.appendChild(keywordTag);
             });
         } else {
-            const noKeywords = document.createElement('span');
-            noKeywords.textContent = 'No keywords';
-            noKeywords.style.cssText = 'color: #888; font-style: italic;';
+            const noKeywords = document.createElement('div');
+            noKeywords.textContent = 'No keywords yet - add some above!';
+            noKeywords.style.cssText = 'color: #888; font-style: italic; text-align: center; width: 100%; padding: 1rem;';
             keywordsContainer.appendChild(noKeywords);
         }
 
@@ -334,6 +336,73 @@ function showMessage(message, type) {
     }, 3000);
 }
 
+// Toggle explanation visibility
+function toggleExplanation(explanationId) {
+    const element = document.getElementById(explanationId);
+    const toggle = document.getElementById(explanationId + 'Toggle');
+
+    if (element && toggle) {
+        if (element.style.display === 'none') {
+            element.style.display = 'block';
+            toggle.textContent = '▼';
+        } else {
+            element.style.display = 'none';
+            toggle.textContent = '▶';
+        }
+    }
+}
+
+// Close explanation
+function closeExplanation(explanationId) {
+    const element = document.getElementById(explanationId);
+    const toggle = document.getElementById(explanationId + 'Toggle');
+
+    if (element && toggle) {
+        element.style.display = 'none';
+        toggle.textContent = '▶';
+    }
+}
+
+// Recalculate all category data
+async function recalculateCategoryInfo() {
+    const button = document.querySelector('button[onclick="recalculateCategoryInfo()"]');
+    const originalText = button.textContent;
+
+    // Disable button and show loading
+    button.disabled = true;
+    button.textContent = '🔄 Recalculating...';
+    button.style.opacity = '0.7';
+
+    try {
+        const response = await fetch('/admin/api/recalculate-categories', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showMessage('Category data recalculated successfully!', 'success');
+
+            // Reload the page data
+            await loadCategoryStats();
+            await loadAllCategoryKeywords();
+        } else {
+            showMessage('Error recalculating categories: ' + (data.error || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        console.error('Error recalculating categories:', error);
+        showMessage('Error recalculating categories', 'error');
+    } finally {
+        // Re-enable button
+        button.disabled = false;
+        button.textContent = originalText;
+        button.style.opacity = '1';
+    }
+}
+
 // Enter key support is now handled inline for each category input
 
 // #region agent log
@@ -446,7 +515,7 @@ function displayCategoryStats(stats) {
     });
     // #endregion
 
-    let html = '<div style="display: grid !important; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important; gap: 1rem !important; background: transparent !important;">';
+    let html = '<div style="display: grid !important; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important; gap: 1.5rem !important; background: transparent !important; max-width: 1000px; margin: 0 auto; justify-items: center;">';
 
     stats.forEach(stat => {
         html += `
