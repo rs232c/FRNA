@@ -2288,14 +2288,82 @@ def rerun_relevance_scoring():
 @login_required
 @app.route('/admin/api/recalculate-categories', methods=['POST', 'OPTIONS'])
 def recalculate_categories():
-    """Recalculate category relevance scores"""
+    """Recalculate category relevance scores for all articles"""
+    import time
+    start_time = time.time()
+
     try:
-        # This would recalculate relevance scores
-        return jsonify({'success': True, 'message': 'Recalculation completed'})
+        # Import the recalculator
+        from recalculate_articles import ArticleRecalculator
+
+        # Get zip code from session
+        zip_code = session.get('zip_code')
+
+        # Initialize recalculator
+        recalculator = ArticleRecalculator()
+
+        # Track progress
+        total_processed = 0
+        categories_updated = 0
+        keywords_matched = 0
+
+        # Process articles in batches for the specific zip code
+        batch_size = 50
+        offset = 0
+
+        while True:
+            batch_start = time.time()
+            logger.info(f"Processing batch starting at offset {offset} for zip {zip_code}")
+
+            # Recalculate batch
+            results = recalculator.recalculate_batch(zip_code=zip_code, limit=batch_size, offset=offset)
+
+            if not results or len(results) == 0:
+                break  # No more articles to process
+
+            # Count results
+            batch_processed = len(results)
+            total_processed += batch_processed
+
+            # Count categories and keywords updated
+            for result in results:
+                if result.get('category_changed', False):
+                    categories_updated += 1
+                if result.get('keywords_matched', 0) > 0:
+                    keywords_matched += result.get('keywords_matched', 0)
+
+            batch_time = time.time() - batch_start
+            logger.info(f"Batch processed {batch_processed} articles in {batch_time:.2f}s")
+
+            offset += batch_size
+
+            # Safety limit to prevent infinite loops
+            if offset > 10000:  # Max 10k articles
+                break
+
+        total_time = time.time() - start_time
+
+        # Return detailed results
+        return jsonify({
+            'success': True,
+            'message': f'Recalculated {total_processed} articles in {total_time:.1f} seconds',
+            'stats': {
+                'articles_processed': total_processed,
+                'categories_updated': categories_updated,
+                'keywords_matched': keywords_matched,
+                'processing_time_seconds': round(total_time, 1),
+                'zip_code': zip_code or 'all'
+            }
+        })
 
     except Exception as e:
-        logger.error(f"Error recalculating: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.error(f"Error recalculating categories: {e}")
+        total_time = time.time() - start_time
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'processing_time_seconds': round(total_time, 1)
+        }), 500
 
 
 # Catch-all route for static files - MUST be last to ensure specific routes are matched first

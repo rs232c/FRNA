@@ -365,15 +365,48 @@ function closeExplanation(explanationId) {
 
 // Recalculate all category data
 async function recalculateCategoryInfo() {
-    const button = document.querySelector('button[onclick="recalculateCategoryInfo()"]');
+    const button = document.querySelector('button');
     const originalText = button.textContent;
+    const startTime = Date.now();
 
-    // Disable button and show loading
+    // Disable button and show initial loading with time estimate
     button.disabled = true;
-    button.textContent = '🔄 Recalculating...';
+    button.textContent = '🔄 Starting recalculation... (~15-30 seconds)';
     button.style.opacity = '0.7';
 
+    // Show progress message
+    showMessage('Starting category data recalculation...', 'info');
+
     try {
+        // Show step-by-step progress
+        setTimeout(() => {
+            if (button.disabled) { // Only update if still processing
+                button.textContent = '🔄 Loading article data...';
+                showMessage('Loading article data for analysis...', 'info');
+            }
+        }, 2000);
+
+        setTimeout(() => {
+            if (button.disabled) {
+                button.textContent = '🔄 Analyzing categories...';
+                showMessage('Analyzing category classifications...', 'info');
+            }
+        }, 8000);
+
+        setTimeout(() => {
+            if (button.disabled) {
+                button.textContent = '🔄 Updating keyword matches...';
+                showMessage('Updating keyword matching data...', 'info');
+            }
+        }, 15000);
+
+        setTimeout(() => {
+            if (button.disabled) {
+                button.textContent = '🔄 Finalizing updates...';
+                showMessage('Finalizing category updates...', 'info');
+            }
+        }, 22000);
+
         const response = await fetch('/admin/api/recalculate-categories', {
             method: 'POST',
             headers: {
@@ -382,19 +415,30 @@ async function recalculateCategoryInfo() {
         });
 
         const data = await response.json();
+        const endTime = Date.now();
+        const duration = Math.round((endTime - startTime) / 1000);
 
         if (data.success) {
-            showMessage('Category data recalculated successfully!', 'success');
+            showMessage(`✅ Category data recalculated successfully in ${duration} seconds!`, 'success');
 
             // Reload the page data
             await loadCategoryStats();
             await loadAllCategoryKeywords();
+
+            // Show completion with stats if available
+            if (data.stats) {
+                setTimeout(() => {
+                    showMessage(`Updated ${data.stats.categories_processed || 'all'} categories and ${data.stats.keywords_updated || 'keyword'} matches`, 'success');
+                }, 1000);
+            }
         } else {
-            showMessage('Error recalculating categories: ' + (data.error || 'Unknown error'), 'error');
+            showMessage('❌ Error recalculating categories: ' + (data.error || 'Unknown error'), 'error');
         }
     } catch (error) {
         console.error('Error recalculating categories:', error);
-        showMessage('Error recalculating categories', 'error');
+        const endTime = Date.now();
+        const duration = Math.round((endTime - startTime) / 1000);
+        showMessage(`❌ Recalculation failed after ${duration} seconds: ${error.message}`, 'error');
     } finally {
         // Re-enable button
         button.disabled = false;
