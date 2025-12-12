@@ -222,6 +222,14 @@ else:
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # #region agent log - login_required check
+        try:
+            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f_log:
+                f_log.write('{"login_required_check": "executing", "path": "' + request.path + '", "session_keys": ' + str(list(session.keys())) + ', "logged_in": ' + str(session.get("logged_in")) + ', "timestamp": ' + str(int(__import__("time").time()*1000)) + '}\n')
+        except Exception as e:
+            print(f"LOG ERROR in decorator: {e}")
+        # #endregion
+
         # For API endpoints, return JSON error instead of redirect
         path = request.path
         is_api = path.startswith('/admin/api') or '/api/' in path
@@ -229,6 +237,13 @@ def login_required(f):
             if 'logged_in' not in session:
                 return jsonify({'success': False, 'error': 'Not authenticated'}), 401
         elif 'logged_in' not in session:
+            # #region agent log - redirecting to login
+            try:
+                with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f_log:
+                    f_log.write('{"login_required_redirect": "redirecting to login", "path": "' + request.path + '", "timestamp": ' + str(int(__import__("time").time()*1000)) + '}\n')
+            except Exception as e:
+                pass
+            # #endregion
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
@@ -902,6 +917,14 @@ def admin_slash_redirect():
 @login_required
 def admin_zip_dashboard(zip_code):
     """Admin dashboard for specific zip code"""
+    # #region agent log - test if logging works
+    try:
+        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write('{"test": "logging_works", "zip_code": "' + zip_code + '", "timestamp": ' + str(int(__import__("time").time()*1000)) + '}\n')
+    except Exception as e:
+        print(f"LOG ERROR: {e}")
+    # #endregion
+
     # #region agent log
     import json
     import time
@@ -946,6 +969,29 @@ def admin_zip_dashboard(zip_code):
         session['zip_code'] = zip_code
 
         tab = request.args.get('tab', 'articles')  # Default to articles tab for zip-specific
+
+        # #region agent log
+        try:
+            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                json.dump({
+                    "id": f"log_{int(time.time()*1000)}_tab_value",
+                    "timestamp": int(time.time()*1000),
+                    "location": "admin/routes.py:948",
+                    "message": "Tab parameter value",
+                    "data": {
+                        "tab": tab,
+                        "request_args": dict(request.args),
+                        "full_url": request.url,
+                        "method": request.method
+                    },
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "A"
+                }, f)
+                f.write('\n')
+        except Exception as e:
+            pass
+        # #endregion
         page = int(request.args.get('page', 1))
         category_filter = request.args.get('category', 'all')
         source_filter = request.args.get('source', '')
@@ -1027,26 +1073,67 @@ def admin_zip_dashboard(zip_code):
 
                 conn.commit()
 
-                # Get categories for this zip code
+                # Get category statistics and keyword counts
+                # Use the actual categories from articles, not the separate categories table
                 cursor.execute('''
                     SELECT
-                        c.id,
-                        c.name,
+                        a.category as name,
                         COUNT(a.id) as article_count,
                         COUNT(CASE WHEN a.published >= date('now', '-7 days') THEN 1 END) as recent_count
-                    FROM categories c
-                    LEFT JOIN articles a ON c.name = a.category AND a.zip_code = ?
-                    GROUP BY c.id, c.name
-                    ORDER BY c.name
+                    FROM articles a
+                    WHERE a.zip_code = ? AND a.category IS NOT NULL AND a.category != ''
+                    GROUP BY a.category
+                    ORDER BY a.category
                 ''', (zip_code,))
 
+                category_stats = []
+                for row in cursor.fetchall():
+                    category_name = row[0]
+
+                    # Get keyword count for this category
+                    cursor.execute('SELECT COUNT(DISTINCT keyword) FROM category_keywords WHERE category = ? AND zip_code = ?', (category_name, zip_code))
+                    keyword_count = cursor.fetchone()[0]
+
+                    category_stats.append({
+                        'name': category_name.replace('-', ' ').title(),  # Convert 'local-news' to 'Local News'
+                        'article_count': row[1],
+                        'recent_count': row[2],
+                        'keyword_count': keyword_count
+                    })
+
+                category_stats = []
                 for row in cursor.fetchall():
                     category_stats.append({
-                        'id': row[0],
-                        'name': row[1],
-                        'article_count': row[2],
-                        'recent_count': row[3]
+                        'name': row[0],
+                        'article_count': row[1],
+                        'recent_count': row[2],
+                        'keyword_count': row[3] or 0
                     })
+
+                # If no categories found, provide default ones with keyword counts
+                if not category_stats:
+                    default_categories = [
+                        ('business', 'Business'),
+                        ('crime', 'Crime'),
+                        ('events', 'Events'),
+                        ('food', 'Food'),
+                        ('local-news', 'Local News'),
+                        ('obituaries', 'Obituaries'),
+                        ('schools', 'Schools'),
+                        ('sports', 'Sports'),
+                        ('weather', 'Weather')
+                    ]
+
+                    for cat_slug, cat_name in default_categories:
+                        cursor.execute('SELECT COUNT(*) FROM category_keywords WHERE category = ? AND zip_code = ?', (cat_slug, zip_code))
+                        keyword_count = cursor.fetchone()[0]
+
+                        category_stats.append({
+                            'name': cat_name,
+                            'article_count': 0,
+                            'recent_count': 0,
+                            'keyword_count': keyword_count
+                        })
         except Exception as e:
             logger.error(f"Error getting category stats: {e}")
             category_stats = []
@@ -1059,6 +1146,97 @@ def admin_zip_dashboard(zip_code):
 
         # All enabled zips
         enabled_zips = ['02720', '02721', '02722', '02723', '02724', '02725', '02726', '02842']
+
+        # Use dedicated categories template for categories tab
+        # #region agent log
+        try:
+            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                json.dump({
+                    "id": f"log_{int(time.time()*1000)}_template_selection",
+                    "timestamp": int(time.time()*1000),
+                    "location": "admin/routes.py:1104",
+                    "message": "Template selection logic reached",
+                    "data": {
+                        "tab": tab,
+                        "tab_equals_categories": tab == 'categories',
+                        "zip_code": zip_code,
+                        "template_to_render": "admin/categories.html" if tab == 'categories' else "admin/main_dashboard.html"
+                    },
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "A"
+                }, f)
+                f.write('\n')
+        except Exception as e:
+            pass
+        # #endregion
+
+        if tab == 'categories':
+            # #region agent log
+            try:
+                with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                    json.dump({
+                        "id": f"log_{int(time.time()*1000)}_categories_branch",
+                        "timestamp": int(time.time()*1000),
+                        "location": "admin/routes.py:1105",
+                        "message": "Categories branch executed",
+                        "data": {
+                            "tab": tab,
+                            "zip_code": zip_code
+                        },
+                        "sessionId": "debug-session",
+                        "runId": "run1",
+                        "hypothesisId": "A"
+                    }, f)
+                    f.write('\n')
+            except Exception as e:
+                pass
+            # #endregion
+            # #region agent log
+            try:
+                with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                    json.dump({
+                        "id": f"log_{int(time.time()*1000)}_rendering_categories",
+                        "timestamp": int(time.time()*1000),
+                        "location": "admin/routes.py:1105",
+                        "message": "Rendering categories.html template",
+                        "data": {
+                            "zip_code": zip_code,
+                            "version": VERSION
+                        },
+                        "sessionId": "debug-session",
+                        "runId": "run1",
+                        "hypothesisId": "A"
+                    }, f)
+                    f.write('\n')
+            except Exception as e:
+                pass
+            # #endregion
+            return render_template('admin/categories.html',
+                zip_code=zip_code,
+                version=VERSION
+            )
+
+        # #region agent log
+        try:
+            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                json.dump({
+                    "id": f"log_{int(time.time()*1000)}_main_dashboard_render",
+                    "timestamp": int(time.time()*1000),
+                    "location": "admin/routes.py:1137",
+                    "message": "Rendering main dashboard template (categories not selected)",
+                    "data": {
+                        "tab": tab,
+                        "zip_code": zip_code
+                    },
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "A"
+                }, f)
+                f.write('\n')
+        except Exception as e:
+            pass
+        # #endregion
 
         return render_template('admin/main_dashboard.html',
             zip_code=zip_code,  # Pass the actual zip code for zip-specific admin
@@ -1751,6 +1929,146 @@ def get_category_stats():
 
 
 @login_required
+@app.route('/admin/api/category-keywords/<category>', methods=['GET'])
+@login_required
+def get_category_keywords(category):
+    """Get keywords for a specific category"""
+    try:
+        zip_code = request.args.get('zip_code', '02720')
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT keyword FROM category_keywords
+                WHERE category = ? AND (zip_code = ? OR zip_code IS NULL)
+                ORDER BY zip_code DESC, keyword
+                LIMIT 10
+            ''', (category, zip_code))
+
+            keywords = [row[0] for row in cursor.fetchall()]
+
+        return jsonify({'keywords': keywords})
+
+    except Exception as e:
+        logger.error(f"Error getting keywords for category {category}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/admin/api/category-keywords-full/<category>', methods=['GET'])
+@login_required
+def get_category_keywords_full(category):
+    """Get all keywords for a specific category"""
+    try:
+        zip_code = request.args.get('zip_code', '02720')
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT keyword FROM category_keywords
+                WHERE category = ? AND (zip_code = ? OR zip_code IS NULL)
+                ORDER BY keyword
+            ''', (category, zip_code))
+
+            keywords = [row[0] for row in cursor.fetchall()]
+
+        return jsonify({'success': True, 'keywords': keywords})
+
+    except Exception as e:
+        logger.error(f"Error getting full keywords for category {category}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/admin/api/category-keyword', methods=['POST', 'DELETE'])
+@login_required
+def manage_keyword():
+    """Add or delete a keyword for a category"""
+    try:
+        data = request.get_json() if request.is_json else request.form
+        category = data.get('category')
+        keyword = data.get('keyword', '').strip().lower()
+        zip_code = data.get('zip_code', '02720')
+
+        if not category or not keyword:
+            return jsonify({'success': False, 'error': 'Category and keyword required'}), 400
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            if request.method == 'POST':
+                # Add keyword
+                cursor.execute('''
+                    INSERT OR IGNORE INTO category_keywords (zip_code, category, keyword)
+                    VALUES (?, ?, ?)
+                ''', (zip_code, category, keyword))
+
+                if cursor.rowcount > 0:
+                    message = f'Added "{keyword}" to {category}'
+                else:
+                    return jsonify({'success': False, 'error': f'Keyword "{keyword}" already exists'}), 400
+
+            elif request.method == 'DELETE':
+                # Delete keyword
+                cursor.execute('''
+                    DELETE FROM category_keywords
+                    WHERE category = ? AND keyword = ? AND (zip_code = ? OR zip_code IS NULL)
+                ''', (category, keyword, zip_code))
+
+                if cursor.rowcount > 0:
+                    message = f'Deleted "{keyword}" from {category}'
+                else:
+                    return jsonify({'success': False, 'error': f'Keyword "{keyword}" not found'}), 404
+
+            conn.commit()
+
+        return jsonify({'success': True, 'message': message})
+
+    except Exception as e:
+        logger.error(f"Error managing keyword: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/admin/api/category-keywords/<zip_code>/stats', methods=['GET'])
+@login_required
+def get_category_keywords_stats(zip_code):
+    """Get category statistics for a zip code"""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Get category statistics
+            cursor.execute('''
+                SELECT
+                    a.category as name,
+                    COUNT(a.id) as article_count,
+                    COUNT(CASE WHEN a.published >= date('now', '-7 days') THEN 1 END) as recent_count
+                FROM articles a
+                WHERE a.zip_code = ? AND a.category IS NOT NULL AND a.category != ''
+                GROUP BY a.category
+                ORDER BY a.category
+            ''', (zip_code,))
+
+            stats = []
+            for row in cursor.fetchall():
+                category_name = row[0]
+
+                # Get keyword count
+                cursor.execute('SELECT COUNT(DISTINCT keyword) FROM category_keywords WHERE category = ? AND zip_code = ?', (category_name, zip_code))
+                keyword_count = cursor.fetchone()[0]
+
+                stats.append({
+                    'name': category_name.replace('-', ' ').title(),
+                    'article_count': row[1],
+                    'recent_count': row[2],
+                    'keyword_count': keyword_count
+                })
+
+            return jsonify({'success': True, 'stats': stats})
+
+    except Exception as e:
+        logger.error(f"Error getting category stats for {zip_code}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/admin/api/retrain-categories', methods=['POST', 'OPTIONS'])
 def retrain_categories():
     """Retrain category classification for all articles"""

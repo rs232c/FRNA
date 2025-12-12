@@ -7,10 +7,21 @@
 console.log('[FRNA Admin] ✅ Admin script loading...');
 console.log('[FRNA Admin] Build timestamp:', new Date().toISOString());
 
-// Force dark theme immediately
-document.documentElement.classList.add('dark');
-document.body.style.background = '#0a0a0a';
-document.body.style.color = '#ffffff';
+// Force dark theme - wait for DOM to be ready
+function applyDarkTheme() {
+    if (document.body) {
+        document.documentElement.classList.add('dark');
+        document.body.style.background = '#0a0a0a';
+        document.body.style.color = '#ffffff';
+    }
+}
+
+// Apply immediately if body exists, otherwise wait for DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyDarkTheme);
+} else {
+    applyDarkTheme();
+}
 
 // Toast notification system
 function showToast(message, type = 'success') {
