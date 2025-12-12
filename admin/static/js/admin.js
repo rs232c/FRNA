@@ -1212,7 +1212,7 @@ document.addEventListener('click', async (e) => {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             credentials: 'same-origin',
-            body: JSON.stringify({id: articleId, zip_code: zipCode, is_on_target: newState})
+            body: JSON.stringify({article_id: articleId, zip_code: zipCode})
         })
         .then(r => r.json())
         .then(data => {
@@ -1280,7 +1280,7 @@ document.addEventListener('click', async (e) => {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             credentials: 'same-origin',
-            body: JSON.stringify({id: articleId, zip_code: zipCode})
+            body: JSON.stringify({article_id: articleId, zip_code: zipCode})
         })
         .then(r => r.json())
         .then(data => {
