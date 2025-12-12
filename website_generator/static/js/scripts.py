@@ -393,10 +393,11 @@ def get_js_content() -> str:
     
     // Initialize weather pill - fetch fresh data on every page load
     async function updateWeatherPill() {
-        const weatherPill = document.getElementById('weatherPill');
-        const weatherTemp = document.getElementById('weatherTemp');
-        const weatherCondition = document.getElementById('weatherCondition');
-        const weatherIcon = document.getElementById('weatherIcon');
+        // Try header weather widget first, then fallback to main weather pill
+        const weatherPill = document.getElementById('weatherPillHeader') || document.getElementById('weatherPill');
+        const weatherTemp = document.getElementById('weatherTempHeader') || document.getElementById('weatherTemp');
+        const weatherCondition = document.getElementById('weatherConditionHeader') || document.getElementById('weatherCondition');
+        const weatherIcon = document.getElementById('weatherIconHeader') || document.getElementById('weatherIcon');
         
         if (!weatherPill || !weatherTemp || !weatherCondition || !weatherIcon) {
             return; // Weather pill elements not found
@@ -425,6 +426,14 @@ def get_js_content() -> str:
                     weatherTemp.textContent = `${weather.current.temperature}${weather.current.unit}`;
                     weatherCondition.textContent = weather.current.condition;
                     weatherIcon.textContent = weather.current.icon || '🌤️';
+                    
+                    // Also update header widget if it exists separately
+                    const headerTemp = document.getElementById('weatherTempHeader');
+                    const headerCondition = document.getElementById('weatherConditionHeader');
+                    const headerIcon = document.getElementById('weatherIconHeader');
+                    if (headerTemp) headerTemp.textContent = `${weather.current.temperature}${weather.current.unit}`;
+                    if (headerCondition) headerCondition.textContent = weather.current.condition;
+                    if (headerIcon) headerIcon.textContent = weather.current.icon || '🌤️';
                 } else {
                     // Fallback to default
                     weatherTemp.textContent = '--°F';

@@ -36,22 +36,47 @@
 </head>
 <body class="bg-[#0a0a0a] text-gray-100 min-h-screen fouc-hidden">
     <!-- Top Bar -->
-    <div class="bg-[#0a0a0a]/50 backdrop-blur-sm border-b border-gray-900/30 py-6">
+    <div class="bg-[#0a0a0a]/50 backdrop-blur-sm border-b border-gray-900/30 py-4">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Mobile: Hamburger + Centered Search | Desktop: Just Centered Search -->
-            <div class="flex flex-col gap-4">
-                <!-- Header Row: Hamburger Menu + Admin Button (Always Visible) -->
-                <div class="flex items-center justify-between">
-                    <button id="mobileNavToggle" class="text-gray-200 hover:text-white transition-colors p-3 rounded-lg hover:bg-[#161616]/50 border border-gray-800/50" aria-label="Toggle navigation menu" title="Menu & Category Controls">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </button>
-                    <a href="/admin" id="hamburgerMenuLink" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-colors" title="Admin Panel">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- Single Row Layout: Badge Left | Search Center | Controls Right -->
+            <div class="flex items-center justify-between gap-4">
+                <!-- Left: Location Badge -->
+                <div class="text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg bg-purple-500/40 backdrop-blur-xl border border-white/10 flex-shrink-0">
+                    {{ location_badge_text }}
+                </div>
+
+                <!-- Center: Search Bar -->
+                <div class="flex-1 max-w-2xl mx-4">
+                    <div class="relative flex items-center bg-[#161616]/60 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-800/30 focus-within:border-blue-500/60 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300">
+                        <span class="text-gray-400 mr-2 text-lg">🔍</span>
+                        <input type="text" placeholder="Search articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full" id="searchInput">
+                        <button class="text-gray-400 hover:text-blue-400 transition-colors ml-2 p-1 rounded-full hover:bg-gray-800/50" onclick="toggleSearchFilters()" title="Advanced Filters">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Controls (Settings, Hamburger, Weather) -->
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <a href="/admin" id="hamburgerMenuLink" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-[#161616]/50" title="Admin Panel">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                             <circle cx="12" cy="12" r="3"/>
                         </svg>
+                    </a>
+                    <button id="mobileNavToggle" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-[#161616]/50" aria-label="Toggle navigation menu" title="Menu & Category Controls">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <a href="{{ weather_station_url }}" target="_blank" rel="noopener" id="weatherPillHeader" class="flex items-center gap-2 rounded-lg px-3 py-2 bg-blue-500/40 backdrop-blur-xl border border-white/10 hover:bg-blue-500/50 transition-all">
+                        <span id="weatherIconHeader" class="text-lg">🌤️</span>
+                        <div class="text-white">
+                            <div id="weatherTempHeader" class="font-bold text-xs leading-tight">--°F</div>
+                            <div id="weatherConditionHeader" class="text-blue-100 text-xs">Clear</div>
+                        </div>
                     </a>
                     <script>
                         console.log('[FRNA] ✅ Navigation buttons initialized');
@@ -73,19 +98,7 @@
                         })();
                     </script>
                 </div>
-
-                <!-- Centered Search Bar - Full Width and Prominent -->
-                <div class="w-full max-w-4xl mx-auto">
-                    <div class="relative flex items-center bg-[#161616]/60 backdrop-blur-sm rounded-full px-6 py-4 border border-gray-800/30 focus-within:border-blue-500/60 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300 shadow-lg">
-                        <span class="text-gray-400 mr-4 text-xl">🔍</span>
-                        <input type="text" placeholder="Search all articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full text-lg" id="searchInput">
-                        <button class="text-gray-400 hover:text-blue-400 transition-colors ml-4 p-2 rounded-full hover:bg-gray-800/50" onclick="toggleSearchFilters()" title="Advanced Filters">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+            </div>
 
                 <!-- Advanced Search Filters -->
                 <div class="hidden w-full max-w-6xl mx-auto" id="searchFilters">
@@ -212,19 +225,6 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
-        <!-- Fixed Location Badge (Top-Left) -->
-        <div class="fixed top-4 left-4 z-50 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg bg-purple-500/40 backdrop-blur-xl border border-white/10">
-            {{ location_badge_text }}
-        </div>
-        
-        <!-- Fixed Weather Pill (Top-Right) -->
-        <a href="{{ weather_station_url }}" target="_blank" rel="noopener" id="weatherPill" class="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-blue-500/40 backdrop-blur-xl border border-white/10 hover:bg-blue-500/50 hover:border-white/20">
-            <span id="weatherIcon" class="text-xl">🌤️</span>
-            <div class="text-white">
-                <div id="weatherTemp" class="font-bold text-sm leading-tight">--°F</div>
-                <div id="weatherCondition" class="text-blue-100 text-xs">Loading...</div>
-            </div>
-        </a>
         
         <!-- Hero + Trending Row (65/35 split) -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10 items-start">
@@ -269,15 +269,9 @@
                                     </div>
                                 </div>
                                 {% else %}
-                                <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient }}">
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br from-purple-500 to-blue-600">
                                     <!-- Subtle pattern overlay -->
-                                    <div class="absolute inset-0 opacity-5" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
-                                    <!-- City skyline silhouette -->
-                                    <div class="absolute bottom-0 left-0 right-0 h-32 opacity-3">
-                                        <svg viewBox="0 0 400 100" class="w-full h-full" preserveAspectRatio="none">
-                                            <path d="M0,100 L0,85 L15,82 L30,78 L45,75 L60,72 L75,70 L90,68 L105,66 L120,64 L135,62 L150,60 L165,58 L180,56 L195,54 L210,52 L225,50 L240,52 L255,54 L270,56 L285,58 L300,60 L315,62 L330,64 L345,66 L360,68 L375,70 L385,72 L400,75 L400,100 Z" fill="white"/>
-                                        </svg>
-                                    </div>
+                                    <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.05) 20px, rgba(255,255,255,0.05) 40px);"></div>
                                     <!-- Video play icon if video -->
                                     {% if hero_article._is_video %}
                                     <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
@@ -341,13 +335,13 @@
                 <div class="rounded-xl p-6" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);">
                     <div class="flex items-center gap-2 mb-6">
                         <span class="text-2xl">🔥</span>
-                        <h3 class="text-lg font-bold text-gray-100">Trending in {{ locale.split(',')[0] if ',' in locale else locale }}</h3>
+                        <h3 class="text-lg font-bold text-gray-100">Trending in Fall River</h3>
                     </div>
                     <div class="space-y-4">
                         {% if trending_articles %}
                             {% for article in trending_articles[:8] %}
                             <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group">
-                                <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
+                                <div class="flex items-start gap-3 pb-3 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors hover:bg-gray-800/20">
                                     {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f]">
                                         <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
@@ -359,11 +353,11 @@
                                     </div>
                                     {% endif %}
                                     <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-1 mb-1">
-                                            <span class="text-sm">🔥</span>
-                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2">{{ article.title }}</h4>
+                                        <div class="flex items-start gap-1.5 mb-1">
+                                            <span class="text-orange-500 text-xs mt-0.5 flex-shrink-0">🔥</span>
+                                            <h4 class="text-sm font-semibold text-gray-100 group-hover:text-orange-400 transition-colors line-clamp-2 leading-snug">{{ article.title }}</h4>
                                         </div>
-                                        <div class="text-xs text-gray-500">{{ article.source_display }} • {{ article._trending_date if article._trending_date else (article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently') }}</div>
+                                        <div class="text-xs text-gray-500 ml-4">{{ article.source_display }} • {{ article._trending_date if article._trending_date else (article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently') }}</div>
                                     </div>
                                 </div>
                             </a>
@@ -381,28 +375,30 @@
         <div class="mb-8">
             <div class="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800/30">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span class="text-green-400">●</span>
-                    Newest Articles
+                    <span class="text-green-400 text-lg">●</span>
+                    <span>Newest Articles</span>
                 </h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {% for article in newest_articles %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    {% for article in newest_articles[:4] %}
                     <a href="{{ article.url }}" target="_blank" rel="noopener" class="group">
-                        <div class="bg-[#0f0f0f] rounded-lg p-4 border border-gray-800/20 hover:border-blue-500/50 transition-all h-full flex flex-col">
+                        <div class="bg-[#0f0f0f] rounded-lg overflow-hidden border border-gray-800/20 hover:border-blue-500/50 transition-all h-full flex flex-col">
                             {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
-                            <div class="aspect-square rounded-lg overflow-hidden mb-3 bg-gray-900">
+                            <div class="aspect-square rounded-t-lg overflow-hidden bg-gray-900">
                                 <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                             </div>
                             {% else %}
-                            <div class="aspect-square rounded-lg mb-3 bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden">
+                            <div class="aspect-square rounded-t-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center relative overflow-hidden">
                                 <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
                                 <div class="text-2xl font-black text-white drop-shadow-lg relative z-10">{{ article.source_initials }}</div>
                             </div>
                             {% endif %}
-                            <h3 class="text-sm font-semibold text-gray-100 line-clamp-2 mb-2 group-hover:text-blue-400 transition-colors">
-                                {{ article.title }}
-                            </h3>
-                            <div class="text-xs text-gray-500 mt-auto">
-                                {{ article.source_display }} • {{ article._trending_date if article._trending_date else (article.formatted_date if article.formatted_date else 'Recently') }}
+                            <div class="p-4 flex flex-col flex-1">
+                                <h3 class="text-sm font-semibold text-gray-100 line-clamp-2 mb-2 group-hover:text-blue-400 transition-colors leading-snug">
+                                    {{ article.title }}
+                                </h3>
+                                <div class="text-xs text-gray-500 mt-auto">
+                                    {{ article.source_display }} • {{ article._trending_date if article._trending_date else (article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else (article.formatted_date if article.formatted_date else 'Recently')) }}
+                                </div>
                             </div>
                         </div>
                     </a>

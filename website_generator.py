@@ -750,22 +750,21 @@ class WebsiteGenerator:
         # Top row: Primary navigation (big, bold)
         # Note: "Local" replaces "Home" and shows mixed articles (all enabled articles)
         top_row_tabs = [
-            ("🏠 Home", f"{home_href}", "home", "home"),
-            ("📰 Local News", f"{category_prefix}local-news.html", "local-news", "category-local-news"),
-            ("🚔 Crime", f"{category_prefix}crime.html", "crime", "category-crime"),
-            ("⚽ Sports", f"{category_prefix}sports.html", "sports", "category-sports"),
-            ("⚱️ Obituaries", f"{category_prefix}obituaries.html", "obituaries", "category-obituaries"),
-            ("🍽️ Food", f"{category_prefix}food.html", "food", "category-food"),
+            ("Local", f"{home_href}", "home", "home"),
+            ("Police & Fire", f"{category_prefix}crime.html", "crime", "category-crime"),
+            ("Sports", f"{category_prefix}sports.html", "sports", "category-sports"),
+            ("Obituaries", f"{category_prefix}obituaries.html", "obituaries", "category-obituaries"),
+            ("Food & Drink", f"{category_prefix}food.html", "food", "category-food"),
         ]
 
         # Second row: Secondary navigation (slightly smaller, lighter)
         second_row_tabs = [
-            ("🏫 Schools", f"{category_prefix}schools.html", "schools", "category-schools"),
-            ("📅 Events", f"{category_prefix}events.html", "events", "category-events"),
-            ("🏛️ Meetings", f"{category_prefix}meetings.html", "meetings", "category-meetings"),
-            ("🎬 Entertainment", f"{category_prefix}entertainment.html", "entertainment", "category-entertainment"),
-            ("💼 Business", f"{category_prefix}business.html", "business", "category-business"),
-            ("🌤️ Weather", f"{category_prefix}weather.html", "weather", "category-weather"),
+            ("Media", f"{category_prefix}entertainment.html", "entertainment", "category-entertainment"),
+            ("Scanner", f"{category_prefix}scanner.html", "scanner", "category-scanner"),
+            ("Meetings", f"{category_prefix}meetings.html", "meetings", "category-meetings"),
+            ("Submit Tip", f"{home_href}#submit", "submit-tip", "home"),
+            ("Lost & Found", f"{home_href}#lost-found", "lost-found", "home"),
+            ("Events", f"{category_prefix}events.html", "events", "category-events"),
         ]
         
         # Build navigation HTML with two-row structure
