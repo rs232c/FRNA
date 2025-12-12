@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,24 +25,57 @@
         /* Custom styles for things Tailwind can't handle */
         .lazy-image { opacity: 0; transition: opacity 0.3s; }
         .lazy-image.loaded { opacity: 1; }
+
+        /* Prevent FOUC - hide content until JS loads */
+        .fouc-hidden { opacity: 0; transition: opacity 0.3s; }
+        .fouc-hidden.loaded { opacity: 1; }
+
+        /* Ensure dark theme is applied immediately */
+        html.dark body { background: #0a0a0a !important; color: #ffffff !important; }
     </style>
 </head>
-<body class="bg-[#0a0a0a] text-gray-100 min-h-screen">
+<body class="bg-[#0a0a0a] text-gray-100 min-h-screen fouc-hidden">
     <!-- Top Bar -->
-    <div class="bg-[#0a0a0a]/50 backdrop-blur-sm border-b border-gray-900/30 py-2">
+    <div class="bg-[#0a0a0a]/50 backdrop-blur-sm border-b border-gray-900/30 py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="w-full sm:w-auto flex-1">
-                    <div class="relative flex items-center bg-[#161616]/50 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-800/20 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 flex-1 md:w-64">
-                        <span class="text-gray-400 mr-2">🔍</span>
-                        <input type="text" placeholder="Search articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full" id="searchInput">
-                        <button class="text-gray-400 hover:text-blue-400 transition-colors ml-2" onclick="toggleSearchFilters()" title="Advanced Filters">⚙️</button>
+            <!-- Mobile: Hamburger + Centered Search | Desktop: Just Centered Search -->
+            <div class="flex flex-col gap-4">
+                <!-- Mobile Header Row: Hamburger Menu + Admin Button -->
+                <div class="flex items-center justify-between md:hidden">
+                    <button id="mobileNavToggle" class="text-gray-200 hover:text-white transition-colors p-3 rounded-lg hover:bg-[#161616]/50 border border-gray-800/50" aria-label="Toggle navigation menu" title="Menu & Category Controls">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <a href="/admin" id="hamburgerMenuLink" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-colors" title="Admin Panel">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Centered Search Bar - Full Width and Prominent -->
+                <div class="w-full max-w-4xl mx-auto">
+                    <div class="relative flex items-center bg-[#161616]/60 backdrop-blur-sm rounded-full px-6 py-4 border border-gray-800/30 focus-within:border-blue-500/60 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300 shadow-lg">
+                        <span class="text-gray-400 mr-4 text-xl">🔍</span>
+                        <input type="text" placeholder="Search all articles..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full text-lg" id="searchInput">
+                        <button class="text-gray-400 hover:text-blue-400 transition-colors ml-4 p-2 rounded-full hover:bg-gray-800/50" onclick="toggleSearchFilters()" title="Advanced Filters">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                            </svg>
+                        </button>
                     </div>
-                    <div class="hidden mt-3 p-4 rounded-lg shadow-xl" id="searchFilters" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                </div>
+
+                <!-- Advanced Search Filters -->
+                <div class="hidden w-full max-w-6xl mx-auto" id="searchFilters">
+                    <div class="p-6 rounded-xl bg-[#161616]/60 backdrop-blur-sm border border-white/10 shadow-xl">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">Category:</label>
-                                <select id="filterCategory" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <select id="filterCategory" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 bg-[#161616]/60 backdrop-blur-sm border border-white/10">
                                     <option value="">All Categories</option>
                                     <option value="news">📰 News</option>
                                     <option value="entertainment">🎬 Entertainment</option>
@@ -53,7 +86,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">Neighborhood:</label>
-                                <select id="filterNeighborhood" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <select id="filterNeighborhood" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 bg-[#161616]/60 backdrop-blur-sm border border-white/10">
                                     <option value="">All Neighborhoods</option>
                                     <option value="north end">North End</option>
                                     <option value="south end">South End</option>
@@ -65,7 +98,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">Source:</label>
-                                <select id="filterSource" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <select id="filterSource" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 bg-[#161616]/60 backdrop-blur-sm border border-white/10">
                                     <option value="">All Sources</option>
                                     {% for source in sources %}
                                     <option value="{{ source }}">{{ source }}</option>
@@ -74,7 +107,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">Date Range:</label>
-                                <select id="filterDateRange" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <select id="filterDateRange" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 bg-[#161616]/60 backdrop-blur-sm border border-white/10">
                                     <option value="">All Time</option>
                                     <option value="today">Today</option>
                                     <option value="week">Last 7 Days</option>
@@ -82,23 +115,14 @@
                                 </select>
                             </div>
                             <div class="flex items-end">
-                                <button class="w-full text-gray-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(26, 26, 26, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)';" onclick="clearFilters()">Clear Filters</button>
+                                <button class="w-full text-gray-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-[#161616]/60 backdrop-blur-sm border border-white/10 hover:bg-[#1a1a1a]/70 hover:border-white/20" onclick="clearFilters()">Clear Filters</button>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Right side: Hamburger + Settings Button -->
-                <div class="flex items-center gap-3">
-                    <!-- Hamburger Menu Button -->
-                    <button id="mobileNavToggle" class="text-gray-200 hover:text-white transition-colors p-2 rounded-lg hover:bg-[#161616]/50 border border-gray-800 w-10 h-10 inline-flex items-center justify-center" aria-label="Toggle navigation menu" title="Menu & Category Controls">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </button>
-
-                    <!-- Settings Button -->
-                    <a href="/admin" id="hamburgerMenuLink" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors items-center justify-center w-10 h-10 inline-flex" title="Admin Panel">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            </div>
+        </div>
+    </div>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
@@ -136,16 +160,64 @@
             </div>
         </div>
     </nav>
-    
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenu" class="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xl hidden">
+        <div class="fixed top-0 right-0 w-80 h-full bg-[#0a0a0a]/95 backdrop-blur-xl border-l border-gray-800/50 transform translate-x-full transition-transform duration-300 ease-in-out" id="mobileMenuPanel">
+            <div class="flex flex-col h-full">
+                <!-- Header -->
+                <div class="flex items-center justify-between p-6 border-b border-gray-800/50">
+                    <h2 class="text-xl font-bold text-white">Navigation</h2>
+                    <button id="closeMobileMenu" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Menu Content -->
+                <div class="flex-1 overflow-y-auto p-6">
+                    <!-- Categories -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold text-gray-300 mb-4">Categories</h3>
+                        <div class="space-y-2">
+                            <a href="/" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🏠 All News</a>
+                            <a href="/category/business" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">💼 Business</a>
+                            <a href="/category/crime" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🚔 Crime</a>
+                            <a href="/category/events" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">📅 Events</a>
+                            <a href="/category/food" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🍽️ Food</a>
+                            <a href="/category/local-news" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">📰 Local News</a>
+                            <a href="/category/meetings" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🏛️ Meetings</a>
+                            <a href="/category/obituaries" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">⚱️ Obituaries</a>
+                            <a href="/category/scanner" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">📻 Scanner</a>
+                            <a href="/category/schools" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🏫 Schools</a>
+                            <a href="/category/sports" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">⚽ Sports</a>
+                            <a href="/category/weather" class="block px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🌤️ Weather</a>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="border-t border-gray-800/50 pt-6">
+                        <h3 class="text-lg font-semibold text-gray-300 mb-4">Actions</h3>
+                        <div class="space-y-2">
+                            <a href="/admin" class="block px-4 py-3 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 rounded-lg transition-colors">⚙️ Admin Panel</a>
+                            <button onclick="toggleSearchFilters()" class="w-full text-left px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors">🔍 Search Filters</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
         <!-- Fixed Location Badge (Top-Left) -->
-        <div class="fixed top-4 left-4 z-50 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg" style="background: rgba(147, 51, 234, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);">
+        <div class="fixed top-4 left-4 z-50 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg bg-purple-500/40 backdrop-blur-xl border border-white/10">
             {{ location_badge_text }}
         </div>
         
         <!-- Fixed Weather Pill (Top-Right) -->
-        <a href="{{ weather_station_url }}" target="_blank" rel="noopener" id="weatherPill" class="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" style="background: rgba(37, 99, 235, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(37, 99, 235, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)';" onmouseout="this.style.background='rgba(37, 99, 235, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)';">
+        <a href="{{ weather_station_url }}" target="_blank" rel="noopener" id="weatherPill" class="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-blue-500/40 backdrop-blur-xl border border-white/10 hover:bg-blue-500/50 hover:border-white/20">
             <span id="weatherIcon" class="text-xl">🌤️</span>
             <div class="text-white">
                 <div id="weatherTemp" class="font-bold text-sm leading-tight">--°F</div>
@@ -343,39 +415,38 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="articlesGrid">
             {% if articles and articles|length > 0 %}
                 {% for article in articles[:30] %}
-            <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}">
+            <article class="group relative bg-[#161616]/40 backdrop-blur-sm rounded-xl overflow-hidden ring-1 ring-white/10 hover:ring-white/20 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}">
                 <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
                     {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
-                    <div class="relative aspect-square overflow-hidden" style="border-radius: 12px;">
-                        <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover">
-                        <!-- Source initials in top-right corner -->
-                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px {{ article.source_glow_color }};">
-                            {{ article.source_initials }}
-                        </div>
+                    <div class="relative aspect-square overflow-hidden rounded-t-xl">
+                        <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
                         <!-- Dark overlay gradient bottom 40% -->
                         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
-                        <!-- Title overlay bottom-left -->
-                        <div class="absolute bottom-0 left-0 right-0 p-3">
-                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                        <!-- Source badge in bottom-left -->
+                        <div class="absolute bottom-3 left-3 px-2 py-1 rounded-full text-xs font-semibold text-white bg-black/60 backdrop-blur-sm border border-white/20">
+                            {{ article.source_initials }}
+                        </div>
+                        <!-- Read time in bottom-right -->
+                        {% if article.reading_time %}
+                        <div class="absolute bottom-3 right-3 px-2 py-1 rounded-full text-xs font-medium text-white bg-black/60 backdrop-blur-sm border border-white/20">
+                            {{ article.reading_time }}
+                        </div>
+                        {% endif %}
+                        <!-- Title overlay -->
+                        <div class="absolute bottom-0 left-0 right-0 p-4">
+                            <h2 class="text-lg font-bold text-white mb-1 line-clamp-2 leading-tight">
                                 {{ article.title }}
                             </h2>
-                            <div class="flex items-center justify-between">
-                                <!-- Time + read time -->
-                                <div class="text-xs text-gray-300">
-                                    {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}{% if article.reading_time %} • {{ article.reading_time }}{% endif %}
-                                </div>
+                            <div class="text-xs text-gray-300">
+                                {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}
                             </div>
                         </div>
                     </div>
                     {% else %}
-                    <!-- Placeholder with square ratio and gradient background -->
-                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br {{ article.source_gradient }}" style="border-radius: 12px;">
+                    <!-- Placeholder with gradient background -->
+                    <div class="relative aspect-square overflow-hidden rounded-t-xl bg-gradient-to-br {{ article.source_gradient }}">
                         <!-- Subtle pattern overlay for texture -->
-                        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
-                        <!-- Source initials in top-right corner -->
-                        <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px {{ article.source_glow_color }};">
-                            {{ article.source_initials }}
-                        </div>
+                        <div class="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(45deg,transparent,transparent_20px,rgba(255,255,255,0.03)_20px,rgba(255,255,255,0.03)_40px)]"></div>
                         <!-- Image placeholder icon centered -->
                         <div class="absolute inset-0 flex items-center justify-center">
                             <svg class="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -384,16 +455,23 @@
                         </div>
                         <!-- Dark overlay gradient bottom 40% -->
                         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
-                        <!-- Title overlay bottom-left -->
-                        <div class="absolute bottom-0 left-0 right-0 p-3">
-                            <h2 class="text-[1.4rem] font-bold text-white mb-2 line-clamp-2 leading-[1.15]">
+                        <!-- Source badge in bottom-left -->
+                        <div class="absolute bottom-3 left-3 px-2 py-1 rounded-full text-xs font-semibold text-white bg-black/60 backdrop-blur-sm border border-white/20">
+                            {{ article.source_initials }}
+                        </div>
+                        <!-- Read time in bottom-right -->
+                        {% if article.reading_time %}
+                        <div class="absolute bottom-3 right-3 px-2 py-1 rounded-full text-xs font-medium text-white bg-black/60 backdrop-blur-sm border border-white/20">
+                            {{ article.reading_time }}
+                        </div>
+                        {% endif %}
+                        <!-- Title overlay -->
+                        <div class="absolute bottom-0 left-0 right-0 p-4">
+                            <h2 class="text-lg font-bold text-white mb-1 line-clamp-2 leading-tight">
                                 {{ article.title }}
                             </h2>
-                            <div class="flex items-center justify-between">
-                                <!-- Time + read time -->
-                                <div class="text-xs text-gray-300">
-                                    {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}{% if article.reading_time %} • {{ article.reading_time }}{% endif %}
-                                </div>
+                            <div class="text-xs text-gray-300">
+                                {{ article.formatted_date.split(' at ')[0] if ' at ' in article.formatted_date else 'Recently' }}
                             </div>
                         </div>
                     </div>
@@ -417,7 +495,7 @@
                     <h4 class="text-lg font-bold text-gray-100 mb-3">Stay Informed</h4>
                     <p class="text-gray-400 text-sm mb-4">Get daily news updates delivered to your inbox.</p>
                     <form class="flex flex-col sm:flex-row gap-2" id="newsletterForm" onsubmit="handleNewsletterSignup(event)">
-                        <input type="email" placeholder="Enter your email" class="flex-1 text-gray-100 rounded-lg px-4 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 outline-none" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);" id="newsletterEmail" required>
+                        <input type="email" placeholder="Enter your email" class="flex-1 text-gray-100 rounded-lg px-4 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 outline-none bg-[#161616]/60 backdrop-blur-sm border border-white/10" id="newsletterEmail" required>
                         <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-semibold transition-colors">Subscribe</button>
                     </form>
                     <div class="text-sm mt-2 min-h-[1.2rem]" id="newsletterMessage"></div>
@@ -484,7 +562,7 @@
     </script>
     
     <!-- Generation Timestamp Badge (Bottom-Right) -->
-    <div class="fixed bottom-4 right-4 z-50 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-mono shadow-lg" style="background: rgba(16, 16, 16, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05);">
+    <div class="fixed bottom-4 right-4 z-50 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-mono shadow-lg bg-[#161616]/60 backdrop-blur-sm border border-white/5">
         <div>Generated: {{ generation_timestamp or "TEMPLATE_NOT_WORKING" }}</div>
         {% if last_db_update %}<div>DB Updated: {{ last_db_update }}</div>{% else %}<div>DB Updated: TEMPLATE_NOT_WORKING</div>{% endif %}
     </div>

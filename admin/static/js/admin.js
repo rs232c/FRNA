@@ -7,6 +7,147 @@
 console.log('[FRNA Admin] ✅ Admin script loading...');
 console.log('[FRNA Admin] Build timestamp:', new Date().toISOString());
 
+// Force dark theme immediately
+document.documentElement.classList.add('dark');
+document.body.style.background = '#0a0a0a';
+document.body.style.color = '#ffffff';
+
+// Toast notification system
+function showToast(message, type = 'success') {
+    // Remove existing toast
+    const existingToast = document.getElementById('adminToast');
+    if (existingToast) existingToast.remove();
+
+    // Create new toast
+    const toast = document.createElement('div');
+    toast.id = 'adminToast';
+    toast.className = `fixed top-4 right-4 z-[9999] px-4 py-2 rounded-lg shadow-lg text-white font-medium transition-all duration-300 ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'}`;
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 3000);
+}
+
+// Unified admin action function
+function adminAction(articleId, actionType) {
+    console.log(`[FRNA Admin] Executing action: ${actionType} on article ${articleId}`);
+
+    const zipCode = getZipCodeFromUrl();
+
+    fetch(`/admin/action/${articleId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            action: actionType,
+            zip_code: zipCode
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            console.log(`[FRNA Admin] ✅ Action ${actionType} successful:`, data.message);
+            showToast(data.message, 'success');
+
+            // Update UI based on action type
+            updateUIForAction(articleId, actionType, data);
+        } else {
+            console.error(`[FRNA Admin] ❌ Action ${actionType} failed:`, data.message);
+            showToast(data.message || 'Action failed', 'error');
+        }
+    })
+    .catch(error => {
+        console.error(`[FRNA Admin] ❌ Action ${actionType} error:`, error);
+        showToast(`Error: ${error.message}`, 'error');
+    });
+}
+
+// Update UI after successful action
+function updateUIForAction(articleId, actionType, data) {
+    const articleItem = document.querySelector(`.article-item[data-id="${articleId}"]`);
+    if (!articleItem) return;
+
+    switch (actionType) {
+        case 'trash':
+            articleItem.style.opacity = '0.5';
+            articleItem.style.background = 'rgba(255, 0, 0, 0.1)';
+            // Update trash button to show restore
+            const trashBtn = articleItem.querySelector('.trash-btn');
+            if (trashBtn) {
+                trashBtn.innerHTML = '🔄';
+                trashBtn.className = trashBtn.className.replace('trash-btn', 'restore-btn');
+                trashBtn.setAttribute('data-action', 'restore');
+                trashBtn.title = 'Restore article';
+            }
+            break;
+
+        case 'restore':
+            articleItem.style.opacity = '1';
+            articleItem.style.background = '';
+            // Update restore button to show trash
+            const restoreBtn = articleItem.querySelector('.restore-btn');
+            if (restoreBtn) {
+                restoreBtn.innerHTML = '🗑️';
+                restoreBtn.className = restoreBtn.className.replace('restore-btn', 'trash-btn');
+                restoreBtn.setAttribute('data-action', 'trash');
+                restoreBtn.title = 'Move to trash';
+            }
+            break;
+
+        case 'thumbs_up':
+        case 'good_fit':
+            const goodFitBtn = articleItem.querySelector('.thumbs-up-btn, .good-fit-btn');
+            if (goodFitBtn) {
+                goodFitBtn.style.background = '#4caf50';
+                goodFitBtn.style.opacity = '1';
+                goodFitBtn.setAttribute('data-state', 'on');
+            }
+            break;
+
+        case 'thumbs_down':
+            articleItem.style.opacity = '0.5';
+            articleItem.style.background = 'rgba(255, 0, 0, 0.1)';
+            break;
+
+        case 'top_story':
+            const topStoryBtn = articleItem.querySelector('.top-story-btn');
+            if (topStoryBtn) {
+                topStoryBtn.style.background = '#ff9800';
+                topStoryBtn.style.opacity = '1';
+                topStoryBtn.setAttribute('data-state', 'on');
+            }
+            break;
+
+        case 'alert':
+            const alertBtn = articleItem.querySelector('.alert-btn');
+            if (alertBtn) {
+                alertBtn.style.background = '#ff4444';
+                alertBtn.style.opacity = '1';
+                alertBtn.setAttribute('data-state', 'on');
+            }
+            break;
+    }
+
+    // Reload page after a short delay for some actions
+    if (['thumbs_down', 'top_story', 'alert'].includes(actionType)) {
+        setTimeout(() => location.reload(), 500);
+    }
+}
+
 // Utility functions for escaping
 function escapeHtml(unsafe) {
     if (!unsafe) return '';
@@ -367,38 +508,48 @@ let showImagesTogglePromise = Promise.resolve();
         alert('Script error - check console. Some buttons may not work. Error: ' + e.message);
     }
 
-    // Add unified button click handler inside DOMContentLoaded
-    console.log('[FRNA Admin] Setting up unified button event handler...');
-    document.addEventListener('click', async (e) => {
-        const btn = e.target.closest('button, .trash-btn, .restore-btn, .top-story-btn, .restore-trash-btn, .restore-auto-btn, .thumbs-up-btn, .thumbs-down-btn, .alert-btn, .top-article-btn, .on-target-btn, .off-target-btn, .relevance-breakdown-btn, .edit-article-btn, .good-fit-btn, .add-tags-btn');
+    // Simplified button click handler - use adminAction for all admin buttons
+    console.log('[FRNA Admin] Setting up simplified button event handler...');
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action], .trash-btn, .restore-btn, .top-story-btn, .thumbs-up-btn, .thumbs-down-btn, .alert-btn, .top-article-btn, .on-target-btn, .off-target-btn, .good-fit-btn');
 
         if (!btn) return;
 
-        // Check if this is an admin action button (has data-action OR is one of our button classes)
-        const isAdminButton = btn.classList.contains('trash-btn') ||
-            btn.classList.contains('restore-btn') ||
-            btn.classList.contains('restore-trash-btn') ||
-            btn.classList.contains('restore-auto-btn') ||
-            btn.classList.contains('top-story-btn') ||
-            btn.classList.contains('good-fit-btn') ||
-            btn.classList.contains('thumbs-up-btn') ||
-            btn.classList.contains('thumbs-down-btn') ||
-            btn.classList.contains('top-article-btn') ||
-            btn.classList.contains('alert-btn') ||
-            btn.classList.contains('on-target-btn') ||
-            btn.classList.contains('off-target-btn') ||
-            btn.classList.contains('relevance-breakdown-btn') ||
-            btn.classList.contains('edit-article-btn') ||
-            btn.classList.contains('add-tags-btn') ||
-            btn.getAttribute('data-action');
+        e.preventDefault();
+        const articleId = btn.getAttribute('data-id');
+        if (!articleId) return;
 
-        if (!isAdminButton) return;
+        // Determine action type from button class or data-action attribute
+        let actionType = btn.getAttribute('data-action');
+
+        if (!actionType) {
+            if (btn.classList.contains('trash-btn')) actionType = 'trash';
+            else if (btn.classList.contains('restore-btn') || btn.classList.contains('restore-trash-btn') || btn.classList.contains('restore-auto-btn')) actionType = 'restore';
+            else if (btn.classList.contains('thumbs-up-btn') || btn.classList.contains('good-fit-btn')) actionType = 'thumbs_up';
+            else if (btn.classList.contains('thumbs-down-btn')) actionType = 'thumbs_down';
+            else if (btn.classList.contains('top-story-btn')) actionType = 'top_story';
+            else if (btn.classList.contains('top-article-btn')) actionType = 'top_article';
+            else if (btn.classList.contains('alert-btn')) actionType = 'alert';
+            else if (btn.classList.contains('on-target-btn')) actionType = 'on_target';
+            else if (btn.classList.contains('off-target-btn')) actionType = 'off_target';
+        }
+
+        if (actionType) {
+            adminAction(articleId, actionType);
+        }
+    });
+
+    // Special handlers for complex buttons (edit, relevance breakdown, etc.)
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.relevance-breakdown-btn, .edit-article-btn, .add-tags-btn');
+
+        if (!btn) return;
 
         e.preventDefault();
         const articleId = btn.getAttribute('data-id');
 
         // Handle relevance breakdown button
-        if (btn.classList.contains('relevance-breakdown-btn') || btn.getAttribute('data-action') === 'show-breakdown') {
+        if (btn.classList.contains('relevance-breakdown-btn')) {
             const modal = document.getElementById('relevanceBreakdownModal');
             const body = document.getElementById('relevanceBreakdownBody');
             if (!articleId || !modal || !body) return;
@@ -435,246 +586,24 @@ let showImagesTogglePromise = Promise.resolve();
                 console.error('Error loading relevance breakdown:', e);
                 body.innerHTML = '<div style="padding: 1rem; color: #d32f2f;">Error loading relevance breakdown</div>';
             });
-            return;
         }
 
         // Handle edit article button
-        if (btn.classList.contains('edit-article-btn') || btn.getAttribute('data-action') === 'edit-article') {
+        else if (btn.classList.contains('edit-article-btn')) {
             if (typeof window.editArticle === 'function') {
                 window.editArticle(articleId);
             } else {
-                alert('Error: editArticle function not available. Please refresh the page.');
+                showToast('Error: Edit function not available', 'error');
             }
-            return;
-        }
-
-        // Handle thumbs up button
-        if (btn.classList.contains('thumbs-up-btn') || btn.getAttribute('data-action') === 'thumbs-up') {
-            const zipCode = getZipCodeFromUrl();
-            if (articleId && zipCode) {
-                fetch('/admin/api/train-relevance', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        article_id: articleId,
-                        zip_code: zipCode,
-                        click_type: 'thumbs_up'
-                    })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        btn.style.background = '#4caf50';
-                        btn.style.opacity = '1';
-                        btn.setAttribute('data-state', 'on');
-                    }
-                })
-                .catch(e => console.error('Error with thumbs up:', e));
-            }
-            return;
-        }
-
-        // Handle thumbs down button
-        if (btn.classList.contains('thumbs-down-btn') || btn.getAttribute('data-action') === 'thumbs-down') {
-            const zipCode = getZipCodeFromUrl();
-            if (articleId && zipCode) {
-                fetch('/admin/api/train-relevance', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        article_id: articleId,
-                        zip_code: zipCode,
-                        click_type: 'thumbs_down'
-                    })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        // Mark as rejected
-                        const articleItem = btn.closest('.article-item');
-                        if (articleItem) {
-                            articleItem.style.opacity = '0.5';
-                        }
-                        setTimeout(() => location.reload(), 500);
-                    }
-                })
-                .catch(e => console.error('Error with thumbs down:', e));
-            }
-            return;
-        }
-
-        // Handle top article button
-        if (btn.classList.contains('top-article-btn') || btn.getAttribute('data-action') === 'toggle-top-article') {
-            const zipCode = getZipCodeFromUrl();
-            if (articleId && zipCode) {
-                fetch('/admin/api/toggle-top-article', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        article_id: articleId,
-                        zip_code: zipCode
-                    })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        document.querySelectorAll('.top-article-btn').forEach(otherBtn => {
-                            if (otherBtn.getAttribute('data-id') == articleId) {
-                                otherBtn.style.background = '#ffd700';
-                                otherBtn.style.opacity = '1';
-                                otherBtn.setAttribute('data-state', 'on');
-                            } else {
-                                otherBtn.style.background = 'transparent';
-                                otherBtn.style.opacity = '0.5';
-                                otherBtn.setAttribute('data-state', 'off');
-                            }
-                        });
-                    }
-                })
-                .catch(e => console.error('Error toggling top article:', e));
-            }
-            return;
-        }
-
-        // Handle alert button
-        if (btn.classList.contains('alert-btn') || btn.getAttribute('data-action') === 'toggle-alert') {
-            const zipCode = getZipCodeFromUrl();
-            if (articleId && zipCode) {
-                const isCurrentlyAlert = btn.getAttribute('data-state') === 'on';
-                const newState = !isCurrentlyAlert;
-
-                fetch('/admin/api/toggle-alert', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        article_id: articleId,
-                        zip_code: zipCode,
-                        is_alert: newState
-                    })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        document.querySelectorAll('.alert-btn').forEach(otherBtn => {
-                            if (otherBtn.getAttribute('data-id') == articleId) {
-                                otherBtn.style.background = newState ? '#ff4444' : 'transparent';
-                                otherBtn.style.opacity = newState ? '1' : '0.5';
-                                otherBtn.setAttribute('data-state', newState ? 'on' : 'off');
-                            }
-                        });
-                    }
-                })
-                .catch(e => console.error('Error toggling alert:', e));
-            }
-            return;
-        }
-
-        // Handle on-target button
-        if (btn.classList.contains('on-target-btn') || btn.getAttribute('data-action') === 'on-target') {
-            const zipCode = getZipCodeFromUrl();
-            if (articleId && zipCode) {
-                fetch('/admin/api/on-target', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        article_id: articleId,
-                        zip_code: zipCode
-                    })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        btn.style.opacity = '1';
-                        btn.setAttribute('data-state', 'on');
-                        const offTargetBtn = document.querySelector(`.off-target-btn[data-id="${articleId}"]`);
-                        if (offTargetBtn) {
-                            offTargetBtn.style.background = 'transparent';
-                            offTargetBtn.style.opacity = '0.5';
-                            offTargetBtn.setAttribute('data-state', 'off');
-                        }
-                    }
-                })
-                .catch(e => console.error('Error setting on-target:', e));
-            }
-            return;
-        }
-
-        // Handle off-target button
-        if (btn.classList.contains('off-target-btn') || btn.getAttribute('data-action') === 'off-target') {
-            const zipCode = getZipCodeFromUrl();
-            if (articleId && zipCode) {
-                fetch('/admin/api/off-target', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        article_id: articleId,
-                        zip_code: zipCode
-                    })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        btn.style.opacity = '1';
-                        btn.setAttribute('data-state', 'on');
-                        const onTargetBtn = document.querySelector(`.on-target-btn[data-id="${articleId}"]`);
-                        if (onTargetBtn) {
-                            onTargetBtn.style.background = 'transparent';
-                            onTargetBtn.style.opacity = '0.5';
-                            onTargetBtn.setAttribute('data-state', 'off');
-                        }
-                    }
-                })
-                .catch(e => console.error('Error setting off-target:', e));
-            }
-            return;
-        }
-
-
-        // Handle trash button
-        if (btn.classList.contains('trash-btn') || btn.getAttribute('data-action') === 'trash-article') {
-            if (typeof window.rejectArticle === 'function') {
-                window.rejectArticle(articleId);
-            } else {
-                alert('Error: rejectArticle function not available. Please refresh the page.');
-            }
-            return;
-        }
-
-        // Handle restore button
-        if (btn.classList.contains('restore-btn') || btn.classList.contains('restore-trash-btn') || btn.classList.contains('restore-auto-btn') || btn.getAttribute('data-action') === 'restore-article') {
-            if (typeof window.restoreArticle === 'function') {
-                const rejectionType = btn.getAttribute('data-rejection-type') || 'manual';
-                window.restoreArticle(articleId, rejectionType);
-            } else {
-                alert('Error: restoreArticle function not available. Please refresh the page.');
-            }
-            return;
-        }
-
-        // Handle top story button
-        if (btn.classList.contains('top-story-btn') || btn.getAttribute('data-action') === 'toggle-top-story') {
-            if (typeof window.toggleTopStory === 'function') {
-                window.toggleTopStory(articleId);
-            } else {
-                alert('Error: toggleTopStory function not available. Please refresh the page.');
-            }
-            return;
         }
 
         // Handle add tags button
-        if (btn.classList.contains('add-tags-btn')) {
+        else if (btn.classList.contains('add-tags-btn')) {
             if (typeof window.showRejectionTagsModal === 'function') {
                 window.showRejectionTagsModal(articleId);
             } else {
-                alert('Error: showRejectionTagsModal function not available. Please refresh the page.');
+                showToast('Error: Tags modal not available', 'error');
             }
-            return;
         }
     });
     console.log('[FRNA Admin] ✅ Unified button event handler attached inside DOMContentLoaded');

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html class="dark">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -10,44 +10,65 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* Light theme (Main Admin) */
-        body.main-admin {
+        /* Perfect Dark Theme - Forced */
+        html.dark {
+            color-scheme: dark;
+        }
+
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
-            color: #333;
+            background: #0a0a0a !important;
+            color: #ffffff !important;
         }
-        body.main-admin .header {
-            background: #ffffff;
-            color: #333;
-            border-bottom: 1px solid #ddd;
+
+        .header {
+            background: #0a0a0a !important;
+            color: #ffffff !important;
+            border-bottom: 1px solid #333 !important;
         }
-        body.main-admin .header a {
-            color: #0078d4;
+
+        .header a {
+            color: #60a5fa !important;
         }
-        body.main-admin .container {
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+        .container {
+            background: #161616 !important;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
             margin-top: 2rem;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        body.main-admin .controls,
-        body.main-admin .articles-list,
-        body.main-admin .settings-container {
-            background: #ffffff;
-            border-color: #e9ecef;
+
+        .controls,
+        .articles-list,
+        .settings-container {
+            background: #1a1a1a !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-radius: 8px;
         }
-        body.main-admin .settings-section {
-            background: #f8f9fa;
-            border-color: #e9ecef;
+
+        .settings-section {
+            background: #202020 !important;
+            border: 1px solid rgba(255,255,255,0.05) !important;
         }
-        body.main-admin .tabs {
-            border-bottom-color: #e9ecef;
+
+        .tabs {
+            border-bottom: 1px solid rgba(255,255,255,0.1) !important;
         }
-        body.main-admin .tab-btn {
-            color: #6c757d;
+
+        .tab-btn {
+            color: #b3b3b3 !important;
+            background: transparent !important;
         }
-        body.main-admin .article-item {
-            border-bottom-color: #e9ecef;
+
+        .tab-btn.active {
+            color: #ffffff !important;
+            border-bottom: 2px solid #60a5fa !important;
+        }
+
+        .article-item {
+            border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+            background: #1a1a1a !important;
         }
 
         /* Dark theme (Zip Admin) - default */

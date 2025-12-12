@@ -44,6 +44,82 @@ _last_regeneration_start = None
 ZIP_CODE_LENGTH = 5
 MAX_ARTICLE_ID = 2**31 - 1
 
+def get_current_zip_from_request():
+    """Get zip code from request - uses domain mapping, falls back to 02720"""
+    host = request.host.lower()
+
+    # Domain mapping (extend as needed)
+    domain_zip_map = {
+        'fallriver.live': '02720',
+        'fallriver.live:8000': '02720',
+        '127.0.0.1:8000': '02720',
+        'localhost:8000': '02720',
+        # Future domains:
+        # 'newport.live': '02840',
+        # 'boston.live': '02108',
+    }
+
+    # Try domain match first
+    if host in domain_zip_map:
+        return domain_zip_map[host]
+
+    # Try subdomain match (e.g., 02720.fallriver.live)
+    if '.' in host and host.count('.') >= 2:
+        potential_zip = host.split('.')[0]
+        if potential_zip.isdigit() and len(potential_zip) == 5:
+            return potential_zip
+
+    # Fallback to Fall River
+    return '02720'
+
+def get_zip_dir(zip_code):
+    """Get and validate zip directory - ensures the zip has been generated"""
+    from flask import abort
+    import os
+
+    zip_dir = os.path.join("build", "zips", f"zip_{zip_code.zfill(5)}")
+    index_path = os.path.join(zip_dir, "index.html")
+
+    if not os.path.exists(index_path):
+        abort(404, description=f"City zip_{zip_code.zfill(5)} has not been created yet.")
+
+    return zip_dir
+
+def serve_zip_page(zip_code):
+    """Unified function to serve any zip page from clean zip structure"""
+    if not validate_zip_code(zip_code):
+        return "Invalid zip code", 404
+
+    zip_dir = get_zip_dir(zip_code)  # Use the new validator
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    full_zip_dir = os.path.join(project_root, zip_dir)
+    logger.debug(f"Serving from {full_zip_dir}")
+
+    index_path = os.path.join(full_zip_dir, 'index.html')
+    # No need to check exists again since get_zip_dir() already validated
+    return send_file(index_path)
+
+def serve_zip_category_page(zip_code, category_slug):
+    """Unified function to serve zip-specific category page from clean zip structure"""
+    if not validate_zip_code(zip_code):
+        return "Invalid zip code", 404
+
+    # Strip .html extension if present
+    if category_slug.endswith('.html'):
+        category_slug = category_slug[:-5]
+
+    zip_dir = get_zip_dir(zip_code)  # Use the new validator
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    full_zip_dir = os.path.join(project_root, zip_dir)
+    logger.debug(f"Serving category from {full_zip_dir}")
+
+    category_path = os.path.join(full_zip_dir, 'category', f'{category_slug}.html')
+
+    if os.path.exists(category_path):
+        return send_file(category_path)
+    else:
+        return "Category page not found", 404
+
 # Security: Authentication credentials from environment (REQUIRED)
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
@@ -243,29 +319,15 @@ def session_check():
 # Website routes (serve static files)
 @app.route('/')
 def index():
-    """Serve main website index - serves city_fall-river-ma directly"""
+    """Serve main website index - always serves 02720 (Fall River)"""
     logger.info("Index route called")
     zip_code = request.args.get('zip_code')
     if zip_code and validate_zip_code(zip_code):
         logger.info(f"Redirecting to zip code: {zip_code}")
         return redirect(f'/{zip_code}')
 
-    # Serve city_fall-river-ma index directly as the main page
-    try:
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        city_index_path = os.path.join(project_root, 'build', 'city_fall-river-ma', 'index.html')
-        logger.info(f"Root route: checking city path {city_index_path}, exists: {os.path.exists(city_index_path)}")
-        if os.path.exists(city_index_path):
-            logger.info("Serving city_fall-river-ma index as main page")
-            return send_file(city_index_path)
-
-        # Fallback to default zip code redirect
-        default_zip = '02720'
-        logger.info(f"City index not found, redirecting to default zip code: {default_zip}")
-        return redirect(f'/{default_zip}')
-    except Exception as e:
-        logger.error(f"Error serving main index: {e}")
-        return "Error loading page", 500
+    # Serve default zip (Fall River)
+    return serve_zip_page('02720')
 
 
 @app.route('/category/<path:category_slug>')
@@ -468,85 +530,25 @@ def admin_main():
 
 @app.route('/<zip_code>')
 def zip_page(zip_code):
-    """Serve zip-specific index page - resolves to city-based directory"""
-    if not validate_zip_code(zip_code):
-        return "Invalid zip code", 404
-    try:
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-        # Special handling for 02720 - always serve city_fall-river-ma
-        if zip_code == '02720':
-            city_index_path = os.path.join(project_root, 'build', 'city_fall-river-ma', 'index.html')
-            logger.info(f"Zip {zip_code}: serving city path {city_index_path}, exists: {os.path.exists(city_index_path)}")
-            if os.path.exists(city_index_path):
-                logger.info(f"Serving city_fall-river-ma index for zip {zip_code}")
-                return send_file(city_index_path)
-
-        # Try city-based directory first (preferred)
-        if get_city_state_for_zip:
-            city_state = get_city_state_for_zip(zip_code)
-            logger.info(f"Zip {zip_code} resolved to city_state: {city_state}")
-            if city_state:
-                # Convert "Fall River, MA" to "fall-river-ma"
-                city_slug = city_state.lower().replace(", ", "-").replace(" ", "-")
-                city_index_path = os.path.join(project_root, 'build', f'city_{city_slug}', 'index.html')
-                logger.info(f"Trying to serve city index: {city_index_path}, exists: {os.path.exists(city_index_path)}")
-                if os.path.exists(city_index_path):
-                    return send_file(city_index_path)
-
-        # Fallback to zip-based directory
-        zip_index_path = os.path.join(project_root, 'build', f'zip_{zip_code}', 'index.html')
-        logger.info(f"Falling back to zip path: {zip_index_path}, exists: {os.path.exists(zip_index_path)}")
-        if os.path.exists(zip_index_path):
-            return send_file(zip_index_path)
-        
-        return "Zip code not found", 404
-    except (ValueError, OSError) as e:
-        logger.error(f"Error serving zip page {zip_code}: {e}")
-        return "Zip code not found", 404
+    """Serve zip-specific index page from clean zip structure"""
+    return serve_zip_page(zip_code)
 
 
 @app.route('/<zip_code>/category/<path:category_slug>')
 def zip_category_page(zip_code, category_slug):
-    """Serve zip-specific category page - resolves to city-based directory"""
-    if not validate_zip_code(zip_code):
-        return "Invalid zip code", 404
-
-    # Strip .html extension if present
-    if category_slug.endswith('.html'):
-        category_slug = category_slug[:-5]
-
-    try:
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        
-        # Try city-based directory first (preferred)
-        if get_city_state_for_zip:
-            city_state = get_city_state_for_zip(zip_code)
-            if city_state:
-                # Convert "Fall River, MA" to "fall-river-ma"
-                city_slug = city_state.lower().replace(", ", "-").replace(" ", "-")
-                city_category_path = os.path.join(project_root, 'build', f'city_{city_slug}', 'category', f'{category_slug}.html')
-                if os.path.exists(city_category_path):
-                    return send_file(city_category_path)
-        
-        # Fallback to zip-based directory
-        zip_category_path = os.path.join(project_root, 'build', f'zip_{zip_code}', 'category', f'{category_slug}.html')
-        if os.path.exists(zip_category_path):
-            return send_file(zip_category_path)
-        
-        return "Page not found", 404
-    except (ValueError, OSError) as e:
-        logger.error(f"Error serving zip category page {zip_code}/{category_slug}: {e}")
-        return "Page not found", 404
+    """Serve zip-specific category page from clean zip structure"""
+    return serve_zip_category_page(zip_code, category_slug)
 
 
 @app.route('/css/<path:filename>')
 def serve_css(filename):
-    """Serve CSS files"""
-    # Calculate the correct path to the build directory
+    """Serve CSS files from zip directory"""
+    zip_code = get_current_zip_from_request()
+    zip_dir = get_zip_dir(zip_code)  # Validate zip exists
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    build_path = os.path.join(project_root, 'build')
-    safe_filename = safe_path(Path(os.path.join(build_path, 'css')), filename)
+    full_zip_dir = os.path.join(project_root, zip_dir)
+    logger.debug(f"Serving CSS from {full_zip_dir}")
+    safe_filename = safe_path(Path(os.path.join(full_zip_dir, 'css')), filename)
     if not safe_filename.exists():
         return "File not found", 404
     return send_from_directory(str(safe_filename.parent), safe_filename.name)
@@ -554,11 +556,13 @@ def serve_css(filename):
 
 @app.route('/js/<path:filename>')
 def serve_js(filename):
-    """Serve JavaScript files"""
-    # Calculate the correct path to the build directory
+    """Serve JavaScript files from zip directory"""
+    zip_code = get_current_zip_from_request()
+    zip_dir = get_zip_dir(zip_code)  # Validate zip exists
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    build_path = os.path.join(project_root, 'build')
-    safe_filename = safe_path(Path(os.path.join(build_path, 'js')), filename)
+    full_zip_dir = os.path.join(project_root, zip_dir)
+    logger.debug(f"Serving JS from {full_zip_dir}")
+    safe_filename = safe_path(Path(os.path.join(full_zip_dir, 'js')), filename)
     if not safe_filename.exists():
         return "File not found", 404
     return send_from_directory(str(safe_filename.parent), safe_filename.name)
@@ -566,11 +570,13 @@ def serve_js(filename):
 
 @app.route('/images/<path:filename>')
 def serve_images(filename):
-    """Serve image files"""
-    # Calculate the correct path to the build directory
+    """Serve image files from zip directory"""
+    zip_code = get_current_zip_from_request()
+    zip_dir = get_zip_dir(zip_code)  # Validate zip exists
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    build_path = os.path.join(project_root, 'build')
-    safe_filename = safe_path(Path(os.path.join(build_path, 'images')), filename)
+    full_zip_dir = os.path.join(project_root, zip_dir)
+    logger.debug(f"Serving images from {full_zip_dir}")
+    safe_filename = safe_path(Path(os.path.join(full_zip_dir, 'images')), filename)
     if not safe_filename.exists():
         return "File not found", 404
     return send_from_directory(str(safe_filename.parent), safe_filename.name)
@@ -1185,6 +1191,87 @@ def reject_article():
     except Exception as e:
         logger.error(f"Error rejecting article {article_id}: {e}")
         return jsonify({'error': 'Database error'}), 500
+
+
+@login_required
+@app.route('/admin/action/<int:article_id>', methods=['POST'])
+def admin_action(article_id):
+    """Unified admin action endpoint for all button interactions"""
+    data = request.get_json() if request.is_json else request.form
+    action_type = data.get('action') or data.get('type')
+
+    if not action_type:
+        return jsonify({'error': 'Missing action type'}), 400
+
+    # Get zip code from request data or session
+    zip_code = data.get('zip_code') or get_current_zip_from_request()
+
+    try:
+        success = False
+        message = 'Action completed'
+
+        if action_type == 'trash':
+            from .services import trash_article
+            trash_article(article_id, zip_code)
+            success = True
+            message = 'Article moved to trash'
+
+        elif action_type == 'restore':
+            from .services import restore_article
+            restore_article(article_id, zip_code)
+            success = True
+            message = 'Article restored'
+
+        elif action_type == 'thumbs_up' or action_type == 'good_fit':
+            from .services import toggle_good_fit
+            toggle_good_fit(article_id, zip_code, True)
+            success = True
+            message = 'Marked as good fit'
+
+        elif action_type == 'thumbs_down':
+            from .services import toggle_good_fit
+            toggle_good_fit(article_id, zip_code, False)
+            success = True
+            message = 'Article rejected'
+
+        elif action_type == 'top_story':
+            from .services import toggle_top_story
+            toggle_top_story(article_id, zip_code, True)
+            success = True
+            message = 'Marked as top story'
+
+        elif action_type == 'top_article':
+            from .services import toggle_top_article
+            toggle_top_article(article_id, zip_code, True)
+            success = True
+            message = 'Marked as top article'
+
+        elif action_type == 'alert':
+            from .services import toggle_alert
+            toggle_alert(article_id, zip_code, True)
+            success = True
+            message = 'Alert enabled'
+
+        elif action_type == 'on_target':
+            from .services import train_relevance
+            train_relevance(article_id, zip_code, 'on_target')
+            success = True
+            message = 'Marked as on-target'
+
+        elif action_type == 'off_target':
+            from .services import train_relevance
+            train_relevance(article_id, zip_code, 'off_target')
+            success = True
+            message = 'Marked as off-target'
+
+        else:
+            return jsonify({'error': f'Unknown action type: {action_type}'}), 400
+
+        return jsonify({'success': success, 'message': message})
+
+    except Exception as e:
+        logger.error(f"Error in admin action {action_type} for article {article_id}: {e}")
+        return jsonify({'error': 'Database error', 'message': str(e)}), 500
 
 
 @login_required
