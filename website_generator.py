@@ -346,6 +346,7 @@ class WebsiteGenerator:
             # Apply relevance threshold filter if zip_code provided
             # BUT exclude obituaries - they should always show on obit page regardless of relevance
             if zip_code and relevance_threshold is not None:
+                enabled_before_filter = len(enabled)
                 enabled = [
                     a for a in enabled 
                     if (a.get('relevance_score') or 0) >= relevance_threshold 
@@ -362,6 +363,10 @@ class WebsiteGenerator:
                 except: pass
                 # #endregion
                 logger.info(f"Filtered to {len(enabled)} articles above threshold {relevance_threshold} for zip {zip_code}")
+                # #region agent log
+                with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"F","location":"website_generator.py:364","message":"Relevance filtering applied","data":{"zip_code":zip_code,"threshold":relevance_threshold,"articles_before":len(enabled_before_filter),"articles_after":len(enabled),"filtered_out":len(enabled_before_filter)-len(enabled)},"timestamp":int(time.time()*1000)})+'\n')
+                # #endregion
             
             return enabled
         except Exception as e:
@@ -836,10 +841,23 @@ class WebsiteGenerator:
         try:
             from website_generator.utils import get_trending_articles
             trending_articles = get_trending_articles(articles)
+            # #region agent log
+            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"website_generator.py:838","message":"Trending articles fetched","data":{"count":len(trending_articles),"method":"get_trending_articles"},"timestamp":int(time.time()*1000)})+'\n')
+            # #endregion
         except ImportError:
             # Fallback to old method - get more articles to account for client-side filtering
             trending_articles = self._get_trending_articles(articles, limit=10)
+            # #region agent log
+            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"website_generator.py:841","message":"Trending articles fetched (fallback)","data":{"count":len(trending_articles),"method":"_get_trending_articles"},"timestamp":int(time.time()*1000)})+'\n')
+            # #endregion
         
+        # #region agent log
+        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"website_generator.py:844","message":"Starting article processing","data":{"total_articles":len(articles),"trending_count":len(trending_articles),"hero_count":len(hero_articles),"top_stories_count":len(top_stories),"grid_articles_count":len(grid_articles)},"timestamp":int(time.time()*1000)})+'\n')
+        # #endregion
+
         # Add category slug and format trending date (no year) to each trending article
         for article in trending_articles:
             article_category = article.get('category', '').lower() if article.get('category') else ''
