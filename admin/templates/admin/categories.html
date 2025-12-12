@@ -427,8 +427,9 @@ async function recalculateCategoryInfo() {
 
             // Show completion with stats if available
             if (data.stats) {
+                const stats = data.stats;
                 setTimeout(() => {
-                    showMessage(`Updated ${data.stats.categories_processed || 'all'} categories and ${data.stats.keywords_updated || 'keyword'} matches`, 'success');
+                    showMessage(`Processed ${stats.articles_processed} articles, updated ${stats.categories_updated} categories in ${stats.processing_time_seconds}s`, 'success');
                 }, 1000);
             }
         } else {

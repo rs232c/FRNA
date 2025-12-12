@@ -2315,30 +2315,24 @@ def recalculate_categories():
             batch_start = time.time()
             logger.info(f"Processing batch starting at offset {offset} for zip {zip_code}")
 
-            # Recalculate batch
-            results = recalculator.recalculate_batch(zip_code=zip_code, limit=batch_size, offset=offset)
+            # Recalculate batch - returns count of updated articles
+            updated_in_batch = recalculator.recalculate_batch(zip_code=zip_code, limit=batch_size, offset=offset)
 
-            if not results or len(results) == 0:
-                break  # No more articles to process
+            # If no articles were updated in this batch, we've processed all articles
+            if updated_in_batch == 0:
+                break
 
-            # Count results
-            batch_processed = len(results)
-            total_processed += batch_processed
-
-            # Count categories and keywords updated
-            for result in results:
-                if result.get('category_changed', False):
-                    categories_updated += 1
-                if result.get('keywords_matched', 0) > 0:
-                    keywords_matched += result.get('keywords_matched', 0)
+            total_processed += batch_size  # Count all processed, not just updated
+            categories_updated += updated_in_batch  # Updated articles = categories changed
 
             batch_time = time.time() - batch_start
-            logger.info(f"Batch processed {batch_processed} articles in {batch_time:.2f}s")
+            logger.info(f"Batch processed {batch_size} articles, updated {updated_in_batch} in {batch_time:.2f}s")
 
             offset += batch_size
 
             # Safety limit to prevent infinite loops
             if offset > 10000:  # Max 10k articles
+                logger.warning("Hit safety limit of 10,000 articles")
                 break
 
         total_time = time.time() - start_time
@@ -2346,13 +2340,13 @@ def recalculate_categories():
         # Return detailed results
         return jsonify({
             'success': True,
-            'message': f'Recalculated {total_processed} articles in {total_time:.1f} seconds',
+            'message': f'Recalculated {total_processed} articles, updated {categories_updated} categories in {total_time:.1f} seconds',
             'stats': {
                 'articles_processed': total_processed,
                 'categories_updated': categories_updated,
-                'keywords_matched': keywords_matched,
                 'processing_time_seconds': round(total_time, 1),
-                'zip_code': zip_code or 'all'
+                'zip_code': zip_code or 'all',
+                'average_time_per_article': round(total_time / max(total_processed, 1), 3)
             }
         })
 
