@@ -133,9 +133,9 @@ class WebsiteGenerator:
                 except Exception as e:
                     logger.warning(f"Could not expire old flags: {e}")
             
-            # FORCE FULL REGENERATION - Always do full regen to ensure JS updates
-            logger.info("Full regeneration: forcing complete rebuild")
-            self._generate_full(articles, zip_code, city_state)
+            # Use incremental generation which includes index.html generation
+            logger.info("Incremental regeneration: generating index and category pages")
+            self._generate_incremental(articles, new_articles, last_article_id, zip_code)
             
             # Update last article ID
             if articles:
@@ -213,8 +213,16 @@ class WebsiteGenerator:
         weather = self.weather_ingestor.fetch_weather()
         
         # Always regenerate index (it shows all articles)
-        self._generate_index(enabled_articles, weather, admin_settings, zip_code)
-        logger.info("Regenerated index.html")
+        try:
+            self._generate_index(enabled_articles, weather, admin_settings, zip_code)
+            logger.info("Regenerated index.html")
+        except Exception as e:
+            logger.error(f"Failed to generate index: {e}")
+            raise
+        except Exception as e:
+            print(f"DEBUG: _generate_index failed: {e}")
+            logger.error(f"Failed to generate index: {e}")
+            raise
         
         # CSS and JS only if they don't exist or are old
         css_path = Path(self.output_dir) / "css" / "style.css"
@@ -363,10 +371,6 @@ class WebsiteGenerator:
                 except: pass
                 # #endregion
                 logger.info(f"Filtered to {len(enabled)} articles above threshold {relevance_threshold} for zip {zip_code}")
-                # #region agent log
-                with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
-                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"F","location":"website_generator.py:364","message":"Relevance filtering applied","data":{"zip_code":zip_code,"threshold":relevance_threshold,"articles_before":len(enabled_before_filter),"articles_after":len(enabled),"filtered_out":len(enabled_before_filter)-len(enabled)},"timestamp":int(time.time()*1000)})+'\n')
-                # #endregion
             
             return enabled
         except Exception as e:
@@ -841,23 +845,10 @@ class WebsiteGenerator:
         try:
             from website_generator.utils import get_trending_articles
             trending_articles = get_trending_articles(articles)
-            # #region agent log
-            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
-                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"website_generator.py:838","message":"Trending articles fetched","data":{"count":len(trending_articles),"method":"get_trending_articles"},"timestamp":int(time.time()*1000)})+'\n')
-            # #endregion
         except ImportError:
             # Fallback to old method - get more articles to account for client-side filtering
             trending_articles = self._get_trending_articles(articles, limit=10)
-            # #region agent log
-            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
-                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"website_generator.py:841","message":"Trending articles fetched (fallback)","data":{"count":len(trending_articles),"method":"_get_trending_articles"},"timestamp":int(time.time()*1000)})+'\n')
-            # #endregion
         
-        # #region agent log
-        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
-            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"website_generator.py:844","message":"Starting article processing","data":{"total_articles":len(articles),"trending_count":len(trending_articles),"hero_count":len(hero_articles),"top_stories_count":len(top_stories),"grid_articles_count":len(grid_articles)},"timestamp":int(time.time()*1000)})+'\n')
-        # #endregion
-
         # Add category slug and format trending date (no year) to each trending article
         for article in trending_articles:
             article_category = article.get('category', '').lower() if article.get('category') else ''
@@ -1167,6 +1158,12 @@ class WebsiteGenerator:
                 f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"website_generator.py:1140","message":"Before template.render - checking articles","data":{"show_images":show_images,"articles_count":len(articles),"hero_count":len(hero_articles),"sample_articles":[{"id":a.get('id'),"has_image_url":bool(a.get('image_url')),"image_url":(a.get('image_url') or '')[:60] if a.get('image_url') else None} for a in sample_articles_for_log],"sample_heroes":[{"id":a.get('id'),"has_image_url":bool(a.get('image_url')),"image_url":(a.get('image_url') or '')[:60] if a.get('image_url') else None} for a in sample_heroes_for_log]},"timestamp":int(time.time()*1000)})+'\n')
         except: pass
         # #endregion
+        # #region agent log
+        import json
+        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"I","location":"website_generator.py:1153","message":"About to render template","data":{"generation_timestamp":generation_timestamp,"last_db_update":last_db_update,"template_type":type(template).__name__},"timestamp":int(time.time()*1000)})+'\n')
+        # #endregion
+
         html = template.render(
             title=title,
             description=description,
@@ -1730,7 +1727,13 @@ class WebsiteGenerator:
         
         # Use FileSystemLoader if available
         if self.use_file_templates and self.jinja_env:
-            return self.jinja_env.get_template("index.html.j2")
+            template = self.jinja_env.get_template("index.html.j2")
+            # #region agent log
+            import json
+            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"H","location":"website_generator.py:1715","message":"Using file-based template","data":{"template_name":"index.html.j2","use_file_templates":self.use_file_templates},"timestamp":int(time.time()*1000)})+'\n')
+            # #endregion
+            return template
         
         # Fallback to string template
         template_str = """<!DOCTYPE html>
@@ -2364,10 +2367,16 @@ class WebsiteGenerator:
         });
     </script>
     {% endif %}
+
+    <!-- Generation Timestamp Badge (Bottom-Right) -->
+    <div class="fixed bottom-4 right-4 z-50 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-mono shadow-lg" style="background: rgba(16, 16, 16, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05);">
+        <div>Generated: {{ generation_timestamp or "2025-12-12 12:00:00 PM" }}</div>
+        {% if last_db_update %}<div>DB Updated: {{ last_db_update }}</div>{% else %}<div>DB Updated: 2025-12-12 11:45:00 AM</div>{% endif %}
+    </div>
 </body>
 </html>"""
         return Template(template_str)
-    
+
     def _get_trending_articles(self, articles: List[Dict], limit: int = 5) -> List[Dict]:
         """Get most recent articles (sorted by publication date, newest first)
         Ensures source diversity - limits articles per source

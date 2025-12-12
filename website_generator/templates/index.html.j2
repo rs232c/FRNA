@@ -485,8 +485,8 @@
     
     <!-- Generation Timestamp Badge (Bottom-Right) -->
     <div class="fixed bottom-4 right-4 z-50 text-gray-500 px-3 py-1.5 rounded-lg text-xs font-mono shadow-lg" style="background: rgba(16, 16, 16, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05);">
-        <div>Generated: {{ generation_timestamp }}</div>
-        {% if last_db_update %}<div>DB Updated: {{ last_db_update }}</div>{% endif %}
+        <div>Generated: {{ generation_timestamp or "TEMPLATE_NOT_WORKING" }}</div>
+        {% if last_db_update %}<div>DB Updated: {{ last_db_update }}</div>{% else %}<div>DB Updated: TEMPLATE_NOT_WORKING</div>{% endif %}
     </div>
 </body>
 </html>
