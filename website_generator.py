@@ -1319,7 +1319,7 @@ class WebsiteGenerator:
         <!-- Backdrop -->
         <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999]" onclick="closeHamburgerMenu()"></div>
         <!-- Side Drawer -->
-        <div id="hamburgerDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-[#161616] shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-out z-[1000]" style="transform: translateX(100%);" onclick="event.stopPropagation()">
+        <div id="hamburgerDrawer" class="fixed top-0 right-0 h-full w-80 bg-[#161616] shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-out z-[1000]" style="transform: translateX(100%);" onclick="event.stopPropagation()">
             <!-- Header -->
             <div class="sticky top-0 bg-gradient-to-r from-[#161616] to-[#1a1a1a] border-b border-gray-800/50 p-5 flex items-center justify-between z-10 shadow-lg">
                 <div class="flex items-center gap-3">
@@ -1532,7 +1532,7 @@ class WebsiteGenerator:
             }
             
             // Close on backdrop click
-            const backdrop = menu.querySelector('div[onclick="closeHamburgerMenu()"]');
+            const backdrop = menu.querySelector('div.bg-black\\/70.backdrop-blur-sm');
             if (backdrop) {
                 backdrop.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -1992,7 +1992,7 @@ class WebsiteGenerator:
                     </div>
                     <div class="space-y-4" id="trendingArticlesContainer">
                         {% if trending_articles %}
-                            {% for article in trending_articles[:10] %}
+                            {% for article in trending_articles[:5] %}
                             <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group trending-article-item" data-category-slug="{{ article._category_slug if article._category_slug else 'local-news' }}">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 hover:bg-[#1a1a1a] -mx-2 px-2 rounded-lg transition-colors">
                                     {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
@@ -2960,7 +2960,7 @@ class WebsiteGenerator:
                     </div>
                     <div class="space-y-4" id="trendingArticlesContainer">
                         {% if trending_articles %}
-                            {% for article in trending_articles[:10] %}
+                            {% for article in trending_articles[:5] %}
                             <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group trending-article-item" data-category-slug="{{ article._category_slug if article._category_slug else 'local-news' }}">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 hover:bg-[#1a1a1a] -mx-2 px-2 rounded-lg transition-colors">
                                     {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
