@@ -4,7 +4,7 @@
 
 Run the admin panel with:
 ```bash
-python admin.py
+python server.py
 ```
 
 Or use the batch file:

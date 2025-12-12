@@ -1560,4 +1560,4 @@ def serve_website(filename):
         return "File not found", 404
 
 
-# App is imported by admin.py for execution
+# App is imported by server.py for execution

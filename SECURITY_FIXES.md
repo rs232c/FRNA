@@ -1,7 +1,7 @@
 # Security Fixes Applied
 
 ## Summary
-Applied critical security fixes to `admin.py` based on code review findings.
+Applied critical security fixes to `server.py` and `admin/routes.py` based on code review findings.
 
 ## Changes Made
 

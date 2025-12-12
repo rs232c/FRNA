@@ -34,12 +34,12 @@ The website is currently showing **12 articles** from Fall River news sources.
 
 To start admin panel:
 ```powershell
-python admin.py
+python server.py
 ```
 
 Or use the batch file:
 ```powershell
-start_admin.bat
+scripts/deployment/start_admin.bat
 ```
 
 ## Current Status

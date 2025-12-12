@@ -63,7 +63,7 @@ python main.py           # Start aggregator
 For backward compatibility, these still work but use the unified server:
 
 ```bash
-python admin.py          # Redirects to server.py
+python server.py         # Unified server (website + admin)
 ```
 
 ## Troubleshooting

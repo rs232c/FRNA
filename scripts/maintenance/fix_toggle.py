@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import sys
 
-print("Step 1: Reading admin.py...", flush=True)
-with open('admin.py', 'r', encoding='utf-8') as f:
+print("Step 1: Reading server.py...", flush=True)
+with open('server.py', 'r', encoding='utf-8') as f:
     content = f.read()
 print(f"✓ Read {len(content)} characters", flush=True)
 
@@ -62,7 +62,7 @@ content = content.replace(js_block, '                ')
 print("✓ JavaScript handler removed", flush=True)
 
 print("Step 5: Writing file...", flush=True)
-with open('admin.py', 'w', encoding='utf-8') as f:
+with open('server.py', 'w', encoding='utf-8') as f:
     f.write(content)
 print("✓ File written", flush=True)
 

@@ -10,7 +10,7 @@ try:
     print(f"  Login: admin / admin")
 except Exception as e:
     print(f"✗ Admin panel not responding: {e}")
-    print("  Make sure to run: python admin.py")
+    print("  Make sure to run: python server.py")
 
 
 

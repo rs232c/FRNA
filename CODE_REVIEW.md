@@ -1,7 +1,7 @@
 # Code Review: admin.py and Related Files
 
 **Review Date:** 2024-12-19  
-**Reviewed Files:** `admin.py`, `database.py`, `config.py`, related JavaScript files  
+**Reviewed Files:** `server.py`, `admin/routes.py`, `database.py`, `config.py`, related JavaScript files  
 **Total Issues Found:** 25 (8 Critical, 9 High, 8 Medium/Low)
 
 ---
@@ -119,7 +119,7 @@ csrf = CSRFProtect(app)
 ## ⚠️ HIGH PRIORITY ISSUES
 
 ### 9. **Massive File Size (7742 lines)**
-`admin.py` is too large and should be split into modules:
+`server.py` and `admin/routes.py` should be properly organized:
 - `admin/routes/` - Route handlers
 - `admin/auth.py` - Authentication
 - `admin/api/` - API endpoints
@@ -302,7 +302,7 @@ Many functions lack docstrings or have incomplete ones.
 
 ## 📊 METRICS
 
-- **File Size:** admin.py = 7,742 lines (should be < 500 per file)
+- **File Size:** server.py and admin/routes.py should be properly modularized
 - **Cyclomatic Complexity:** High (many nested conditionals)
 - **Test Coverage:** 0% (estimated)
 - **Security Score:** 4/10 (Critical issues present)
