@@ -443,7 +443,7 @@ class WebsiteGenerator:
         current_time = "12:00 PM"
         generation_timestamp = "Test timestamp"
         last_db_update = "Recently"
-        nav_tabs = '<nav><a href="/">Home</a></nav>'
+        nav_tabs = self._get_nav_tabs("home", zip_code)
         unique_sources = []
         location_badge_text = "Fall River · 02720"
         weather_station_url = ""
@@ -750,10 +750,22 @@ class WebsiteGenerator:
         # Top row: Primary navigation (big, bold)
         # Note: "Local" replaces "Home" and shows mixed articles (all enabled articles)
         top_row_tabs = [
+            ("🏠 Home", f"{home_href}", "home", "home"),
+            ("📰 Local News", f"{category_prefix}local-news.html", "local-news", "category-local-news"),
+            ("🚔 Crime", f"{category_prefix}crime.html", "crime", "category-crime"),
+            ("⚽ Sports", f"{category_prefix}sports.html", "sports", "category-sports"),
+            ("⚱️ Obituaries", f"{category_prefix}obituaries.html", "obituaries", "category-obituaries"),
+            ("🍽️ Food", f"{category_prefix}food.html", "food", "category-food"),
         ]
-        
+
         # Second row: Secondary navigation (slightly smaller, lighter)
         second_row_tabs = [
+            ("🏫 Schools", f"{category_prefix}schools.html", "schools", "category-schools"),
+            ("📅 Events", f"{category_prefix}events.html", "events", "category-events"),
+            ("🏛️ Meetings", f"{category_prefix}meetings.html", "meetings", "category-meetings"),
+            ("🎬 Entertainment", f"{category_prefix}entertainment.html", "entertainment", "category-entertainment"),
+            ("💼 Business", f"{category_prefix}business.html", "business", "category-business"),
+            ("🌤️ Weather", f"{category_prefix}weather.html", "weather", "category-weather"),
         ]
         
         # Build navigation HTML with two-row structure
