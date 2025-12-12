@@ -75,7 +75,11 @@ class ArticleCategorizer {
 // Initialize categorizer
 let categorizer;
 if (typeof window !== 'undefined') {
-    categorizer = new ArticleCategorizer();
-    window.categorizer = categorizer;
+    try {
+        categorizer = new ArticleCategorizer();
+        window.categorizer = categorizer;
+    } catch (error) {
+        console.error('Failed to initialize ArticleCategorizer:', error);
+    }
 }
 

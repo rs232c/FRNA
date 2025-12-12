@@ -1,0 +1,203 @@
+"""Backfill image_url for existing articles by scraping their pages"""
+import asyncio
+import sqlite3
+import argparse
+import time
+from ingestors.news_ingestor import NewsIngestor
+from database import ArticleDatabase
+from config import DATABASE_CONFIG
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+async def process_article(article, ingestor, db_conn, semaphore, stats):
+    """Process a single article to extract and save image_url"""
+    async with semaphore:
+        url = article.get('url')
+        article_id = article.get('id')
+        title = article.get('title', '')[:50]
+        
+        if not url:
+            stats['skipped'] += 1
+            return
+        
+        try:
+            scraped = await ingestor._do_scrape_article(url)
+            
+            if scraped and scraped.get('image_url'):
+                image_url = scraped['image_url']
+                cursor = db_conn.cursor()
+                cursor.execute('UPDATE articles SET image_url = ? WHERE id = ?', (image_url, article_id))
+                db_conn.commit()
+                stats['updated'] += 1
+                logger.info(f"  ✓ [{stats['processed']}/{stats['total']}] Updated article {article_id}: {title}...")
+                # #region agent log
+                try:
+                    import json
+                    with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                        f.write(json.dumps({"sessionId":"debug-session","runId":"backfill","hypothesisId":"J","location":"backfill_image_urls.py:process_article","message":"Backfilled article with image_url","data":{"article_id":article_id,"title":title,"image_url":(image_url or '')[:80]},"timestamp":int(time.time()*1000)})+'\n')
+                except: pass
+                # #endregion
+            else:
+                stats['no_image'] += 1
+                logger.debug(f"  ✗ [{stats['processed']}/{stats['total']}] No image found for article {article_id}: {title}...")
+                # #region agent log
+                try:
+                    import json
+                    with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                        f.write(json.dumps({"sessionId":"debug-session","runId":"backfill","hypothesisId":"J","location":"backfill_image_urls.py:process_article","message":"No image found for article","data":{"article_id":article_id,"title":title,"url":(url or '')[:60]},"timestamp":int(time.time()*1000)})+'\n')
+                except: pass
+                # #endregion
+        except Exception as e:
+            stats['errors'] += 1
+            logger.warning(f"  ✗ [{stats['processed']}/{stats['total']}] Error scraping article {article_id} ({url[:50]}...): {e}")
+        finally:
+            stats['processed'] += 1
+            # Print progress every 10 articles
+            if stats['processed'] % 10 == 0:
+                progress = (stats['processed'] / stats['total']) * 100
+                logger.info(f"Progress: {progress:.1f}% ({stats['processed']}/{stats['total']}) - Updated: {stats['updated']}, No image: {stats['no_image']}, Errors: {stats['errors']}")
+
+async def backfill_image_urls(limit=100, concurrency=10, offset=0, process_all=False):
+    """Scrape article pages to get image_url for existing articles
+    
+    Args:
+        limit: Maximum number of articles to process per batch
+        concurrency: Maximum number of concurrent requests
+        offset: Starting offset for pagination
+        process_all: If True, process all articles in batches
+    """
+    db = ArticleDatabase()
+    db_path = DATABASE_CONFIG.get("path", "fallriver_news.db")
+    
+    # Get total count of articles without image_url
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM articles WHERE image_url IS NULL OR image_url = ""')
+    total_articles = cursor.fetchone()[0]
+    conn.close()
+    
+    if total_articles == 0:
+        logger.info("No articles need image_url backfill")
+        return
+    
+    logger.info(f"Found {total_articles} articles without image_url")
+    
+    if process_all:
+        logger.info(f"Processing all {total_articles} articles in batches of {limit}")
+        total_processed = 0
+        current_offset = offset
+        
+        while current_offset < total_articles:
+            batch_limit = min(limit, total_articles - current_offset)
+            logger.info(f"\n{'='*60}")
+            logger.info(f"Processing batch: {current_offset} to {current_offset + batch_limit} (of {total_articles})")
+            logger.info(f"{'='*60}")
+            
+            batch_stats = await process_batch(batch_limit, concurrency, current_offset, db_path)
+            total_processed += batch_stats['processed']
+            current_offset += batch_limit
+            
+            if current_offset < total_articles:
+                logger.info(f"\nBatch complete. Continuing to next batch...")
+                await asyncio.sleep(2)  # Brief pause between batches
+        
+        logger.info(f"\n{'='*60}")
+        logger.info(f"All batches complete! Total processed: {total_processed}")
+        logger.info(f"{'='*60}")
+    else:
+        await process_batch(limit, concurrency, offset, db_path)
+
+async def process_batch(limit, concurrency, offset, db_path):
+    """Process a single batch of articles"""
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # Get articles without image_url
+    cursor.execute('''
+        SELECT id, url, title, source 
+        FROM articles 
+        WHERE image_url IS NULL OR image_url = ''
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
+    ''', (limit, offset))
+    
+    articles = [dict(row) for row in cursor.fetchall()]
+    
+    if not articles:
+        logger.info("No articles found in this batch")
+        conn.close()
+        return {'processed': 0, 'updated': 0, 'no_image': 0, 'errors': 0, 'skipped': 0}
+    
+    logger.info(f"Processing {len(articles)} articles with concurrency limit of {concurrency}")
+    
+    # Create a dummy ingestor just for scraping
+    dummy_config = {"name": "Backfill", "url": ""}
+    ingestor = NewsIngestor(dummy_config)
+    
+    # Statistics tracking
+    stats = {
+        'total': len(articles),
+        'processed': 0,
+        'updated': 0,
+        'no_image': 0,
+        'errors': 0,
+        'skipped': 0
+    }
+    
+    # Create semaphore for rate limiting
+    semaphore = asyncio.Semaphore(concurrency)
+    
+    # Process articles in parallel
+    start_time = time.time()
+    tasks = [process_article(article, ingestor, conn, semaphore, stats) for article in articles]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Handle any exceptions that weren't caught
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            stats['errors'] += 1
+            logger.error(f"Unhandled exception for article {articles[i].get('id')}: {result}")
+    
+    elapsed_time = time.time() - start_time
+    
+    conn.close()
+    await ingestor._close_session()
+    
+    # Print summary
+    logger.info(f"\n{'='*60}")
+    logger.info(f"Batch Summary:")
+    logger.info(f"  Total processed: {stats['processed']}")
+    logger.info(f"  Successfully updated: {stats['updated']}")
+    logger.info(f"  No image found: {stats['no_image']}")
+    logger.info(f"  Errors: {stats['errors']}")
+    logger.info(f"  Skipped: {stats['skipped']}")
+    logger.info(f"  Time elapsed: {elapsed_time:.2f} seconds")
+    if stats['processed'] > 0:
+        logger.info(f"  Average time per article: {elapsed_time / stats['processed']:.2f} seconds")
+    logger.info(f"{'='*60}\n")
+    
+    return stats
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Backfill image_url for articles missing images')
+    parser.add_argument('limit', type=int, nargs='?', default=100, 
+                       help='Number of articles to process (default: 100)')
+    parser.add_argument('--concurrency', '-c', type=int, default=10,
+                       help='Maximum concurrent requests (default: 10)')
+    parser.add_argument('--offset', '-o', type=int, default=0,
+                       help='Starting offset for pagination (default: 0)')
+    parser.add_argument('--all', '-a', action='store_true',
+                       help='Process all articles in batches')
+    
+    args = parser.parse_args()
+    
+    asyncio.run(backfill_image_urls(
+        limit=args.limit,
+        concurrency=args.concurrency,
+        offset=args.offset,
+        process_all=args.all
+    ))
+

@@ -49,12 +49,16 @@
         <div class="settings-section" style="margin-top: 2rem;">
             <h3>Display Settings</h3>
             <div class="toggle-switch">
-                <label>Show Images:</label>
+                <label title="Allow Hotlinked Images – turns on/off external photos (obituaries, news sites)">Allow Hotlinked Images:</label>
                 <label class="switch">
                     <input type="checkbox" id="showImagesSettings" {{ 'checked' if settings.get('show_images') == '1' else '' }}>
                     <span class="slider"></span>
                 </label>
             </div>
+            <p style="font-size: 0.9rem; color: #666; margin-top: 0.75rem; line-height: 1.4;">
+                Toggling this option changes how the static site renders images, so you must regenerate the website for the new state to appear.
+                Regeneration rebuilds the cached pages (source fetches are intentionally throttled to ~5 minutes) and serves the updated markup, so please wait for the process to complete before checking the frontend.
+            </p>
         </div>
         
         <div class="settings-section" style="margin-top: 2rem;">
@@ -137,6 +141,29 @@
 
 <script>
 (function() {
+    // #region agent log
+    // Log checkbox state on page load
+    (function() {
+        const checkbox = document.getElementById('showImagesSettings');
+        if (checkbox) {
+            console.log('Settings page loaded - checkbox state:', checkbox.checked);
+            fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    sessionId: 'debug-session',
+                    runId: 'settings-page-load',
+                    hypothesisId: 'K',
+                    location: 'admin/templates/admin/settings.html:193',
+                    message: 'Settings page loaded - checkbox initial state',
+                    data: {checkboxChecked: checkbox.checked, checkboxId: checkbox.id},
+                    timestamp: Date.now()
+                })
+            }).catch(() => {});
+        }
+    })();
+    // #endregion
+    
     function checkAndTriggerRegeneration() {
         // Get zip code from URL - use same function as admin.js
         let zipCode;

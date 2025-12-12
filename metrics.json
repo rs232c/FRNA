@@ -3,71 +3,71 @@
     {
       "metric": "duplicates_removed",
       "count": 1,
-      "timestamp": "2025-12-10T23:55:13.446245",
+      "timestamp": "2025-12-11T19:47:21.743213",
       "metadata": {}
     }
   ],
   "remove_duplicates": [
     {
       "operation": "remove_duplicates",
-      "duration": 0.008794546127319336,
-      "timestamp": "2025-12-10T23:55:13.446260",
+      "duration": 0.01484823226928711,
+      "timestamp": "2025-12-11T19:47:21.743240",
       "metadata": {}
     }
   ],
   "articles_aggregated": [
     {
       "metric": "articles_aggregated",
-      "count": 13,
-      "timestamp": "2025-12-10T23:55:15.937819",
+      "count": 57,
+      "timestamp": "2025-12-11T19:47:54.558794",
       "metadata": {}
     }
   ],
   "aggregate_articles": [
     {
       "operation": "aggregate_articles",
-      "duration": 2.4915475845336914,
-      "timestamp": "2025-12-10T23:55:15.937834",
+      "duration": 32.8155243396759,
+      "timestamp": "2025-12-11T19:47:54.558809",
       "metadata": {}
     }
   ],
   "filter_rejected": [
     {
       "operation": "filter_rejected",
-      "duration": 0.016276836395263672,
-      "timestamp": "2025-12-10T23:55:15.954191",
+      "duration": 0.006311893463134766,
+      "timestamp": "2025-12-11T19:47:54.565172",
       "metadata": {}
     }
   ],
   "save_articles": [
     {
       "operation": "save_articles",
-      "duration": 0.17670392990112305,
-      "timestamp": "2025-12-10T23:55:16.130921",
+      "duration": 0.4269528388977051,
+      "timestamp": "2025-12-11T19:47:54.992145",
       "metadata": {}
     }
   ],
   "get_articles_from_db": [
     {
       "operation": "get_articles_from_db",
-      "duration": 0.037680864334106445,
-      "timestamp": "2025-12-10T23:55:16.168630",
+      "duration": 0.04193615913391113,
+      "timestamp": "2025-12-11T19:47:55.034132",
       "metadata": {}
     }
   ],
   "enrich_articles": [
     {
       "operation": "enrich_articles",
-      "duration": 0.020781517028808594,
-      "timestamp": "2025-12-10T23:55:16.189445",
+      "duration": 0.014716625213623047,
+      "timestamp": "2025-12-11T19:47:55.048876",
       "metadata": {}
     }
   ],
   "generate_website": [
     {
       "operation": "generate_website",
-      "duration": 0.9600765705108643,
-      "timestamp": "2025-12-10T23:55:17.149545",
+      "duration": 128.7004153728485,
+      "timestamp": "2025-12-11T19:50:03.749312",
       "metadata": {}
     }
   ]

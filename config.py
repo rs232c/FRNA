@@ -253,6 +253,7 @@ CATEGORY_SLUGS = {
     "obituaries": "Obituaries",
     "media": "Media",  # For navigation
     "scanner": "Scanner",  # For navigation
+    "meetings": "Meetings",  # For navigation
 }
 
 # Category Mapping - Maps old article categories to new category slugs
@@ -308,15 +309,18 @@ WEBSITE_CONFIG = {
     "title": f"{LOCALE} News Aggregator",
     "description": f"Latest news and updates from {LOCALE}",
     "domain": os.getenv("WEBSITE_DOMAIN", "fallrivernews.local"),
-    "output_dir": "website_output",
+    "output_dir": "build",
     "auto_deploy": os.getenv("AUTO_DEPLOY", "false").lower() == "true",
     "deploy_method": os.getenv("DEPLOY_METHOD", "github_pages")  # github_pages, netlify, vercel
 }
 
 # Database Configuration
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_FILENAME = os.getenv("DATABASE_PATH", "fallriver_news.db")
+DATABASE_PATH = DEFAULT_DB_FILENAME if os.path.isabs(DEFAULT_DB_FILENAME) else os.path.join(BASE_DIR, DEFAULT_DB_FILENAME)
 DATABASE_CONFIG = {
     "type": "sqlite",
-    "path": "fallriver_news.db"
+    "path": DATABASE_PATH
 }
 
 # Scanner Configuration (Broadcastify)

@@ -421,6 +421,9 @@
             color: #0078d4;
         }
         .tab-content {
+            display: none;
+        }
+        .tab-content.active {
             display: block;
         }
         .sources-list {
@@ -575,26 +578,26 @@
         }
     </style>
     <script src="/Sortable.min.js"></script>
-    <script src="{{ url_for('admin.static', filename='js/admin.js') }}?v={{ cache_bust }}"></script>
+    <script src="/static/admin/js/admin.js?v={{ cache_bust }}"></script>
 </head>
 <body>
     <div class="header">
         <h1>{% if zip_code %}Zip {{ zip_code }} - {% endif %}Admin Dashboard</h1>
         <div style="display: flex; gap: 1rem; align-items: center;">
             <a href="/">Home</a>
-            <a href="{{ url_for('admin.logout') }}">Logout</a>
+            <a href="/admin/logout">Logout</a>
         </div>
     </div>
     
     <div class="container" id="admin-container" data-zip-code="{{ zip_code or '' }}">
         <div class="tabs">
-            <a href="{{ url_for('admin.dashboard', zip_code=zip_code) }}" class="tab-btn {{ 'active' if active_tab == 'articles' else '' }}">Articles</a>
-            <a href="{{ url_for('admin.trash_tab', zip_code=zip_code) }}" class="tab-btn {{ 'active' if active_tab == 'trash' else '' }}">🗑️ Trash</a>
-            <a href="{{ url_for('admin.sources_tab', zip_code=zip_code) }}" class="tab-btn {{ 'active' if active_tab == 'sources' else '' }}">Sources</a>
-            <a href="{{ url_for('admin.stats_tab', zip_code=zip_code) }}" class="tab-btn {{ 'active' if active_tab == 'stats' else '' }}">📊 Stats</a>
-            <a href="{{ url_for('admin.relevance_tab', zip_code=zip_code) }}" class="tab-btn {{ 'active' if active_tab == 'relevance' else '' }}">🎯 Relevance</a>
-            <a href="{{ url_for('admin.categories_tab', zip_code=zip_code) }}" class="tab-btn {{ 'active' if active_tab == 'categories' else '' }}">📂 Categories</a>
-            <a href="{{ url_for('admin.settings_tab', zip_code=zip_code) }}" class="tab-btn {{ 'active' if active_tab == 'settings' else '' }}">⚙️ Settings</a>
+            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=articles" class="tab-btn {{ 'active' if active_tab == 'articles' else '' }}">Articles</a>
+            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=trash" class="tab-btn {{ 'active' if active_tab == 'trash' else '' }}">🗑️ Trash</a>
+            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=sources" class="tab-btn {{ 'active' if active_tab == 'sources' else '' }}">Sources</a>
+            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=stats" class="tab-btn {{ 'active' if active_tab == 'stats' else '' }}">📊 Stats</a>
+            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=relevance" class="tab-btn {{ 'active' if active_tab == 'relevance' else '' }}">🎯 Relevance</a>
+            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=categories" class="tab-btn {{ 'active' if active_tab == 'categories' else '' }}">📂 Categories</a>
+            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=settings" class="tab-btn {{ 'active' if active_tab == 'settings' else '' }}">⚙️ Settings</a>
         </div>
         
         {% block content %}{% endblock %}

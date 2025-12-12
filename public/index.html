@@ -25,7 +25,66 @@
         /* Custom styles for things Tailwind can't handle */
         .lazy-image { opacity: 0; transition: opacity 0.3s; }
         .lazy-image.loaded { opacity: 1; }
+
+        /* Immediately hide homepage elements for category routes */
+        @media screen {
+            body[data-spa-category] div.mb-6,
+            body[data-spa-category] div.mb-8 {
+                display: none !important;
+            }
+        }
+
+        /* Hide homepage elements when serving as SPA category pages */
+        body[data-spa-category] div.mb-6:has(.bg-gradient-to-r.from-red-600),
+        body[data-spa-category] div.mb-8:has(.bg-gradient-to-r.from-yellow-400),
+        body[data-spa-category] div.mb-8:has(.bg-gradient-to-r.from-orange-500),
+        body[data-spa-category] .bg-gradient-to-r {
+            display: none !important;
+        }
     </style>
+    <script>
+        // Detect if this is a category route and hide homepage elements immediately
+        (function() {
+            var path = window.location.pathname;
+            if (path !== '/' && path !== '' && !path.startsWith('/zip_') && !path.includes('.')) {
+                document.body.setAttribute('data-spa-category', path.substring(1));
+
+                // Use MutationObserver to hide elements as they are added to DOM
+                var observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'childList') {
+                            mutation.addedNodes.forEach(function(node) {
+                                if (node.nodeType === 1) { // Element node
+                                    // Hide alert articles
+                                    if (node.matches && node.matches('div.mb-6')) {
+                                        if (node.querySelector('.bg-gradient-to-r') && node.textContent.includes('URGENT ALERT')) {
+                                            node.style.display = 'none';
+                                        }
+                                    }
+                                    // Hide featured articles
+                                    if (node.matches && node.matches('div.mb-8')) {
+                                        if (node.querySelector('.bg-gradient-to-r')) {
+                                            node.style.display = 'none';
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
+                });
+
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+
+                // Also hide existing elements immediately
+                document.querySelectorAll('div.mb-6, div.mb-8').forEach(function(el) {
+                    el.style.display = 'none';
+                });
+            }
+        })();
+    </script>
 </head>
 <body class="bg-[#0f0f0f] text-gray-100 min-h-screen">
     <!-- Top Bar -->

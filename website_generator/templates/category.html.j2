@@ -20,7 +20,7 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="{{ css_path }}style.css">
+    <link rel="stylesheet" href="{{ css_path }}style.css?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}">
     <style>
         .lazy-image { opacity: 0; transition: opacity 0.3s; }
         .lazy-image.loaded { opacity: 1; }
@@ -38,13 +38,22 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <a href="/admin" id="hamburgerMenuLink" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors inline-flex items-center justify-center w-10 h-10" title="Admin Panel">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Hamburger Menu Button (Visible on All Screens - for category controls) -->
+                    <button id="mobileNavToggle" class="flex items-center gap-2 text-gray-200 hover:text-white px-3 py-2 rounded-lg hover:bg-[#161616]/50 transition-colors border border-gray-800" aria-label="Toggle navigation menu" title="Menu & Category Controls">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <!-- Desktop Admin Button -->
+                    <a href="/admin" id="hamburgerMenuLink" class="hidden lg:inline-flex bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors items-center justify-center w-10 h-10" title="Admin Panel">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
                     </a>
                     <script>
-                        // Update hamburger menu link based on session
+                        console.log('[FRNA] ✅ Category page navigation buttons initialized');
+                        // Update admin link based on session
                         (function() {
                             fetch('/api/session-check')
                                 .then(response => response.json())
@@ -106,9 +115,9 @@
                         {% for hero_article in hero_articles %}
                         <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / {{ hero_articles|length }}); width: calc(100% / {{ hero_articles|length }});">
                             <a href="{{ hero_article.url }}" target="_blank" rel="noopener" class="group block relative w-full h-full">
-                                {% if show_images and hero_article.image_url %}
+                                {% if show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) %}
                                 <div class="relative h-full overflow-hidden">
-                                    <img data-src="{{ hero_article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ hero_article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 lazy-image">
+                                    <img src="{{ hero_article.image_url }}" alt="{{ hero_article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
                                     <!-- Dark gradient overlay bottom 40% -->
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" style="background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, transparent 100%);"></div>
                                     <!-- Video play icon if video -->
@@ -214,9 +223,9 @@
                             {% for article in trending_articles[:8] %}
                             <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
-                                    {% if show_images and article.image_url %}
+                                    {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f]">
-                                        <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 lazy-image">
+                                        <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
                                     </div>
                                     {% else %}
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden">
@@ -249,9 +258,9 @@
             {% for article in articles %}
             <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}">
                 <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
-                    {% if show_images and article.image_url %}
+                    {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
                     <div class="relative aspect-square overflow-hidden" style="border-radius: 12px;">
-                        <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover lazy-image">
+                        <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover">
                         <!-- Source initials in top-right corner -->
                         <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px {{ article.source_glow_color }};">
                             {{ article.source_initials }}
@@ -329,7 +338,17 @@
         </div>
     </footer>
     
-    <script src="{{ home_path }}js/main.js"></script>
+    <!-- Load scripts in dependency order -->
+    <script src="{{ home_path }}js/storage.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/categorizer.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/news-fetcher.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/article-renderer.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/weather.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/tabs.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/stats.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/main.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/zip-router.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script>console.log('[FRNA] ✅ Category page loaded with cache-busting - build:', '{{ current_time }}');</script>
     <script>
         // Lazy load images with data-src
         document.addEventListener('DOMContentLoaded', function() {

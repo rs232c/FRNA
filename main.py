@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from aggregator import NewsAggregator
 from website_generator import WebsiteGenerator
 from social_poster import SocialPoster
-from deploy import WebsiteDeployer
+from scripts.deployment.deploy import WebsiteDeployer
 from database import ArticleDatabase
 from config import POSTING_SCHEDULE, WEBSITE_CONFIG, DATABASE_CONFIG
 from monitoring.metrics import get_metrics, TimingContext
@@ -41,15 +41,15 @@ class NewsAggregatorApp:
             conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
             cursor = conn.cursor()
             
-            # Get auto_regenerate setting
+            # Get auto_regenerate setting (default to True if not set)
             cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('auto_regenerate',))
             row = cursor.fetchone()
-            auto_regenerate = row[0] == '1' if row else False
+            auto_regenerate = row[0] == '1' if row else True  # Default to True if not set
             
-            # Get regenerate_interval setting (default 10 minutes)
+            # Get regenerate_interval setting (use database value, default to 1 minute if not set)
             cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('regenerate_interval',))
             row = cursor.fetchone()
-            regenerate_interval = int(row[0]) if row and row[0] else 10
+            regenerate_interval = int(row[0]) if row and row[0] else 1  # Default to 1 minute if not set
             
             # Get regenerate_on_load setting
             cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('regenerate_on_load',))
@@ -66,7 +66,7 @@ class NewsAggregatorApp:
             logger.warning(f"Could not load regenerate settings: {e}, using defaults")
             return {
                 'auto_regenerate': True,
-                'regenerate_interval': 10,
+                'regenerate_interval': 1,  # Default to 1 minute
                 'regenerate_on_load': False
             }
     

@@ -80,16 +80,11 @@
         {% if error %}
         <div class="error">{{ error }}</div>
         {% endif %}
-        {% if zip_code %}
-        <div class="info">
-            <strong>Zip Code Login:</strong><br>
-            Username: <strong>{{ zip_code }}</strong><br>
-            Password: <strong>admin</strong>
-        </div>
-        {% else %}
-        <div class="info">
-            <strong>Standard Admin:</strong> username = "admin", password = "admin"<br>
-            <strong>Per-Zip Admin:</strong> username = zip code (e.g., "02720"), password = "admin"
+        {% if not zip_code %}
+        <div class="info" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 0.75rem; margin-bottom: 1rem; border-radius: 4px;">
+            <strong>Setup Required:</strong><br>
+            Admin credentials must be configured via environment variables.<br>
+            Set ADMIN_USERNAME, ADMIN_PASSWORD, and ZIP_LOGIN_PASSWORD in your .env file.
         </div>
         {% endif %}
         <form method="POST" id="loginForm">
@@ -105,19 +100,21 @@
         </form>
     </div>
     <script>
+        // Store login state in localStorage after successful login
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             const formData = new FormData(this);
             const username = formData.get('username');
             const password = formData.get('password');
-            
+
+            // Check if it's a zip code (5 digits)
             if (username && username.length === 5 && /^[0-9]{5}$/.test(username)) {
-                if (password === 'admin') {
-                    localStorage.setItem('admin_zip_code', username);
-                    sessionStorage.setItem('admin_zip_code', username);
-                }
+                // Store zip code in localStorage for client-side filtering
+                localStorage.setItem('admin_zip_code', username);
+                sessionStorage.setItem('admin_zip_code', username);
             }
         });
-        
+
+        // Check if we have a zip code from URL
         const urlParams = new URLSearchParams(window.location.search);
         const zipParam = urlParams.get('z');
         if (zipParam && zipParam.length === 5) {
@@ -126,4 +123,3 @@
     </script>
 </body>
 </html>
-

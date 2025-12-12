@@ -29,6 +29,28 @@ _last_regeneration_start = None  # Track when regen started to prevent rapid-fir
 class RegeneratingHTTPRequestHandler(SimpleHTTPRequestHandler):
     """HTTP handler that checks if regeneration is needed before serving pages"""
     
+    def end_headers(self):
+        """Override to add cache headers for static files"""
+        # Add cache headers for static files (frontend caching enabled)
+        path = self.path.lower()
+        
+        # No cache for root redirect and API endpoints
+        if self.path == '/' or self.path == '' or self.path.startswith('/api/'):
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+        # Cache HTML files for 5 minutes (content changes frequently)
+        elif path.endswith('.html'):
+            self.send_header('Cache-Control', 'public, max-age=300')
+        # Cache JS, CSS, images for 1 hour (static assets)
+        elif any(path.endswith(ext) for ext in ['.js', '.css', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.ico', '.webp']):
+            self.send_header('Cache-Control', 'public, max-age=3600')
+        # Default: no cache for unknown types
+        else:
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        
+        super().end_headers()
+    
     def do_GET(self):
         """Handle GET requests - check if regeneration needed"""
         # Handle root path - redirect to default zip 02720
@@ -111,7 +133,7 @@ class RegeneratingHTTPRequestHandler(SimpleHTTPRequestHandler):
     def _should_regenerate(self):
         """Check if website needs regeneration based on admin settings"""
         try:
-            # Get the parent directory (we're serving from website_output)
+            # Get the parent directory (we're serving from build)
             parent_dir = os.path.dirname(os.path.abspath(os.getcwd()))
             if not parent_dir:
                 parent_dir = os.path.join(os.getcwd(), '..')
@@ -205,8 +227,8 @@ class RegeneratingHTTPRequestHandler(SimpleHTTPRequestHandler):
                 logger.info("Website is out of date - triggering QUICK regeneration in background")
                 logger.info("Page served immediately - regeneration happening asynchronously")
                 logger.info("=" * 60)
-                
-                # Get the parent directory (we're serving from website_output)
+
+                # Get the parent directory (we're serving from build)
                 parent_dir = os.path.dirname(os.path.abspath(os.getcwd()))
                 if not parent_dir:
                     parent_dir = os.path.join(os.getcwd(), '..')
@@ -279,7 +301,7 @@ class RegeneratingHTTPRequestHandler(SimpleHTTPRequestHandler):
         logger.info(f"{self.address_string()} - {format % args}")
 
 
-def serve(port=8000, directory="website_output"):
+def serve(port=8000, directory="build"):
     """Serve the website with auto-regeneration"""
     # Store original directory
     original_dir = os.getcwd()
@@ -311,7 +333,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Serve website with auto-regeneration")
     parser.add_argument("--port", type=int, default=8000, help="Port to serve on")
-    parser.add_argument("--dir", type=str, default="website_output", help="Directory to serve")
+    parser.add_argument("--dir", type=str, default="build", help="Directory to serve")
     args = parser.parse_args()
     
     serve(port=args.port, directory=args.dir)

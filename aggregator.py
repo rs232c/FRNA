@@ -655,8 +655,12 @@ class NewsAggregator:
             
             article['_relevance_score'] = relevance_score
             
-            # Auto-filter articles below relevance threshold
-            if relevance_score < relevance_threshold:
+            # Auto-filter articles below relevance threshold (exclude obituaries)
+            # Check both category and primary_category fields
+            article_category = (article.get('category', '') or article.get('primary_category', '') or '').lower()
+            is_obituary = article_category in ['obituaries', 'obituary', 'obits']
+            
+            if relevance_score < relevance_threshold and not is_obituary:
                 logger.info(f"🔴 AUTO-FILTER: Filtering out article '{title_lower[:50]}...' - relevance score below threshold: {relevance_score:.1f} < {relevance_threshold}")
                 
                 # Save auto-filtered article to database for review

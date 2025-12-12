@@ -15,7 +15,7 @@ class ArticleDatabase:
     """Database for storing articles and tracking posted items"""
     
     def __init__(self):
-        self.db_path = DATABASE_CONFIG.get("path", "fallriver_news.db")
+        self.db_path = DATABASE_CONFIG["path"]
         self._init_database()
     
     def _init_database(self):
@@ -447,7 +447,19 @@ class ArticleDatabase:
             cursor.execute('ALTER TABLE article_management ADD COLUMN is_alert INTEGER DEFAULT 0')
         except:
             pass
-        
+        try:
+            cursor.execute('ALTER TABLE article_management ADD COLUMN is_featured INTEGER DEFAULT 0')
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+        try:
+            cursor.execute('ALTER TABLE article_management ADD COLUMN user_notes TEXT DEFAULT ""')
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+        try:
+            cursor.execute('ALTER TABLE article_management ADD COLUMN created_at TEXT')
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
         # Initialize default settings
         cursor.execute('''
             INSERT OR IGNORE INTO admin_settings (key, value) 
@@ -630,7 +642,25 @@ class ArticleDatabase:
                             logger.info(f"Skipping rejected article: {title[:50]} (ID: {existing_id})")
                             # Don't add to new_ids - we want to skip it completely
                             continue
-                        # Article already exists but not rejected, skip adding duplicate
+                        # Article already exists but not rejected - update image_url if provided and missing
+                        new_image_url = article.get("image_url")
+                        if new_image_url:
+                            # Check if existing article has image_url
+                            cursor.execute('SELECT image_url FROM articles WHERE id = ?', (existing_id,))
+                            result = cursor.fetchone()
+                            existing_image_url = result[0] if result else None
+                            # Update if missing or empty
+                            if not existing_image_url or (isinstance(existing_image_url, str) and existing_image_url.strip() == ''):
+                                cursor.execute('UPDATE articles SET image_url = ? WHERE id = ?', (new_image_url, existing_id))
+                                logger.debug(f"Updated existing article (ID: {existing_id}) with image_url: {title[:50]}")
+                                # #region agent log
+                                try:
+                                    import json
+                                    import time
+                                    with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                                        f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"I","location":"database.py:633","message":"Updated existing article with image_url","data":{"article_id":existing_id,"title":(title or '')[:50],"new_image_url":(new_image_url or '')[:80]},"timestamp":int(time.time()*1000)})+'\n')
+                                except: pass
+                                # #endregion
                         logger.debug(f"Article already exists (ID: {existing_id}): {title[:50]}")
                         new_ids.append(existing_id)
                         continue
@@ -753,14 +783,56 @@ class ArticleDatabase:
                             secondary_category = "News"
                             category_confidence = 0.5
                     
+                    # Map primary_category to category (lowercase, match expected values)
+                    # primary_category uses capitalized names like "Obituaries", category uses lowercase like "obituaries"
+                    category = article.get("category", "").lower() if article.get("category") else ""
+                    if not category and primary_category:
+                        # Map primary_category to category format
+                        category_map = {
+                            "Obituaries": "obituaries",
+                            "obits": "obituaries",  # Handle short form from classifier
+                            "Obits": "obituaries",  # Handle capitalized short form
+                            "News": "news",
+                            "Sports": "sports",
+                            "Entertainment": "entertainment",
+                            "Crime": "crime",
+                            "Business": "business",
+                            "Schools": "schools",
+                            "Food": "food",
+                            "Events": "events",
+                            "Weather": "weather"
+                        }
+                        category = category_map.get(primary_category, primary_category.lower())
+                        # Also map "obits" lowercase if it wasn't caught above
+                        if category == "obits":
+                            category = "obituaries"
+                    
+                    # #region agent log
+                    try:
+                        if (category == "obituaries" or (primary_category or "").lower() in ["obituaries", "obituary", "obits"]):
+                            import json
+                            import time
+                            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"database.py:755","message":"Saving obituary article","data":{"title":(title or '')[:50],"category":category,"primary_category":primary_category,"source":source},"timestamp":int(time.time()*1000)})+'\n')
+                    except: pass
+                    # #endregion
+                    
                     # Insert new article with city_state (Phase 1)
+                    # #region agent log
+                    try:
+                        import json
+                        import time
+                        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"H","location":"database.py:791","message":"Saving article to database","data":{"title":(title or '')[:50],"has_image_url":bool(article.get("image_url")),"image_url":(article.get("image_url") or '')[:80] if article.get("image_url") else None},"timestamp":int(time.time()*1000)})+'\n')
+                    except: pass
+                    # #endregion
                     cursor.execute('''
                         INSERT INTO articles 
                         (title, url, published, summary, content, source, source_type, 
                          image_url, post_id, ingested_at, relevance_score, local_score, zip_code,
                          city_name, state_abbrev, city_state,
-                         primary_category, secondary_category, category_confidence, category_override)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         category, primary_category, secondary_category, category_confidence, category_override)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         title,
                         url,
@@ -778,6 +850,7 @@ class ArticleDatabase:
                         city_name,
                         state_abbrev,
                         city_state,
+                        category or "news",
                         primary_category or "News",
                         secondary_category or "News",
                         category_confidence or 0.5,

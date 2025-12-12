@@ -1,6 +1,9 @@
 """
 Intelligent caching layer for news aggregation
 Uses in-memory cache with file-based persistence
+
+CACHING DISABLED: 2024-12-11
+All caching is disabled to ensure fresh data on every page load.
 """
 import json
 import hashlib
@@ -15,25 +18,35 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Cache directory
+# CACHING DISABLED - Always fetch fresh data
+CACHE_DISABLED = True
+
+# Cache directory (kept for compatibility but not used when disabled)
 CACHE_DIR = Path("cache")
 CACHE_DIR.mkdir(exist_ok=True)
 
-# Cache TTLs (in seconds)
+# Cache TTLs (in seconds) - NOT USED when CACHE_DISABLED=True
 CACHE_TTLS = {
-    "rss": 15 * 60,  # 15 minutes
-    "scraped": 30 * 60,  # 30 minutes
-    "weather": 5 * 60,  # 5 minutes
-    "articles": 10 * 60,  # 10 minutes
+    "rss": 0,  # DISABLED
+    "scraped": 0,  # DISABLED
+    "weather": 0,  # DISABLED
+    "articles": 0,  # DISABLED
+    "meetings": 0,  # DISABLED
 }
 
 
 class CacheManager:
-    """Manages caching for RSS feeds, scraped content, and other data"""
+    """Manages caching for RSS feeds, scraped content, and other data
+    
+    NOTE: Caching is currently DISABLED (CACHE_DISABLED=True)
+    All get() calls return None to force fresh data fetches.
+    """
     
     def __init__(self):
         self.memory_cache = {}  # In-memory cache
         self.cache_dir = CACHE_DIR
+        if CACHE_DISABLED:
+            logger.info("[CACHE] ⚠️ Caching is DISABLED - all requests will fetch fresh data")
     
     def _get_cache_key(self, cache_type: str, identifier: str) -> str:
         """Generate cache key"""
@@ -45,7 +58,15 @@ class CacheManager:
         return self.cache_dir / f"{cache_key}.json"
     
     def get(self, cache_type: str, identifier: str) -> Optional[Any]:
-        """Get cached value if exists and not expired"""
+        """Get cached value if exists and not expired
+        
+        DISABLED: Always returns None to force fresh data
+        """
+        # CACHING DISABLED - always return None to force fresh fetch
+        if CACHE_DISABLED:
+            logger.debug(f"[CACHE] DISABLED - forcing fresh fetch for {cache_type}:{identifier}")
+            return None
+        
         cache_key = self._get_cache_key(cache_type, identifier)
         
         # Check memory cache first
@@ -82,7 +103,15 @@ class CacheManager:
         return None
     
     def set(self, cache_type: str, identifier: str, data: Any, ttl: Optional[int] = None):
-        """Set cached value"""
+        """Set cached value
+        
+        DISABLED: Does nothing when caching is disabled
+        """
+        # CACHING DISABLED - don't store anything
+        if CACHE_DISABLED:
+            logger.debug(f"[CACHE] DISABLED - not caching {cache_type}:{identifier}")
+            return
+        
         cache_key = self._get_cache_key(cache_type, identifier)
         
         # Get TTL

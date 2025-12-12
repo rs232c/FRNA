@@ -1,9 +1,11 @@
 /**
  * Admin Panel JavaScript
  * All button handlers and event delegation
+ * FIXED: 2024-12-11 - Complete event delegation for ALL buttons
  */
 
-console.log('Admin script starting to load...');
+console.log('[FRNA Admin] ✅ Admin script loading...');
+console.log('[FRNA Admin] Build timestamp:', new Date().toISOString());
 
 // Utility functions for escaping
 function escapeHtml(unsafe) {
@@ -50,12 +52,31 @@ function getZipCodeFromUrl() {
     return null;
 }
 
+// Update the article count in the header
+function updateArticleCount() {
+    const articlesList = document.getElementById('articles-list');
+    const visibleArticles = articlesList.querySelectorAll('.article-item').length;
+    const totalArticles = parseInt(articlesList.getAttribute('data-total-articles') || 0);
+
+    const headerDiv = articlesList.querySelector('div');
+    if (headerDiv) {
+        const isTrash = window.location.pathname.includes('/trash');
+        // Get rejected count from data attribute on articles-list
+        const rejectedCount = articlesList ? (articlesList.getAttribute('data-rejected-count') || '0') : '0';
+        const rejectedText = parseInt(rejectedCount) > 0 ? ` (${rejectedCount} in <a href="${window.location.pathname.replace('/trash', '').replace('/articles', '')}?tab=trash" style="color: #0078d4; text-decoration: underline;">🗑️ Trash</a>)` : '';
+        headerDiv.innerHTML = `Showing ${visibleArticles} of ${totalArticles} article${totalArticles !== 1 ? 's' : ''}${isTrash ? '' : rejectedText}`;
+    }
+}
+
+let showImagesToggleInFlight = false;
+let showImagesTogglePromise = Promise.resolve();
+
 // Button handler functions - make globally available
 (function() {
     try {
         // Reject article
         function rejectArticle(articleId) {
-            console.log('Rejecting article:', articleId);
+            console.log('rejectArticle function called with ID:', articleId);
             if (!articleId) {
                 alert('Error: Article ID is missing');
                 return;
@@ -112,15 +133,17 @@ function getZipCodeFromUrl() {
             
             // Handle reject action
             function performReject(goToTrash) {
+                console.log('performReject called with goToTrash:', goToTrash, 'articleId:', articleId, 'zipCode:', zipCode);
                 const requestBody = {
                     article_id: articleId,
                     rejected: true
                 };
-                
+
                 if (zipCode) {
                     requestBody.zip_code = zipCode;
                 }
-                
+
+                console.log('Making fetch request to /admin/api/reject-article with body:', requestBody);
                 fetch('/admin/api/reject-article', {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
@@ -399,31 +422,53 @@ function getZipCodeFromUrl() {
         }
         window.restoreArticle = restoreArticle;
         
-        console.log('Button handler functions defined');
+        console.log('[FRNA Admin] ✅ All button handler functions defined:', {
+            rejectArticle: typeof window.rejectArticle,
+            restoreArticle: typeof window.restoreArticle,
+            toggleTopStory: typeof window.toggleTopStory,
+            toggleGoodFit: typeof window.toggleGoodFit,
+            editArticle: typeof window.editArticle
+        });
     } catch(e) {
-        console.error('Error defining button handler functions:', e);
+        console.error('[FRNA Admin] ❌ Error defining button handler functions:', e);
         alert('Script error - check console. Some buttons may not work. Error: ' + e.message);
     }
 })();
 
 // Unified event delegation for all buttons
+// FIXED: Include ALL button classes in delegation check
+console.log('[FRNA Admin] Event delegation initialized - all buttons should work');
 document.addEventListener('click', async (e) => {
-    const btn = e.target.closest('button, .trash-btn, .restore-btn, .top-story-btn, .restore-trash-btn');
+    const btn = e.target.closest('button, .trash-btn, .restore-btn, .top-story-btn, .restore-trash-btn, .thumbs-up-btn, .thumbs-down-btn, .alert-btn, .top-article-btn, .on-target-btn, .off-target-btn, .relevance-breakdown-btn, .edit-article-btn, .good-fit-btn, .add-tags-btn');
     
     if (!btn) return;
     
-    if (!btn.classList.contains('trash-btn') && 
-        !btn.classList.contains('restore-btn') && 
-        !btn.classList.contains('restore-trash-btn') && 
-        !btn.classList.contains('top-story-btn') &&
-        !btn.classList.contains('good-fit-btn') &&
-        !btn.classList.contains('edit-article-btn') &&
-        !btn.getAttribute('data-action')) {
+    // Check if this is an admin action button (has data-action OR is one of our button classes)
+    const isAdminButton = btn.classList.contains('trash-btn') || 
+        btn.classList.contains('restore-btn') || 
+        btn.classList.contains('restore-trash-btn') || 
+        btn.classList.contains('top-story-btn') ||
+        btn.classList.contains('good-fit-btn') ||
+        btn.classList.contains('thumbs-up-btn') ||
+        btn.classList.contains('thumbs-down-btn') ||
+        btn.classList.contains('top-article-btn') ||
+        btn.classList.contains('alert-btn') ||
+        btn.classList.contains('on-target-btn') ||
+        btn.classList.contains('off-target-btn') ||
+        btn.classList.contains('relevance-breakdown-btn') ||
+        btn.classList.contains('edit-article-btn') ||
+        btn.classList.contains('add-tags-btn') ||
+        btn.getAttribute('data-action');
+    
+    if (!isAdminButton) {
         return;
     }
     
     e.preventDefault();
     e.stopPropagation();
+    
+    // Log which button was clicked for debugging
+    console.log('[FRNA Admin] Button clicked:', btn.className, 'action:', btn.getAttribute('data-action'), 'id:', btn.dataset.id);
     
     const id = btn.dataset.id || btn.closest('[data-id]')?.dataset.id;
     
@@ -440,6 +485,7 @@ document.addEventListener('click', async (e) => {
     
     // Handle trash button
     if (btn.classList.contains('trash-btn') || btn.getAttribute('data-action') === 'trash-article') {
+        console.log('Trash button clicked:', btn, 'article ID:', btn.getAttribute('data-id'));
         // Also train relevance model when trashing
         const articleId = btn.getAttribute('data-id');
         const zipCode = getZipCodeFromUrl();
@@ -457,6 +503,7 @@ document.addEventListener('click', async (e) => {
             .catch(e => console.error('Error training model:', e));
         }
         if (typeof window.rejectArticle === 'function') {
+            console.log('Calling rejectArticle with ID:', articleId);
             window.rejectArticle(articleId);
         } else {
             alert('Error: rejectArticle function not available. Please refresh the page.');
@@ -615,7 +662,7 @@ document.addEventListener('click', async (e) => {
                     }
                     btn.style.opacity = '1';
                     btn.style.background = '#d32f2f';
-                    // Reload to show updated state
+                    // Reload to show updated state and pagination
                     setTimeout(() => location.reload(), 500);
                 } else {
                     alert('Error rejecting article: ' + (result ? result.message : 'Unknown error'));
@@ -821,6 +868,142 @@ document.addEventListener('click', async (e) => {
         return;
     }
 
+    if (btn.classList.contains('on-target-btn') || btn.getAttribute('data-action') === 'on-target') {
+        const articleId = btn.getAttribute('data-id') || btn.dataset.id;
+        const zipCode = getZipCodeFromUrl();
+        
+        if (!articleId || !zipCode) {
+            alert('Error: Article ID or zip code missing');
+            return;
+        }
+        
+        const isCurrentlyOn = btn.getAttribute('data-state') === 'on';
+        const newState = !isCurrentlyOn;
+        
+        // Update UI immediately
+        if (newState) {
+            btn.style.background = '#4caf50';
+            btn.style.opacity = '1';
+            btn.setAttribute('data-state', 'on');
+            // Turn off the off-target button if it's active
+            const offTargetBtn = document.querySelector(`.off-target-btn[data-id="${articleId}"]`);
+            if (offTargetBtn) {
+                offTargetBtn.style.background = 'transparent';
+                offTargetBtn.style.opacity = '0.5';
+                offTargetBtn.setAttribute('data-state', 'off');
+            }
+        } else {
+            btn.style.background = 'transparent';
+            btn.style.opacity = '0.5';
+            btn.setAttribute('data-state', 'off');
+        }
+        
+        fetch('/admin/api/on-target', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'same-origin',
+            body: JSON.stringify({id: articleId, zip_code: zipCode, is_on_target: newState})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                // Revert UI on error
+                if (newState) {
+                    btn.style.background = 'transparent';
+                    btn.style.opacity = '0.5';
+                    btn.setAttribute('data-state', 'off');
+                } else {
+                    btn.style.background = '#4caf50';
+                    btn.style.opacity = '1';
+                    btn.setAttribute('data-state', 'on');
+                }
+                alert('Error: ' + (data.message || 'Failed to save on-target status'));
+            }
+        })
+        .catch(e => {
+            // Revert UI on error
+            if (newState) {
+                btn.style.background = 'transparent';
+                btn.style.opacity = '0.5';
+                btn.setAttribute('data-state', 'off');
+            } else {
+                btn.style.background = '#4caf50';
+                btn.style.opacity = '1';
+                btn.setAttribute('data-state', 'on');
+            }
+            alert('Error: ' + (e.message || 'Failed to save on-target status'));
+        });
+        return;
+    }
+    
+    if (btn.classList.contains('off-target-btn') || btn.getAttribute('data-action') === 'off-target') {
+        const articleId = btn.getAttribute('data-id') || btn.dataset.id;
+        const zipCode = getZipCodeFromUrl();
+        
+        if (!articleId || !zipCode) {
+            alert('Error: Article ID or zip code missing');
+            return;
+        }
+        
+        const isCurrentlyOff = btn.getAttribute('data-state') === 'on';
+        const newState = !isCurrentlyOff;
+        
+        // Update UI immediately
+        if (newState) {
+            btn.style.background = '#f44336';
+            btn.style.opacity = '1';
+            btn.setAttribute('data-state', 'on');
+            // Turn off the on-target button if it's active
+            const onTargetBtn = document.querySelector(`.on-target-btn[data-id="${articleId}"]`);
+            if (onTargetBtn) {
+                onTargetBtn.style.background = 'transparent';
+                onTargetBtn.style.opacity = '0.5';
+                onTargetBtn.setAttribute('data-state', 'off');
+            }
+        } else {
+            btn.style.background = 'transparent';
+            btn.style.opacity = '0.5';
+            btn.setAttribute('data-state', 'off');
+        }
+        
+        fetch('/admin/api/off-target', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'same-origin',
+            body: JSON.stringify({id: articleId, zip_code: zipCode})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                // Revert UI on error
+                if (newState) {
+                    btn.style.background = 'transparent';
+                    btn.style.opacity = '0.5';
+                    btn.setAttribute('data-state', 'off');
+                } else {
+                    btn.style.background = '#f44336';
+                    btn.style.opacity = '1';
+                    btn.setAttribute('data-state', 'on');
+                }
+                alert('Error: ' + (data.message || 'Failed to save off-target status'));
+            }
+        })
+        .catch(e => {
+            // Revert UI on error
+            if (newState) {
+                btn.style.background = 'transparent';
+                btn.style.opacity = '0.5';
+                btn.setAttribute('data-state', 'off');
+            } else {
+                btn.style.background = '#f44336';
+                btn.style.opacity = '1';
+                btn.setAttribute('data-state', 'on');
+            }
+            alert('Error: ' + (e.message || 'Failed to save off-target status'));
+        });
+        return;
+    }
+    
     if (btn.classList.contains('good-fit-btn') || btn.getAttribute('data-action') === 'toggle-good-fit') {
         if (typeof window.toggleGoodFit === 'function') {
             window.toggleGoodFit(articleId);
@@ -1352,10 +1535,19 @@ window.loadTrash = function loadTrash() {
     trashList.innerHTML = '<p style="padding: 2rem; text-align: center; color: #888; background: #252525; border-radius: 8px; border: 1px solid #404040;">Loading rejected articles...</p>';
     
     const zipCode = getZipCodeFromUrl();
-    let url = '/admin/api/get-rejected-articles';
-    if (zipCode) {
-        url += '?zip_code=' + encodeURIComponent(zipCode);
+    if (!zipCode) {
+        console.error('No zip code found in URL');
+        const trashList = document.getElementById('trashList');
+        if (trashList) {
+            trashList.innerHTML = '<p style="padding: 2rem; text-align: center; color: #d32f2f; background: #252525; border-radius: 8px; border: 1px solid #404040;">' +
+                '<strong>Error:</strong> Zip code not found in URL. Please navigate to /admin/[zip_code]/trash<br>' +
+                '<button class="retry-trash-btn" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>' +
+                '</p>';
+        }
+        return;
     }
+    
+    let url = '/admin/api/get-rejected-articles?zip_code=' + encodeURIComponent(zipCode);
     
     fetch(url, {
         credentials: "same-origin",
@@ -1403,7 +1595,81 @@ window.loadTrash = function loadTrash() {
     });
 };
 
+// Handle retry button for trash page
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('retry-trash-btn')) {
+        console.log('Retry trash button clicked');
+        if (typeof window.loadTrash === 'function') {
+            window.loadTrash();
+        } else {
+            console.error('loadTrash function not available');
+            alert('Error: Cannot reload trash page. Please refresh the page.');
+        }
+    }
+});
+
 // Setup filter button handlers and search input
+// Handle Load More button
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'loadMoreBtn') {
+        const btn = e.target;
+        const offset = parseInt(btn.getAttribute('data-offset'));
+        const zipCode = btn.getAttribute('data-zip-code');
+        const showTrash = btn.getAttribute('data-show-trash') === 'true';
+
+        btn.textContent = 'Loading...';
+        btn.disabled = true;
+
+        fetch(`/admin/${zipCode}/articles?offset=${offset}&show_trash=${showTrash}`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.text())
+        .then(html => {
+            // The response should be just the article HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html.trim();
+
+            const newArticles = tempDiv.querySelectorAll('.article-item');
+
+            const articlesList = document.getElementById('articles-list');
+            const loadMoreContainer = btn.parentNode;
+
+            newArticles.forEach(article => {
+                articlesList.insertBefore(article, loadMoreContainer);
+            });
+
+            // Update the offset and button text
+            const newOffset = offset + newArticles.length;
+            btn.setAttribute('data-offset', newOffset);
+
+            // Get total count from the articles list data attribute
+            const totalArticles = parseInt(articlesList.getAttribute('data-total-articles') || 0);
+
+            if (newOffset >= totalArticles) {
+                // No more articles to load
+                loadMoreContainer.remove();
+            } else {
+                // Update button text with remaining count
+                const remaining = totalArticles - newOffset;
+                btn.textContent = `Load More Articles (${remaining} remaining)`;
+                btn.disabled = false;
+            }
+        })
+        .catch(e => {
+            console.error('Error loading more articles:', e);
+            btn.textContent = 'Error loading articles';
+            setTimeout(() => {
+                btn.textContent = `Load More Articles`;
+                btn.disabled = false;
+            }, 2000);
+        });
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     // Filter button handlers
     document.getElementById('trashFilterAll')?.addEventListener('click', function() {
@@ -1455,12 +1721,31 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show images toggle
         if (matchesSelector(e.target, '#showImages') || matchesSelector(e.target, '#showImagesSettings')) {
             const zipCode = getZipCodeFromUrl();
-            const requestBody = {show_images: e.target.checked};
+            const newValue = e.target.checked;
+            const requestBody = {show_images: newValue};
             if (zipCode) {
                 requestBody.zip_code = zipCode;
             }
             
-            fetch('/admin/api/toggle-images', {
+            // #region agent log
+            console.log('Toggle images: setting to', newValue, 'requestBody:', requestBody);
+            fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    sessionId: 'debug-session',
+                    runId: 'toggle-frontend',
+                    hypothesisId: 'K',
+                    location: 'admin/static/js/admin.js:1596',
+                    message: 'Frontend toggle-images called',
+                    data: {newValue: newValue, requestBody: requestBody, checkboxId: e.target.id},
+                    timestamp: Date.now()
+                })
+            }).catch(() => {});
+            // #endregion
+            
+            showImagesToggleInFlight = true;
+            showImagesTogglePromise = fetch('/admin/api/toggle-images', {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 credentials: "same-origin",
@@ -1468,16 +1753,88 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(r => r.json())
             .then(data => {
+                // #region agent log
+                console.log('Toggle images response:', data);
+                fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        sessionId: 'debug-session',
+                        runId: 'toggle-frontend',
+                        hypothesisId: 'K',
+                        location: 'admin/static/js/admin.js:1610',
+                        message: 'Toggle images response received',
+                        data: {success: data.success, show_images: data.show_images, response: data},
+                        timestamp: Date.now()
+                    })
+                }).catch(() => {});
+                // #endregion
+                
                 if (data.success) {
                     const otherCheckbox = e.target.matches('#showImages') ? 
                         document.getElementById('showImagesSettings') : 
                         document.getElementById('showImages');
-                    if (otherCheckbox) otherCheckbox.checked = e.target.checked;
+                    if (otherCheckbox) {
+                        otherCheckbox.checked = e.target.checked;
+                    }
+                    // #region agent log
+                    console.log('Checkbox state synced. Current state:', e.target.checked);
+                    fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            sessionId: 'debug-session',
+                            runId: 'toggle-frontend',
+                            hypothesisId: 'K',
+                            location: 'admin/static/js/admin.js:1618',
+                            message: 'Checkbox state after sync',
+                            data: {checkboxChecked: e.target.checked, otherCheckboxChecked: otherCheckbox ? otherCheckbox.checked : null},
+                            timestamp: Date.now()
+                        })
+                    }).catch(() => {});
+                    // #endregion
+                } else {
+                    // #region agent log
+                    console.error('Toggle images failed:', data);
+                    fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            sessionId: 'debug-session',
+                            runId: 'toggle-frontend',
+                            hypothesisId: 'K',
+                            location: 'admin/static/js/admin.js:1625',
+                            message: 'Toggle images failed',
+                            data: {error: data.error || 'Unknown error', response: data},
+                            timestamp: Date.now()
+                        })
+                    }).catch(() => {});
+                    // #endregion
+                    // Revert checkbox on failure
+                    e.target.checked = !e.target.checked;
                 }
             })
             .catch(e => {
                 console.error('Error toggling images:', e);
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        sessionId: 'debug-session',
+                        runId: 'toggle-frontend',
+                        hypothesisId: 'K',
+                        location: 'admin/static/js/admin.js:1635',
+                        message: 'Toggle images network error',
+                        data: {error: e.message || String(e)},
+                        timestamp: Date.now()
+                    })
+                }).catch(() => {});
+                // #endregion
                 e.target.checked = !e.target.checked;
+            })
+            .finally(() => {
+                showImagesToggleInFlight = false;
             });
         }
         
@@ -2120,7 +2477,8 @@ function closeExplanation(id) {
 window.closeExplanation = closeExplanation;
 
 // Regenerate website for current zip code (fast, quick regenerate)
-function regenerateWebsite(evt) {
+// If no zip_code, regenerates main website_output directory
+async function regenerateWebsite(evt) {
     let zipCode = getZipCodeFromUrl();
 
     if (!zipCode) {
@@ -2135,11 +2493,20 @@ function regenerateWebsite(evt) {
         if (zipElement) zipCode = zipElement.getAttribute('data-zip-code');
     }
 
-    if (!zipCode) {
-        alert('Zip code not found. Navigate to a zip-specific admin page.');
-        console.error('Unable to determine zip code for regeneration from URL or page.');
+    if (showImagesToggleInFlight) {
+        await showImagesTogglePromise;
+    }
+    const regenMessage = `Regenerating rebuilds the cached static site to apply the image toggle. Source fetches are throttled to roughly five minutes, so this only rewrites the front-end output—proceed?`;
+    if (!confirm(regenMessage)) {
         return;
     }
+
+    // Allow regeneration without zip_code (generates to main website_output)
+    // if (!zipCode) {
+    //     alert('Zip code not found. Navigate to a zip-specific admin page.');
+    //     console.error('Unable to determine zip code for regeneration from URL or page.');
+    //     return;
+    // }
 
     const button = evt?.target || document.querySelector('button[onclick*="regenerateWebsite"]');
     const originalText = button?.textContent || 'Regenerate Website';
@@ -2161,7 +2528,7 @@ function regenerateWebsite(evt) {
         wrapper.innerHTML = `
             <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;">
                 <div class="regen-spinner" style="width:18px;height:18px;border:2px solid #333;border-top:2px solid #38bdf8;border-radius:50%;animation:regenSpin 1s linear infinite;"></div>
-                <strong style="color:#38bdf8;">Regenerating website for ${zipCode}...</strong>
+                <strong style="color:#38bdf8;">Regenerating website${zipCode ? ' for ' + zipCode : ''}...</strong>
             </div>
             <div id="regenStatus" style="color:#888;">⏳ Starting quick regeneration</div>
         `;
@@ -2174,17 +2541,29 @@ function regenerateWebsite(evt) {
         return wrapper;
     };
 
-    const progressBox = createProgressBox();
-    if (button?.parentElement) {
-        button.parentElement.insertBefore(progressBox, button.nextSibling);
-    } else {
-        document.body.appendChild(progressBox);
-    }
+        const progressBox = createProgressBox();
+        if (button?.parentElement) {
+            button.parentElement.insertBefore(progressBox, button.nextSibling);
+        } else {
+            document.body.appendChild(progressBox);
+        }
 
-    const updateStatus = message => {
-        const statusEl = document.getElementById('regenStatus');
-        if (statusEl) statusEl.textContent = message;
-    };
+        const updateStatus = message => {
+            const statusEl = document.getElementById('regenStatus');
+            if (statusEl) statusEl.textContent = message;
+        };
+        
+        // Update progress box message if no zip_code
+        if (!zipCode && progressBox) {
+            const statusEl = progressBox.querySelector('#regenStatus');
+            if (statusEl) {
+                statusEl.textContent = '⏳ Starting quick regeneration (main website)...';
+            }
+            const strongEl = progressBox.querySelector('strong');
+            if (strongEl) {
+                strongEl.textContent = 'Regenerating main website...';
+            }
+        }
 
     const finalize = (message, isError = false) => {
         if (button) {
@@ -2201,11 +2580,20 @@ function regenerateWebsite(evt) {
         }
     };
 
+    const requestBody = {};
+    if (zipCode) {
+        requestBody.zip_code = zipCode;
+    }
+    
     fetch('/admin/api/regenerate', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        cache: 'no-store',
+        headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+        },
         credentials: 'same-origin',
-        body: JSON.stringify({ zip_code: zipCode })
+        body: JSON.stringify(requestBody)
     })
     .then(async r => {
         const data = await r.json().catch(() => ({}));
@@ -3500,6 +3888,29 @@ window.showTargetAnalysis = showTargetAnalysis;
 window.closeTargetModal = closeTargetModal;
 window.addSelectedKeywords = addSelectedKeywords;
 window.updateTargetButtonState = updateTargetButtonState;
+
+// Tab switching functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Hide all tab content except the active one
+    const tabContents = document.querySelectorAll('.tab-content');
+    const activeTab = document.querySelector('.tab-btn.active');
+
+    if (activeTab) {
+        const activeTabName = activeTab.getAttribute('href').split('tab=')[1] || 'articles';
+        const activeContentId = activeTabName + 'Tab';
+
+        // Hide all tab content
+        tabContents.forEach(content => {
+            content.style.display = 'none';
+        });
+
+        // Show active tab content
+        const activeContent = document.getElementById(activeContentId);
+        if (activeContent) {
+            activeContent.style.display = 'block';
+        }
+    }
+});
 
 console.log('Admin script loaded');
 

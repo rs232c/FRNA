@@ -355,7 +355,11 @@ class StorageManager {
 // Initialize storage manager
 let storageManager;
 if (typeof window !== 'undefined') {
-    storageManager = new StorageManager();
-    window.storageManager = storageManager;
+    try {
+        storageManager = new StorageManager();
+        window.storageManager = storageManager;
+    } catch (error) {
+        console.error('Failed to initialize StorageManager:', error);
+    }
 }
 

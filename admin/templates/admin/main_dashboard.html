@@ -1,163 +1,595 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Main Admin - Fall River News</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        h1 { color: #0078d4; }
-        .zip-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }
-        .zip-card { padding: 15px; background: #e3f2fd; border-radius: 4px; text-align: center; }
-        .zip-card a { color: #0078d4; text-decoration: none; font-weight: bold; }
-        .zip-card a:hover { text-decoration: underline; }
-        .actions { margin: 20px 0; padding: 15px; background: #fff3e0; border-radius: 4px; }
-        button { padding: 10px 20px; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; }
-        button:hover { background: #005a9e; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Main Admin Dashboard</h1>
-        <p>Logged in as: <strong>admin</strong> | <a href="{{ url_for('admin.logout') }}">Logout</a></p>
-        
-        <div class="actions">
-            <h2>Global Actions</h2>
-            <button onclick="regenerateAll()">Regenerate All Websites</button>
-            <button onclick="regenerateSelected()">Regenerate Selected Zip</button>
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard{% if zip_code %} - Zip {{ zip_code }}{% endif %}{% endblock %}
+
+{% block content %}
+<div id="articlesTab" class="tab-content{% if active_tab == 'articles' or not active_tab %} active{% endif %}">
+    <div class="articles-list" id="articles-list" data-zip-code="{{ zip_code or '' }}" data-total-articles="{{ total_count }}" data-rejected-count="{{ stats.rejected_articles if stats.rejected_articles else 0 }}">
+        <div style="padding: 0.75rem 1rem; background: #1a1a1a; border-bottom: 2px solid #404040; font-weight: 600; color: #e0e0e0;">
+            Showing {{ articles|length }} of {{ total_count }} article{{ 's' if total_count != 1 else '' }}{% if stats.rejected_articles > 0 %} ({{ stats.rejected_articles }} in <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=trash" style="color: #0078d4; text-decoration: underline;">🗑️ Trash</a>){% endif %}
         </div>
-        
-        <!-- Phase 9: Zip Pin Editability Toggle -->
-        <div class="actions" style="margin-top: 2rem; border: 2px solid #0078d4;">
-            <h2 style="color: #0078d4; margin-bottom: 1rem;">Zip Pin Settings</h2>
-            <div style="padding: 1rem; background: #e3f2fd; border-radius: 4px;">
-                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                    <input type="checkbox" id="zipPinEditable" onchange="toggleZipPinEditable()" style="width: 24px; height: 24px; cursor: pointer;">
-                    <span style="font-size: 1.1em; font-weight: bold;">Enable Zip Pin Editing</span>
-                </label>
-                <p style="margin-top: 0.75rem; font-size: 1em; color: #333; line-height: 1.5;">
-                    When enabled, the purple zip pin badge on the frontend becomes clickable, allowing users to change their zip code and view news for different areas.
-                </p>
-                <p style="margin-top: 0.5rem; font-size: 0.9em; color: #666; font-style: italic;">
-                    Current status: <span id="zipPinStatus" style="font-weight: bold;">Loading...</span>
-                </p>
+        {% for article in articles %}
+        <div class="article-item {{ 'rejected' if article.get('is_rejected', 0) else '' }}" data-id="{{ article.id }}">
+            <div class="article-info">
+                <div class="article-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>{{ article.title[:80] }}{% if article.title|length > 80 %}...{% endif %}</span>
+                    {% if article.url %}
+                    <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" title="Open article in new window" style="color: #0078d4; text-decoration: none; font-size: 1.1rem; opacity: 0.7; transition: opacity 0.2s;">🔗</a>
+                    {% endif %}
+                </div>
+                <div class="article-meta">
+                    {{ article.source }} - {{ article.published[:10] if article.published else 'N/A' }}
+                    {% if article.primary_category %}
+                    • <span class="category-badge relevance-score-tooltip" data-article-id="{{ article.id }}" style="display: inline-block; padding: 0.2rem 0.5rem; background: #0078d4; color: white; border-radius: 4px; font-size: 0.85rem; font-weight: 600;">
+                        {{ article.primary_category }}{% if article.category_confidence %} {{ "%.0f"|format(article.category_confidence) }}%{% endif %}
+                    </span>
+                    {% elif article.category %}
+                    • <span class="relevance-score-tooltip" data-article-id="{{ article.id }}">{{ article.category }}</span>
+                    {% endif %}
+                    {% if article.relevance_score is defined and article.relevance_score is not none %}
+                    • <span class="relevance-score-tooltip" data-article-id="{{ article.id }}">Relevance: <strong style="color: {% if article.relevance_score >= 70 %}#4caf50{% elif article.relevance_score >= 40 %}#ff9800{% else %}#d32f2f{% endif %};">{{ "%.0f"|format(article.relevance_score) }}</strong>/100</span>
+                    <span style="display: inline-block; width: 100px; height: 10px; background: #404040; border-radius: 5px; margin-left: 0.5rem; vertical-align: middle; overflow: hidden;">
+                        <span style="display: block; width: {{ "%.0f"|format(article.relevance_score) }}%; height: 100%; background: {% if article.relevance_score >= 70 %}#4caf50{% elif article.relevance_score >= 40 %}#ff9800{% else %}#d32f2f{% endif %}; transition: width 0.3s;"></span>
+                    </span>
+                    {% else %}
+                    • Relevance: N/A
+                    {% endif %}
+                    {% if article.local_score is defined and article.local_score is not none %}
+                    • <span class="relevance-score-tooltip" data-article-id="{{ article.id }}">Local: <strong>{{ "%.0f"|format(article.local_score) }}</strong>/100</span>
+                    <span style="display: inline-block; width: 100px; height: 10px; background: #404040; border-radius: 5px; margin-left: 0.5rem; vertical-align: middle; overflow: hidden;">
+                        <span style="display: block; width: {{ "%.0f"|format(article.local_score) }}%; height: 100%; background: #4caf50; transition: width 0.3s;"></span>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="article-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="relevance-breakdown-btn" data-id="{{ article.id }}" data-action="show-breakdown"
+                        style="padding: 0.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;"
+                        title="Why rejected? / Score breakdown">
+                    📊
+                </button>
+                <button class="thumbs-up-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_good_fit', 0) else 'off' }}" data-action="thumbs-up"
+                        style="padding: 0.5rem; background: {% if article.get('is_good_fit', 0) %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_good_fit', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                        title="Thumbs up (train relevance + category)">
+                    👍
+                </button>
+                <button class="thumbs-down-btn" data-id="{{ article.id }}" data-action="thumbs-down"
+                        style="padding: 0.5rem; background: transparent; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: 0.5; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                        title="Thumbs down (train relevance + category)">
+                    👎
+                </button>
+                <button class="top-story-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top_story', 0) else 'off' }}" data-action="toggle-top-story"
+                        style="padding: 0.5rem; background: {% if article.get('is_top_story', 0) %}#ff9800{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_top_story', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                        title="Mark as top story (perfect example)">
+                    🎩
+                </button>
+                <button class="top-article-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top', 0) else 'off' }}" data-action="toggle-top-article"
+                        style="padding: 0.5rem; background: {% if article.get('is_top', 0) %}#ffd700{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_top', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                        title="Mark as top article (featured)">
+                    ⭐
+                </button>
+                <button class="alert-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_alert', 0) else 'off' }}" data-action="toggle-alert"
+                        style="padding: 0.5rem; background: {% if article.get('is_alert', 0) %}#ff4444{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_alert', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                        title="Mark as alert (urgent notification)">
+                    🚨
+                </button>
+                <button class="on-target-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') == 1 else 'off' }}" data-action="on-target"
+                        style="padding: 0.5rem; background: {% if article.get('is_on_target') == 1 %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_on_target') == 1 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                        title="Mark as on target (relevant for targeting)">
+                    🎯
+                </button>
+                <button class="off-target-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') is not none and article.get('is_on_target') == 0 else 'off' }}" data-action="off-target"
+                        style="padding: 0.5rem; background: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}#f44336{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1rem; opacity: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                        title="Mark as off target (not relevant for targeting)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <button class="edit-article-btn" data-id="{{ article.id }}" data-action="edit-article"
+                        style="padding: 0.5rem; background: #252525; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;"
+                        title="Edit article">
+                    ✏️
+                </button>
+                {% if not article.get('is_rejected', 0) %}
+                <button class="trash-btn" data-id="{{ article.id }}" data-action="trash-article"
+                        title="Move to trash" style="padding: 0.5rem; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">🗑️</button>
+                {% else %}
+                <button class="restore-trash-btn" data-id="{{ article.id }}" data-action="restore-article"
+                        title="Restore from trash" style="padding: 0.5rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">↩️</button>
+                {% endif %}
             </div>
         </div>
-        
-        <h2>Zip Code Admins ({{ zip_codes|length }} total)</h2>
-        
-        {% if sticky_zips %}
-        <div style="margin-bottom: 2rem;">
-            <h3 style="color: #0078d4; margin-bottom: 1rem;">⭐ Sticky Zip Codes</h3>
-            <div class="zip-list">
-                {% for zip_code in sticky_zips %}
-                {% if zip_code in zip_codes %}
-                <div class="zip-card" style="background: #fff3e0; border: 2px solid #ff9800;">
-                    <a href="{{ url_for('admin.dashboard', zip_code=zip_code) }}">⭐ Zip {{ zip_code }}</a>
-                    <button class="remove-sticky-btn" data-zip-code="{{ zip_code }}" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; background: #d32f2f; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75rem;">Remove</button>
+        {% endfor %}
+
+        <!-- Pagination -->
+        {% if articles|length < total_count %}
+        <div style="text-align: center; padding: 2rem; border-top: 1px solid #404040;">
+            <button id="loadMoreBtn" data-offset="{{ articles|length }}" data-zip-code="{{ zip_code }}" data-show-trash="{{ 'true' if show_trash else 'false' }}"
+                    style="padding: 0.75rem 1.5rem; background: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Load More Articles ({{ total_count - articles|length }} remaining)
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Relevance Breakdown Modal -->
+    <div id="relevanceBreakdownModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 2000; align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background: #111; color: #e0e0e0; max-width: 640px; width: 100%; border-radius: 10px; padding: 1.5rem; box-shadow: 0 12px 32px rgba(0,0,0,0.45); position: relative;">
+            <button id="relevanceBreakdownClose" style="position: absolute; top: 10px; right: 10px; background: transparent; border: none; color: #ccc; font-size: 1.2rem; cursor: pointer;">✕</button>
+            <h3 style="margin-top: 0; margin-bottom: 0.5rem; color: #fff;">Relevance breakdown</h3>
+            <div id="relevanceBreakdownBody" style="max-height: 420px; overflow-y: auto; line-height: 1.5; font-size: 0.95rem;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- TRASH TAB -->
+{% if active_tab == 'trash' %}
+<div id="trashTab" class="tab-content{% if active_tab == 'trash' %} active{% endif %}">
+    <div style="padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <h3 style="margin: 0 0 0.75rem 0; color: #fff; font-size: 1.5rem; font-weight: 600;">🗑️ Trash - All Rejected Articles</h3>
+        <p style="margin: 0; color: rgba(255,255,255,0.95); font-size: 1rem; line-height: 1.6;">View all rejected articles - both manually rejected and auto-filtered. Manually rejected articles train the Bayesian model. You can restore any article from here.</p>
+    </div>
+    <div style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span style="color: #e0e0e0; font-weight: 600; font-size: 0.95rem;">Filter:</span>
+            <button id="trashFilterAll" class="trash-filter-btn active" data-filter="all" style="padding: 0.5rem 1rem; background: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">All</button>
+            <button id="trashFilterManual" class="trash-filter-btn" data-filter="manual" style="padding: 0.5rem 1rem; background: #404040; color: #e0e0e0; border: 1px solid #555; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">🗑️ Manual</button>
+            <button id="trashFilterAuto" class="trash-filter-btn" data-filter="auto" style="padding: 0.5rem 1rem; background: #404040; color: #e0e0e0; border: 1px solid #555; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s;">🤖 Auto</button>
+        </div>
+        <div id="trashFilterCount" style="color: #888; font-size: 0.9rem; margin-left: auto;">
+            <span id="trashFilterCountText">Loading...</span>
+        </div>
+    </div>
+    <div style="margin-bottom: 1.5rem; position: relative;">
+        <input type="text" id="trashSearchInput" placeholder="🔍 Search by title, source, or reason..."
+               style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 1rem; background: #252525; border: 1px solid #404040; border-radius: 8px; color: #e0e0e0; font-size: 0.95rem; outline: none; transition: border-color 0.2s;"
+               onfocus="this.style.borderColor='#0078d4';" onblur="this.style.borderColor='#404040';">
+        <button id="trashSearchClear" onclick="clearTrashSearch()" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #888; cursor: pointer; font-size: 1.2rem; padding: 0.25rem 0.5rem; display: none; transition: color 0.2s;" onmouseover="this.style.color='#e0e0e0';" onmouseout="this.style.color='#888';" title="Clear search">×</button>
+    </div>
+    <div class="articles-list" id="trashList" style="background: transparent;">
+        {% if rejected_articles %}
+        {% for article in rejected_articles %}
+        <div class="article-item rejected" data-id="{{ article.id }}">
+            <div class="article-info">
+                <div class="article-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>{{ article.title[:80] }}{% if article.title|length > 80 %}...{% endif %}</span>
+                    {% if article.url %}
+                    <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" title="Open article in new window" style="color: #0078d4; text-decoration: none; font-size: 1.1rem; opacity: 0.7; transition: opacity 0.2s;">🔗</a>
+                    {% endif %}
+                </div>
+                <div class="article-meta">
+                    {{ article.source }} - {{ article.published[:10] if article.published else 'N/A' }}
+                    {% if article.relevance_score is defined and article.relevance_score is not none %}
+                    • Relevance: <strong style="color: {% if article.relevance_score >= 70 %}#4caf50{% elif article.relevance_score >= 40 %}#ff9800{% else %}#d32f2f{% endif %};">{{ "%.0f"|format(article.relevance_score) }}</strong>/100
+                    {% endif %}
+                </div>
+            </div>
+            <div class="article-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="restore-trash-btn" data-id="{{ article.id }}" data-action="restore-article" title="Restore from trash" style="padding: 0.5rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">↩️</button>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="padding: 2rem; text-align: center; color: #888; background: #252525; border-radius: 8px; border: 1px solid #404040;">No rejected articles found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- SOURCES TAB -->
+{% if active_tab == 'sources' %}
+<div id="sourcesTab" class="tab-content{% if active_tab == 'sources' %} active{% endif %}">
+    <div class="sources-list">
+        {% if sources|length == 0 %}
+        <div style="padding: 2rem; text-align: center; background: #252525; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #404040;">
+            <p style="color: #666; margin-bottom: 1rem;">No sources configured for this zip code.</p>
+            <button onclick="addNewSource()" style="padding: 0.75rem 1.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                + Add Source
+            </button>
+        </div>
+        {% else %}
+        {% for source_key, source_config in sources.items() %}
+        <div class="source-item">
+            <div class="source-info">
+                <div class="source-name">{{ source_config.name }}</div>
+                <div class="source-url">{{ source_config.url }}</div>
+                <div class="source-category">Category: {{ source_config.get('category', 'news') }}</div>
+                {% if source_config.get('_relevance_score') is not none and source_config.get('_relevance_score') >= 0 %}
+                <div class="source-relevance" style="color: #666; font-size: 0.9rem; margin-top: 0.25rem;">
+                    Relevance Score: <strong style="color: {% if source_config.get('_relevance_score', 0) >= 20 %}#4caf50{% elif source_config.get('_relevance_score', 0) >= 10 %}#ff9800{% else %}#f44336{% endif %};">{{ "%.1f"|format(source_config.get('_relevance_score')) }}</strong> points
+                </div>
+                {% else %}
+                <div class="source-relevance" style="color: #999; font-size: 0.9rem; margin-top: 0.25rem; font-style: italic;">
+                    No relevance score set
                 </div>
                 {% endif %}
+            </div>
+            <div class="source-actions">
+                <button class="edit-source-btn" data-source-key="{{ source_key }}" title="Edit source">✏️</button>
+                <div class="toggle-switch">
+                    <label>Enabled:</label>
+                    <label class="switch">
+                        <input type="checkbox" class="source-enabled" data-source="{{ source_key }}" {{ 'checked' if source_config.get('enabled', True) else '' }}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-switch">
+                    <label>Require Fall River:</label>
+                    <label class="switch">
+                        <input type="checkbox" class="source-filter" data-source="{{ source_key }}" {{ 'checked' if source_config.get('require_fall_river', False) else '' }}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <div style="margin-top: 1.5rem;">
+            <button onclick="addNewSource()" style="padding: 0.75rem 1.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                + Add Source
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    <div style="margin-top: 1.5rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
+        <p style="color: #666; font-size: 0.9rem;">
+            <strong>Note:</strong> "Require Fall River" means only articles mentioning "Fall River" will be included from that source.
+            This helps filter out irrelevant content from larger regional sources like Fun107 and WPRI.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<!-- STATS TAB -->
+{% if active_tab == 'stats' %}
+<div id="statsTab" class="tab-content{% if active_tab == 'stats' %} active{% endif %}">
+    <div class="stats-container">
+        <h2 style="margin-bottom: 1.5rem;">Statistics Dashboard</h2>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_articles }}</div>
+                <div class="stat-label">Total Articles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.active_articles }}</div>
+                <div class="stat-label">Active Articles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.rejected_articles }}</div>
+                <div class="stat-label">Rejected Articles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.top_stories }}</div>
+                <div class="stat-label">Top Stories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.disabled_articles }}</div>
+                <div class="stat-label">Disabled Articles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.articles_last_7_days }}</div>
+                <div class="stat-label">Last 7 Days</div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+            <div class="stats-section">
+                <h3>Articles by Source</h3>
+                <div class="stats-list">
+                    {% for item in stats.articles_by_source %}
+                    <div class="stats-item">
+                        <span class="stats-item-label">{{ item.source }}</span>
+                        <span class="stats-item-value">{{ item.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3>Articles by Category</h3>
+                <div class="stats-list">
+                    {% for item in stats.articles_by_category %}
+                    <div class="stats-item">
+                        <span class="stats-item-label">{{ item.category }}</span>
+                        <span class="stats-item-value">{{ item.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% if stats.source_fetch_stats %}
+        <div class="stats-section" style="margin-top: 2rem;">
+            <h3>Source Fetch Status</h3>
+            <div class="stats-list">
+                {% for item in stats.source_fetch_stats %}
+                <div class="stats-item">
+                    <span class="stats-item-label">{{ item.source }}</span>
+                    <span class="stats-item-value">{{ item.count }} articles</span>
+                    <span class="stats-item-meta">Last: {{ item.last_fetch[:16] if item.last_fetch else 'Never' }}</span>
+                </div>
                 {% endfor %}
             </div>
         </div>
         {% endif %}
-        
-        <div class="zip-list">
-            {% for zip_code in zip_codes %}
-            {% set is_sticky = zip_code in sticky_zips %}
-            <div class="zip-card" {% if is_sticky %}style="background: #fff3e0; border: 2px solid #ff9800;"{% endif %}>
-                <a href="{{ url_for('admin.dashboard', zip_code=zip_code) }}">{% if is_sticky %}⭐ {% endif %}Zip {{ zip_code }}</a>
-                <button class="toggle-sticky-btn" data-zip-code="{{ zip_code }}" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; background: {% if is_sticky %}#d32f2f{% else %}#4caf50{% endif %}; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75rem;">
-                    {% if is_sticky %}Remove from{% else %}Add to{% endif %} Sticky
-                </button>
+    </div>
+</div>
+{% endif %}
+
+<!-- RELEVANCE TAB -->
+{% if active_tab == 'relevance' %}
+<div id="relevanceTab" class="tab-content{% if active_tab == 'relevance' %} active{% endif %}">
+    <div class="relevance-container">
+        <h2 style="margin-bottom: 1.5rem;">Relevance Scoring Configuration</h2>
+
+        <!-- Bayesian Learning System Explanation -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white;">
+            <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="toggleExplanation('bayesianExplanation')">
+                <h3 style="margin: 0; color: white; font-size: 1.3rem;">🧠 Bayesian Learning System</h3>
+                <span id="bayesianExplanationToggle" style="font-size: 1.2rem; user-select: none; color: white;">⏷</span>
             </div>
-            {% endfor %}
+            <div id="bayesianExplanation" style="margin-top: 1rem;">
+                <div style="background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+                    <p style="color: white; font-size: 0.95rem; line-height: 1.7; margin: 0;">
+                        The system uses a <strong>Naive Bayes classifier</strong> that learns from your actions to automatically filter similar articles in the future. This creates a personalized filtering system that improves over time.
+                    </p>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 6px;">
+                        <h4 style="margin-top: 0; margin-bottom: 0.5rem; color: white; font-size: 1rem;">📜 Learning from Rejections</h4>
+                        <p style="color: rgba(255,255,255,0.95); font-size: 0.9rem; line-height: 1.6; margin: 0;">
+                            When you move an article to <strong>🗑️ Trash</strong>, the system extracts features and learns that similar articles should be filtered.
+                        </p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 6px;">
+                        <h4 style="margin-top: 0; margin-bottom: 0.5rem; color: white; font-size: 1rem;">✓ Learning from Acceptances</h4>
+                        <p style="color: rgba(255,255,255,0.95); font-size: 0.9rem; line-height: 1.6; margin: 0;">
+                            When you mark articles as "good fit" or keep them active, the system learns these patterns are acceptable.
+                        </p>
+                    </div>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); padding: 0.75rem 1rem; border-radius: 6px; margin-top: 1rem; border-left: 4px solid rgba(255,255,255,0.5);">
+                    <p style="color: white; font-size: 0.9rem; line-height: 1.6; margin: 0;">
+                        <strong>💡 Tip:</strong> The Bayesian system works alongside the relevance scoring system below. Relevance scores provide immediate filtering, while Bayesian learning adapts to your preferences over time.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Auto-Filter Threshold -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">Auto-Filter Threshold</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                Articles with relevance scores below this threshold will be automatically filtered out during aggregation.
+            </p>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <label style="font-weight: 600;">Minimum Relevance Score:</label>
+                <input type="number" id="relevanceThreshold" value="{{ (settings.get('relevance_threshold', '10') | float) | int }}" step="1" min="0" max="100" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100px;">
+                <button class="save-threshold-btn" style="padding: 0.5rem 1rem; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Save Threshold</button>
+                <span id="thresholdSaveStatus" style="color: #4caf50; font-weight: 600; display: none;">✓ Saved</span>
+            </div>
+        </div>
+
+        <p style="color: #666; margin-bottom: 2rem; line-height: 1.6;">
+            Manage the keywords, places, topics, and sources that affect article relevance scores.
+            Changes take effect immediately for new articles.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<!-- CATEGORIES TAB -->
+{% if active_tab == 'categories' %}
+<div id="categoriesTab" class="tab-content{% if active_tab == 'categories' %} active{% endif %}">
+    <div class="relevance-container">
+        <h2 style="margin-bottom: 1.5rem;">Category Classification System</h2>
+
+        <!-- Collapsible Explanation -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="toggleExplanation('categoriesExplanation')">
+                <h3 style="margin: 0; color: #333;">📚 How Category Classification Works</h3>
+                <span id="categoriesExplanationToggle" style="font-size: 1.2rem; user-select: none;">⏷</span>
+            </div>
+            <div id="categoriesExplanation" style="margin-top: 1rem; color: #666; font-size: 0.9rem; line-height: 1.6;">
+                <p><strong>Fast Keyword-Based + Bayesian Learning:</strong> This system uses a combination of keyword matching and machine learning to automatically categorize articles.</p>
+                <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                    <li><strong>Keyword Matching:</strong> Each category has a list of keywords. Articles are scored based on how many keywords they contain relative to article length.</li>
+                    <li><strong>Bayesian Learning:</strong> As you give thumbs up/down feedback on article categories, the system learns patterns and improves accuracy.</li>
+                    <li><strong>Cold-Start:</strong> For the first 48 hours or until you have 50+ training examples, the system uses pure keyword matching. After that, it switches to Bayesian-enhanced scoring.</li>
+                    <li><strong>Training:</strong> Use the thumbs up/down buttons next to category badges on articles to train the system. The more you train, the smarter it gets!</li>
+                </ul>
+                <p style="margin-top: 0.5rem;"><strong>Result:</strong> After 50-100 training examples per zip code, the system achieves >95% accuracy with zero AI costs and <1ms prediction time.</p>
+            </div>
+        </div>
+
+        <!-- Retrain All Categories -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">Retrain All Categories</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                Recalculate categories for all articles using the current trained model and keyword lists.
+                This is useful after training the classifier with new examples or updating keywords.
+            </p>
+            <button onclick="retrainAllCategories()" style="padding: 0.75rem 1.5rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 1rem;">
+                🔄 Retrain All Categories
+            </button>
+        </div>
+
+        <!-- Category Statistics -->
+        <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">Category Statistics</h3>
+            <div id="categoryStats" style="padding: 1rem; background: #f5f5f5; border-radius: 4px;">
+                {% if category_stats %}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    {% for cat in category_stats %}
+                    <div style="background: white; padding: 1rem; border-radius: 6px; border: 1px solid #ddd;">
+                        <h4 style="margin: 0 0 0.5rem 0; color: #333;">{{ cat.name }}</h4>
+                        <div style="font-size: 0.9rem; color: #666;">
+                            <div>Total: <strong>{{ cat.article_count }}</strong></div>
+                            <div>Last 7 days: <strong>{{ cat.recent_count }}</strong></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color: #666; text-align: center;">No categories found.</p>
+                {% endif %}
+            </div>
         </div>
     </div>
-    <script>
-        // Phase 9: Load zip pin setting on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadZipPinSetting();
-        });
-        
-        function loadZipPinSetting() {
-            fetch('/admin/api/get-zip-pin-setting')
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success !== false) {
-                        const checkbox = document.getElementById('zipPinEditable');
-                        const status = document.getElementById('zipPinStatus');
-                        if (checkbox) {
-                            checkbox.checked = data.editable || false;
-                        }
-                        if (status) {
-                            status.textContent = data.editable ? 'ENABLED' : 'DISABLED';
-                            status.style.color = data.editable ? '#4caf50' : '#d32f2f';
-                        }
-                    }
-                })
-                .catch(err => {
-                    console.error('Error loading zip pin setting:', err);
-                    const status = document.getElementById('zipPinStatus');
-                    if (status) {
-                        status.textContent = 'Error loading';
-                        status.style.color = '#d32f2f';
-                    }
-                });
-        }
-        
-        function toggleZipPinEditable() {
-            const checkbox = document.getElementById('zipPinEditable');
-            const status = document.getElementById('zipPinStatus');
-            const enabled = checkbox.checked;
-            
-            fetch('/admin/api/toggle-zip-pin-editable', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'}
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    if (status) {
-                        status.textContent = data.editable ? 'ENABLED' : 'DISABLED';
-                        status.style.color = data.editable ? '#4caf50' : '#d32f2f';
-                    }
-                    alert(data.message || `Zip pin editing ${data.editable ? 'enabled' : 'disabled'}`);
-                } else {
-                    alert('Error: ' + (data.error || 'Failed to update setting'));
-                    checkbox.checked = !enabled; // Revert checkbox
-                    if (status) {
-                        status.textContent = enabled ? 'DISABLED' : 'ENABLED';
-                        status.style.color = enabled ? '#d32f2f' : '#4caf50';
-                    }
-                }
-            })
-            .catch(err => {
-                console.error('Error toggling zip pin setting:', err);
-                alert('Error updating setting');
-                checkbox.checked = !enabled; // Revert checkbox
-                if (status) {
-                    status.textContent = enabled ? 'DISABLED' : 'ENABLED';
-                    status.style.color = enabled ? '#d32f2f' : '#4caf50';
-                }
-            });
-        }
-        
-        function regenerateAll() {
-            if (confirm('Regenerate websites for all zip codes?')) {
-                fetch('{{ url_for("admin.regenerate_all_websites_api") }}', {method: "POST"})
-                    .then(r => r.json())
-                    .then(data => alert(data.message || 'Regeneration started'));
-            }
-        }
-        function regenerateSelected() {
-            const zip = prompt('Enter zip code to regenerate:');
-            if (zip && /^\d{5}$/.test(zip)) {
-                fetch('{{ url_for("admin.regenerate_website_api") }}?zip=' + encodeURIComponent(zip), {method: "POST"})
-                    .then(r => r.json())
-                    .then(data => alert(data.message || 'Regeneration started'));
-            }
-        }
-    </script>
-</body>
-</html>
+</div>
+{% endif %}
 
+<!-- SETTINGS TAB -->
+{% if active_tab == 'settings' %}
+<div id="settingsTab" class="tab-content{% if active_tab == 'settings' %} active{% endif %}">
+    <div class="settings-container">
+        <h2 style="margin-bottom: 1.5rem;">Settings</h2>
+
+        <div class="settings-section">
+            <h3>Website Regeneration</h3>
+            <div class="settings-controls">
+                <button onclick="regenerateWebsite()" style="margin-right: 1rem;">Regenerate Website</button>
+                <button onclick="regenerateAll()" style="background: #ff9800; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Regenerate All (Fresh Data)</button>
+            </div>
+            <p style="color: #666; margin-top: 0.5rem; font-size: 0.9rem;">
+                <strong>Regenerate Website:</strong> Regenerates using existing articles.<br>
+                <strong>Regenerate All:</strong> Fetches fresh data and regenerates completely.
+            </p>
+        </div>
+
+        <div class="settings-section" style="margin-top: 2rem;">
+            <h3>Auto-Regeneration Settings</h3>
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                <label style="font-weight: 600;">Regeneration Interval (minutes):</label>
+                <input type="number" id="regenerateInterval" value="{{ settings.get('regenerate_interval', '1') }}" min="1" max="1440" step="1" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100px;">
+                <button onclick="toggleAutoRegenerate()" id="autoRegenerateToggle" style="padding: 0.5rem 1rem; background: {{ '#4caf50' if (settings.get('auto_regenerate') == '1' or settings.get('auto_regenerate') is none) else '#f44336' }}; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; min-width: 60px;">
+                    {{ 'ON' if (settings.get('auto_regenerate') == '1' or settings.get('auto_regenerate') is none) else 'OFF' }}
+                </button>
+                <button onclick="saveRegenerateSettings()" style="padding: 0.5rem 1rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">💾 Save</button>
+            </div>
+            <p style="color: #666; font-size: 0.85rem;">
+                Auto-regeneration runs the aggregation cycle every X minutes when enabled.
+                <strong>Note:</strong> Restart main.py for changes to take effect.
+            </p>
+        </div>
+
+        <div class="settings-section" style="margin-top: 2rem;">
+            <h3>Display Settings</h3>
+            <div class="toggle-switch">
+                <label>Show Images:</label>
+                <label class="switch">
+                    <input type="checkbox" id="showImagesSettings" {{ 'checked' if settings.get('show_images') == '1' else '' }}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section" style="margin-top: 2rem;">
+            <h3>Weather API Configuration</h3>
+            <div style="background: #fff3cd; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #ffc107;">
+                <p style="margin: 0; color: #856404; font-size: 0.9rem; line-height: 1.6;">
+                    <strong>Get your free API key:</strong> Visit <a href="https://openweathermap.org/api" target="_blank" style="color: #0066cc;">https://openweathermap.org/api</a>
+                </p>
+            </div>
+            <div style="margin-top: 1rem;">
+                <label for="weatherApiKey" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">OpenWeatherMap API Key:</label>
+                <input type="password" id="weatherApiKey" value="{{ settings.get('weather_api_key', '') }}" placeholder="Enter your OpenWeatherMap API key" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100%; max-width: 500px; font-family: monospace;">
+                <button onclick="saveWeatherApiKey()" style="margin-top: 0.5rem; padding: 0.5rem 1.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">💾 Save API Key</button>
+                <p style="color: #666; margin-top: 0.5rem; font-size: 0.85rem;">
+                    This API key will be used to fetch weather data for zip code <strong>{{ zip_code or '02720' }}</strong>.
+                </p>
+            </div>
+            <div style="margin-top: 1.5rem; padding: 1rem; background: #f5f5f5; border-radius: 6px; border: 1px solid #ddd;">
+                <label for="weatherStationUrl" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">Weather Station URL:</label>
+                <input type="url" id="weatherStationUrl" value="{{ settings.get('weather_station_url', 'https://www.wunderground.com/weather/us/ma/fall-river') }}" placeholder="https://www.wunderground.com/weather/us/ma/fall-river" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100%; max-width: 500px; font-family: monospace; background: white;">
+                <button onclick="saveWeatherStationUrl()" style="margin-top: 0.5rem; padding: 0.5rem 1.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">💾 Save Weather URL</button>
+            </div>
+        </div>
+
+        <div class="settings-section" style="margin-top: 2rem;">
+            <h3>AI Filtering</h3>
+            <div style="background: #e3f2fd; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #2196f3;">
+                <p style="margin: 0; color: #1565c0; font-size: 0.9rem; line-height: 1.6;">
+                    <strong>AI Relevance Checking:</strong> Uses AI to verify articles are truly about Fall River.
+                </p>
+            </div>
+            <div class="toggle-switch">
+                <label>Enable AI Filtering:</label>
+                <label class="switch">
+                    <input type="checkbox" id="aiFilteringSettings" {{ 'checked' if settings.get('ai_filtering_enabled') == '1' else '' }}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section" style="margin-top: 2rem;">
+            <h3>Zip Code Management</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                Enable zip codes to get pre-generated static pages.
+            </p>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="newZipCode" placeholder="Enter zip code (e.g., 02720)" pattern="[0-9]{5}" maxlength="5" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 200px; margin-right: 0.5rem;">
+                <button onclick="addZipCode()" style="padding: 0.5rem 1rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Add Zip Code</button>
+            </div>
+            <div id="enabledZipsList" style="display: flex; flex-wrap: gap: 0.5rem; margin-top: 1rem;">
+                {% if enabled_zips %}
+                    {% for zip in enabled_zips %}
+                    <div style="display: flex; align-items: center; gap: 0.5rem; background: #e8f5e9; padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid #4caf50;">
+                        <span style="font-weight: 600;">{{ zip }}</span>
+                        <button class="remove-zip-btn" data-zip="{{ zip }}" style="background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer;">Remove</button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: #999; font-style: italic;">No zip codes enabled. Add one to get started.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="settings-section" style="margin-top: 2rem;">
+            <h3>System Information</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Version:</span>
+                    <span class="info-value">{{ version }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Last Generated:</span>
+                    <span class="info-value">{{ last_regeneration or 'Never' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// Initialize tab-specific loading
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTab = urlParams.get('tab') || 'articles';
+
+    // Load data for the active tab
+    switch(activeTab) {
+        case 'trash':
+            if (window.loadTrash) {
+                setTimeout(() => window.loadTrash(), 100);
+            }
+            break;
+        case 'categories':
+            setTimeout(() => loadCategoryStats(), 100);
+            break;
+        case 'relevance':
+            if (window.loadBayesianStats) {
+                setTimeout(() => window.loadBayesianStats(), 100);
+            }
+            break;
+    }
+});
+
+
+
+
+// Article management functions are now handled in admin.js
+</script>
+{% endblock %}

@@ -821,7 +821,11 @@ class ArticleRenderer {
 // Initialize article renderer
 let articleRenderer;
 if (typeof window !== 'undefined') {
-    articleRenderer = new ArticleRenderer();
-    window.articleRenderer = articleRenderer;
+    try {
+        articleRenderer = new ArticleRenderer();
+        window.articleRenderer = articleRenderer;
+    } catch (error) {
+        console.error('Failed to initialize ArticleRenderer:', error);
+    }
 }
 

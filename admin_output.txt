@@ -1,0 +1,10 @@
+============================================================
+Unified Admin & Website Server
+============================================================
+Starting server on http://127.0.0.1:8000
+Website: http://127.0.0.1:8000
+Admin Panel: http://127.0.0.1:8000/admin
+Admin credentials configured via environment variables
+============================================================
+ * Serving Flask app 'admin'
+ * Debug mode: on

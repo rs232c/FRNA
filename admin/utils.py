@@ -3,6 +3,8 @@ Admin utility functions for database operations
 """
 import sqlite3
 import logging
+import time
+import json
 from contextlib import contextmanager
 from config import DATABASE_CONFIG
 from flask import session
@@ -13,7 +15,7 @@ logger = logging.getLogger(__name__)
 @contextmanager
 def get_db():
     """Context manager for database connections"""
-    conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+    conn = sqlite3.connect(DATABASE_CONFIG["path"])
     conn.row_factory = sqlite3.Row
     try:
         yield conn
@@ -23,7 +25,7 @@ def get_db():
 
 def get_db_legacy():
     """Legacy database connection (use get_db context manager instead)"""
-    conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+    conn = sqlite3.connect(DATABASE_CONFIG["path"])
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -37,6 +39,14 @@ def validate_zip_code(zip_code: str) -> bool:
 
 def trash_article(article_id: int, zip_code: str) -> dict:
     """Move article to trash (reject it)"""
+
+    # #region agent log
+    try:
+        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"admin/utils.py:38","message":"trash_article called","data":{"article_id":article_id,"zip_code":zip_code},"timestamp":int(time.time()*1000)})+'\n')
+    except: pass
+    # #endregion
+
     conn = get_db_legacy()
     cursor = conn.cursor()
     
@@ -92,12 +102,27 @@ def trash_article(article_id: int, zip_code: str) -> dict:
             logger.info(f"Bayesian model trained from rejected article: '{article_data.get('title', '')[:50]}...'")
         except Exception as e:
             logger.warning(f"Could not train Bayesian model: {e}")
-    
+
+    # #region agent log
+    try:
+        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"admin/utils.py:106","message":"trash_article completed","data":{"article_id":article_id,"zip_code":zip_code,"success":True,"article_data_found":article_data is not None},"timestamp":int(time.time()*1000)})+'\n')
+    except: pass
+    # #endregion
+
     return {'success': True, 'message': 'Article moved to trash'}
 
 
 def restore_article(article_id: int, zip_code: str, rejection_type: str = 'manual') -> dict:
     """Restore article from trash"""
+
+    # #region agent log
+    try:
+        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"admin/utils.py:116","message":"restore_article called","data":{"article_id":article_id,"zip_code":zip_code,"rejection_type":rejection_type},"timestamp":int(time.time()*1000)})+'\n')
+    except: pass
+    # #endregion
+
     conn = get_db_legacy()
     cursor = conn.cursor()
     
@@ -137,7 +162,14 @@ def restore_article(article_id: int, zip_code: str, rejection_type: str = 'manua
     
     conn.commit()
     conn.close()
-    
+
+    # #region agent log
+    try:
+        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"admin/utils.py:166","message":"restore_article completed","data":{"article_id":article_id,"zip_code":zip_code,"rejection_type":rejection_type,"success":True},"timestamp":int(time.time()*1000)})+'\n')
+    except: pass
+    # #endregion
+
     return {'success': True, 'message': 'Article restored'}
 
 
@@ -1135,6 +1167,97 @@ def toggle_good_fit(article_id: int, zip_code: str, is_good_fit: bool) -> dict:
     return {'success': True, 'message': f'Good fit {"enabled" if is_good_fit else "disabled"}'}
 
 
+def toggle_on_target(article_id: int, zip_code: str, is_on_target: bool) -> dict:
+    """Toggle on target status for an article"""
+    conn = get_db_legacy()
+    cursor = conn.cursor()
+    
+    # Ensure is_on_target column exists (default NULL to distinguish unset from explicitly set to 0)
+    try:
+        cursor.execute('ALTER TABLE article_management ADD COLUMN is_on_target INTEGER')
+        conn.commit()
+    except:
+        pass
+    
+    # Get current display_order
+    cursor.execute('SELECT display_order FROM article_management WHERE article_id = ? AND zip_code = ? ORDER BY ROWID DESC LIMIT 1', (article_id, zip_code))
+    row = cursor.fetchone()
+    display_order = row[0] if row else article_id
+    
+    # Check if entry exists
+    cursor.execute('SELECT id FROM article_management WHERE article_id = ? AND zip_code = ?', (article_id, zip_code))
+    existing = cursor.fetchone()
+    
+    if existing:
+        cursor.execute('''
+            UPDATE article_management 
+            SET is_on_target = ?, display_order = ?
+            WHERE article_id = ? AND zip_code = ?
+        ''', (1 if is_on_target else 0, display_order, article_id, zip_code))
+    else:
+        cursor.execute('''
+            INSERT INTO article_management (article_id, enabled, display_order, is_on_target, zip_code)
+            VALUES (?, 1, ?, ?, ?)
+        ''', (article_id, display_order, 1 if is_on_target else 0, zip_code))
+    
+    conn.commit()
+    
+    # Recalculate relevance scores when on-target status changes
+    try:
+        from aggregator import NewsAggregator
+        from utils.relevance_calculator import calculate_relevance_score
+        
+        # Get article data
+        cursor.execute('SELECT * FROM articles WHERE id = ?', (article_id,))
+        article_row = cursor.fetchone()
+        
+        if article_row:
+            article = {key: article_row[key] for key in article_row.keys()}
+            
+            # Recalculate relevance score
+            relevance_score = calculate_relevance_score(article, zip_code=zip_code)
+            
+            # Calculate local focus score (0-10)
+            local_focus_score = calculate_local_focus_score(article, zip_code=zip_code)
+            
+            # Update article with new scores
+            cursor.execute('''
+                UPDATE articles 
+                SET relevance_score = ?, local_score = ?
+                WHERE id = ?
+            ''', (relevance_score, local_focus_score, article_id))
+            
+            conn.commit()
+            logger.info(f"Recalculated relevance for article {article_id}: relevance={relevance_score:.1f}, local_focus={local_focus_score:.1f}/10")
+            
+            # Train the category classifier if article has a primary_category
+            try:
+                primary_category = article.get('primary_category')
+                if primary_category:
+                    from utils.category_classifier import CategoryClassifier
+                    classifier = CategoryClassifier(zip_code)
+                    article_for_training = {
+                        'title': article.get('title', ''),
+                        'content': article.get('content', ''),
+                        'summary': article.get('summary', ''),
+                        'source': article.get('source', '')
+                    }
+                    # Train as positive if on-target, negative if off-target
+                    classifier.train_from_feedback(article_for_training, primary_category, is_positive=is_on_target)
+                    logger.info(f"Trained classifier from on-target: article {article_id}, category {primary_category}, positive={is_on_target}")
+            except Exception as e:
+                logger.warning(f"Could not train classifier from on-target: {e}")
+                # Don't fail if training fails
+    except Exception as e:
+        logger.warning(f"Could not recalculate relevance for article {article_id}: {e}")
+        # Don't fail the on-target toggle if relevance calc fails
+    
+    conn.close()
+    
+    logger.info(f"Article {article_id} on target set to {is_on_target} for zip {zip_code}")
+    return {'success': True, 'is_on_target': is_on_target, 'message': f'On target {"enabled" if is_on_target else "disabled"}'}
+
+
 def map_category_to_classifier(category_slug: str) -> str:
     """Map new category slugs to classifier category names"""
     mapping = {
@@ -1183,7 +1306,10 @@ def map_classifier_to_category(classifier_category: str) -> str:
         "Politics": "local-news",
         "Health": "local-news",
         "Traffic": "local-news",
-        "Fire": "local-news"
+        "Fire": "local-news",
+        "Obits": "obituaries",  # Map Obits to obituaries category slug
+        "Obituaries": "obituaries",
+        "Obituary": "obituaries"
     }
     return mapping.get(classifier_category, "local-news")
 
@@ -1248,10 +1374,37 @@ def calculate_local_focus_score(article: dict, zip_code: str = None) -> float:
         return 0.0
 
 
-def get_articles(zip_code: str, show_trash: bool = False) -> list:
+def get_articles(zip_code: str, show_trash: bool = False, limit: int = None, offset: int = None) -> list:
     """Get articles for a zip code"""
     conn = get_db_legacy()
     cursor = conn.cursor()
+    
+    # Ensure is_on_target column exists before querying (default NULL to distinguish unset from explicitly set to 0)
+    try:
+        cursor.execute('ALTER TABLE article_management ADD COLUMN is_on_target INTEGER')
+        conn.commit()
+    except:
+        pass  # Column already exists
+    
+    # One-time migration: Clear any existing 0 values that were set by old default
+    # Check if migration has been done by looking for a flag in admin_settings
+    try:
+        cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('is_on_target_migrated',))
+        migration_done = cursor.fetchone()
+        if not migration_done:
+            # Clear all 0 values (they were from old default, not user clicks)
+            cursor.execute('UPDATE article_management SET is_on_target = NULL WHERE is_on_target = 0')
+            conn.commit()
+            # Mark migration as done
+            try:
+                cursor.execute('INSERT INTO admin_settings (key, value) VALUES (?, ?)', ('is_on_target_migrated', '1'))
+                conn.commit()
+            except:
+                # Settings table might not exist or key already exists
+                pass
+    except:
+        # Migration check failed, continue anyway
+        pass
     
     # Build WHERE clause
     where_clauses = ['a.zip_code = ?']
@@ -1263,35 +1416,52 @@ def get_articles(zip_code: str, show_trash: bool = False) -> list:
     
     where_sql = ' AND '.join(where_clauses)
     query_params = ([zip_code] * 2) + where_params
-    
-    cursor.execute(f'''
-        SELECT a.*, 
+
+    # Build the base query
+    base_query = f'''
+        SELECT a.*,
                COALESCE(am.enabled, 1) as enabled,
                COALESCE(am.display_order, a.id) as display_order,
                COALESCE(am.is_rejected, 0) as is_rejected,
                COALESCE(am.is_top_story, 0) as is_top_story,
                COALESCE(am.is_stellar, 0) as is_stellar,
-               COALESCE(am.is_good_fit, 0) as is_good_fit
+               COALESCE(am.is_good_fit, 0) as is_good_fit,
+               am.is_on_target as is_on_target
         FROM articles a
         LEFT JOIN (
-            SELECT article_id, enabled, display_order, is_rejected, is_top_story, is_stellar, is_good_fit
+            SELECT article_id, enabled, display_order, is_rejected, is_top_story, is_stellar, is_good_fit, is_on_target
             FROM article_management
             WHERE zip_code = ?
             AND ROWID IN (
-                SELECT MAX(ROWID) 
-                FROM article_management 
+                SELECT MAX(ROWID)
+                FROM article_management
                 WHERE zip_code = ?
                 GROUP BY article_id
             )
         ) am ON a.id = am.article_id
         WHERE {where_sql}
-        ORDER BY 
+        ORDER BY
             CASE WHEN a.published IS NOT NULL AND a.published != '' THEN a.published ELSE '1970-01-01' END DESC,
             COALESCE(am.display_order, a.id) ASC
-    ''', query_params)
-    
+    '''
+
+    # Add pagination if specified
+    if limit is not None:
+        base_query += ' LIMIT ? OFFSET ?'
+        query_params.extend([limit, offset or 0])
+
+    cursor.execute(base_query, query_params)
     articles = [dict(row) for row in cursor.fetchall()]
-    
+
+    # #region agent log
+    try:
+        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            rejected_count = sum(1 for a in articles if a.get('is_rejected', 0) == 1)
+            enabled_count = sum(1 for a in articles if a.get('enabled', 1) == 1)
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"admin/utils.py:1447","message":"get_articles query result","data":{"zip_code":zip_code,"show_trash":show_trash,"total_articles":len(articles),"rejected_count":rejected_count,"enabled_count":enabled_count,"query_params":query_params},"timestamp":int(time.time()*1000)})+'\n')
+    except: pass
+    # #endregion
+
     # Remove duplicates
     seen_ids = set()
     unique_articles = []
@@ -1307,8 +1477,36 @@ def get_articles(zip_code: str, show_trash: bool = False) -> list:
         if article.get('relevance_score') is None:
             article['relevance_score'] = calculate_relevance_score(article)
     
+    # Get total count for pagination
+    total_count = len(unique_articles)
+    if limit is not None:
+        # Get the total count without LIMIT/OFFSET
+        count_query = f'''
+            SELECT COUNT(DISTINCT a.id)
+            FROM articles a
+            LEFT JOIN (
+                SELECT article_id, is_rejected
+                FROM article_management
+                WHERE zip_code = ?
+                AND ROWID IN (
+                    SELECT MAX(ROWID)
+                    FROM article_management
+                    WHERE zip_code = ?
+                    GROUP BY article_id
+                )
+            ) am ON a.id = am.article_id
+            WHERE {where_sql}
+        '''
+        cursor.execute(count_query, ([zip_code] * 2) + where_params)
+        total_count = cursor.fetchone()[0]
+
     conn.close()
-    return unique_articles
+
+    # Return dict for pagination requests, list for backward compatibility
+    if limit is not None:
+        return {'articles': unique_articles, 'total_count': total_count}
+    else:
+        return unique_articles
 
 
 def get_rejected_articles(zip_code: str) -> list:
@@ -1634,6 +1832,16 @@ def get_settings(zip_code: str) -> dict:
         cursor.execute('SELECT key, value FROM admin_settings_zip WHERE zip_code = ?', (zip_code,))
         for row in cursor.fetchall():
             settings[row['key']] = row['value']
+    
+    # #region agent log
+    try:
+        import json
+        import time
+        show_images_value = settings.get('show_images', 'NOT_SET')
+        with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"get-settings","hypothesisId":"K","location":"admin/utils.py:1761","message":"get_settings called","data":{"zip_code":zip_code,"show_images":show_images_value,"has_zip_specific":zip_code and any(k == 'show_images' for k in settings.keys())},"timestamp":int(time.time()*1000)})+'\n')
+    except: pass
+    # #endregion
     
     conn.close()
     return settings

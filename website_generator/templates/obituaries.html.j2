@@ -11,6 +11,11 @@
             darkMode: 'class',
             theme: {
                 extend: {
+                    colors: {
+                        'edge-bg': '#0d0d0d',
+                        'edge-surface': '#161616',
+                        'edge-elevated': '#1f1f1f',
+                    },
                     fontFamily: {
                         'serif': ['Georgia', 'Times New Roman', 'serif'],
                     }
@@ -18,7 +23,7 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="{{ css_path }}style.css">
+    <link rel="stylesheet" href="{{ css_path }}style.css?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}">
     <style>
         .lazy-image { opacity: 0; transition: opacity 0.3s; }
         .lazy-image.loaded { opacity: 1; }
@@ -32,11 +37,14 @@
         
         .obituary-card {
             transition: all 0.3s ease;
-            border: 1px solid #e5e7eb;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(16, 16, 16, 0.4);
+            backdrop-filter: blur(20px);
         }
-        
+
         .obituary-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             transform: translateY(-2px);
         }
         
@@ -45,34 +53,48 @@
         }
     </style>
 </head>
-<body class="bg-[#f8f8f8] text-gray-800 min-h-screen">
+<body class="bg-[#0a0a0a] text-gray-100 min-h-screen">
     <!-- Top Bar -->
-    <div class="bg-white border-b border-gray-200 py-3">
+    <div class="bg-[#0a0a0a]/50 backdrop-blur-sm border-b border-gray-900/30 py-2">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="w-full sm:w-auto flex-1">
-                    <div class="relative flex items-center bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                    <div class="relative flex items-center bg-[#161616]/50 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-800/20 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20">
                         <span class="text-gray-400 mr-2">🔍</span>
-                        <input type="text" placeholder="Search by name..." class="bg-transparent border-none outline-none text-gray-800 placeholder-gray-400 flex-1 w-full sm:w-64" id="obituarySearch">
+                        <input type="text" placeholder="Search by name..." class="bg-transparent border-none outline-none text-gray-100 placeholder-gray-400 flex-1 w-full sm:w-64" id="obituarySearch">
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <select id="funeralHomeFilter" class="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-800 text-sm focus:border-gray-400 focus:outline-none">
+                    <select id="funeralHomeFilter" class="w-full text-gray-100 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
                         <option value="">All Funeral Homes</option>
                         {% for home in funeral_homes %}
                         <option value="{{ home }}">{{ home }}</option>
                         {% endfor %}
                     </select>
-                    <a href="mailto:obituaries@fallrivernews.local?subject=Submit Obituary" class="bg-[#6b7280] hover:bg-[#4b5563] text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <a href="mailto:obituaries@fallrivernews.local?subject=Submit Obituary" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
                         Submit an Obituary
                     </a>
-                    <a href="/admin" id="hamburgerMenuLink" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors inline-flex items-center justify-center w-10 h-10" title="Admin Panel">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Hamburger Menu Button -->
+                    <button id="mobileNavToggle" class="flex items-center gap-2 text-gray-400 hover:text-white px-3 py-2 rounded-lg hover:bg-gray-800/50 transition-colors border border-gray-700" aria-label="Toggle navigation menu" title="Menu & Category Controls">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <!-- Desktop Admin Button -->
+                    <a href="/admin" id="hamburgerMenuLink" class="hidden lg:inline-flex bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors items-center justify-center w-10 h-10" title="Admin Panel">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </a>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
                     </a>
                     <script>
-                        // Update hamburger menu link based on session
+                        console.log('[FRNA] ✅ Obituaries page navigation buttons initialized');
+                        // Update admin link based on session
                         (function() {
                             fetch('/api/session-check')
                                 .then(response => response.json())
@@ -95,7 +117,7 @@
     </div>
     
     <!-- Navigation -->
-    <nav class="bg-white border-b border-gray-200 py-3 sticky top-0 z-50">
+    <nav class="bg-[#0a0a0a]/80 backdrop-blur-md border-b border-gray-900/20 py-2 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="text-2xl font-semibold text-gray-800">FRNA</div>
@@ -107,7 +129,7 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Fixed Location Badge (Top-Left) -->
-        <div class="fixed top-4 left-4 z-50 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+        <div class="fixed top-4 left-4 z-50 bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
             {{ location_badge_text }}
         </div>
         
@@ -132,8 +154,8 @@
         {% if hero_obit %}
         <div class="mb-16">
             <div class="relative rounded-lg overflow-hidden shadow-lg" style="height: 500px;">
-                {% if show_images and hero_obit.image_url %}
-                <img data-src="{{ hero_obit.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ hero_obit.title }}" class="w-full h-full object-cover lazy-image">
+                {% if show_images and hero_obit.image_url and (hero_obit.image_url|default('')|trim) %}
+                <img src="{{ hero_obit.image_url }}" alt="{{ hero_obit.title }}" loading="lazy" class="w-full h-full object-cover">
                 {% else %}
                 <div class="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
                     <div class="text-center text-gray-600">
@@ -173,9 +195,9 @@
             {% for article in articles %}
             <article class="obituary-card bg-white rounded-lg overflow-hidden shadow-sm" data-name="{{ article.title.lower() }}" data-funeral-home="{{ article.source_display.lower() }}">
                 <!-- Photo or Placeholder -->
-                {% if show_images and article.image_url %}
+                {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
                 <div class="relative h-48 overflow-hidden bg-gray-200">
-                    <img data-src="{{ article.image_url }}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" alt="{{ article.title }}" class="w-full h-full object-cover lazy-image">
+                    <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover">
                 </div>
                 {% else %}
                 <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
@@ -239,7 +261,17 @@
         </div>
     </footer>
     
-    <script src="{{ home_path }}js/main.js"></script>
+    <!-- Load scripts in dependency order -->
+    <script src="{{ home_path }}js/storage.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/categorizer.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/news-fetcher.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/article-renderer.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/weather.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/tabs.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/stats.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/main.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script src="{{ home_path }}js/zip-router.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
+    <script>console.log('[FRNA] ✅ Obituaries page loaded with cache-busting - build:', '{{ current_time }}');</script>
     <script>
         // Obituary search and filter functionality
         document.addEventListener('DOMContentLoaded', function() {

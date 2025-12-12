@@ -27,7 +27,124 @@ document.addEventListener('DOMContentLoaded', function() {
             img.removeAttribute('data-src');
         });
     }
-    
+
+    // URL-based routing for direct navigation (e.g., /obituaries, /news)
+    const currentPath = window.location.pathname;
+    if (currentPath !== '/' && currentPath !== '' && !currentPath.startsWith('/zip_')) {
+        // Extract category from path (e.g., /obituaries -> obituaries)
+        const pathCategory = currentPath.substring(1).split('/')[0];
+
+        // Map URL paths to filter categories
+        const pathToCategoryMap = {
+            'obituaries': 'obituaries',
+            'news': 'news',
+            'entertainment': 'entertainment',
+            'sports': 'sports',
+            'local': 'local',
+            'business': 'business',
+            'events': 'events',
+            'food': 'food',
+            'schools': 'schools',
+            'weather': 'weather',
+            'crime': 'crime'
+        };
+
+        if (pathToCategoryMap[pathCategory]) {
+            // Hide homepage-specific elements for category views
+            hideHomepageElements();
+
+            // Update page title for category
+            updatePageTitle(pathCategory);
+
+            // Automatically filter to the category from the URL
+            setTimeout(() => {
+                filterArticles(pathToCategoryMap[pathCategory]);
+
+                // Update navigation tabs to show active state
+                document.querySelectorAll('nav a').forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && (href.includes(pathCategory) || href.includes(pathCategory.replace('-', ' ')))) {
+                        link.classList.add('bg-[#161616]', 'text-blue-400');
+                        link.classList.remove('text-gray-300', 'hover:bg-[#161616]/50');
+                    } else if (href === 'index.html' || href === '/' || href === '') {
+                        link.classList.remove('bg-[#161616]', 'text-blue-400');
+                        link.classList.add('text-gray-300', 'hover:bg-[#161616]/50');
+                    }
+                });
+            }, 100); // Small delay to ensure DOM is ready
+        }
+    }
+
+    // Function to hide homepage-specific elements
+    function hideHomepageElements() {
+        console.log('Hiding homepage elements...'); // Debug logging
+
+        // Hide alert articles section - look for sections with red gradients
+        const alertSections = document.querySelectorAll('div.mb-6, div[class*="alert"], div[class*="urgent"]');
+        alertSections.forEach(section => {
+            if (section.querySelector('[class*="from-red"]') ||
+                section.textContent.includes('URGENT ALERT') ||
+                section.textContent.includes('🚨')) {
+                section.style.display = 'none';
+            }
+        });
+
+        // Hide featured/top article section - look for sections with yellow/orange gradients
+        const featuredSections = document.querySelectorAll('div.mb-8, div[class*="featured"]');
+        featuredSections.forEach(section => {
+            if (section.querySelector('[class*="from-yellow"]') ||
+                section.querySelector('[class*="from-orange"]') ||
+                (section.querySelector('h1, h2') && section.offsetHeight > 200)) {
+                section.style.display = 'none';
+            }
+        });
+
+        // Hide any large gradient banners
+        const gradientBanners = document.querySelectorAll('.bg-gradient-to-r');
+        gradientBanners.forEach(banner => {
+            if (banner.offsetHeight > 150 && !banner.closest('nav') && !banner.closest('.fixed')) {
+                banner.style.display = 'none';
+            }
+        });
+
+        // Also try to hide by ID or specific classes if they exist
+        const elementsToHide = [
+            'alert-articles',
+            'featured-article',
+            'top-article',
+            'hero-section'
+        ];
+        elementsToHide.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.display = 'none';
+            }
+        });
+    }
+
+    // Function to update page title for category views
+    function updatePageTitle(category) {
+        const titleMap = {
+            'obituaries': 'Obituaries',
+            'news': 'News',
+            'entertainment': 'Entertainment',
+            'sports': 'Sports',
+            'local': 'Local News',
+            'business': 'Business & Development',
+            'events': 'Events',
+            'food': 'Food & Drink',
+            'schools': 'Schools',
+            'weather': 'Weather',
+            'crime': 'Crime & Public Safety'
+        };
+
+        const categoryTitle = titleMap[category] || category.charAt(0).toUpperCase() + category.slice(1);
+        const currentTitle = document.title;
+        if (currentTitle.includes('Fall River')) {
+            document.title = `${categoryTitle} - Fall River, MA News Aggregator`;
+        }
+    }
+
     // Infinite scroll with article looping
     const articlesGrid = document.getElementById('articlesGrid');
     if (articlesGrid) {
@@ -104,41 +221,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const navTabs = document.querySelectorAll('.nav-tab[data-tab]');
     const allTiles = document.querySelectorAll('.tile[data-category]');
     const featuredTile = document.querySelector('.featured-tile');
-    
-    navTabs.forEach(tab => {
-        tab.addEventListener('click', function(e) {
-            e.preventDefault();
-            navTabs.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            
-            const targetTab = this.dataset.tab;
-            
-            // Show/hide featured tile
-            if (featuredTile) {
-                if (targetTab === 'all' || targetTab === 'news' || !targetTab || featuredTile.dataset.category === targetTab) {
-                    featuredTile.style.display = '';
-                } else {
-                    featuredTile.style.display = 'none';
-                }
+
+    // Extract filtering logic into reusable function
+    function filterArticles(targetTab) {
+        // Show/hide featured tile
+        if (featuredTile) {
+            if (targetTab === 'all' || targetTab === 'news' || !targetTab || featuredTile.dataset.category === targetTab) {
+                featuredTile.style.display = '';
+            } else {
+                featuredTile.style.display = 'none';
             }
-            
-            // Filter articles in grid
-            if (articlesGrid) {
-                const articleTiles = articlesGrid.querySelectorAll('.article-tile');
-                articleTiles.forEach(tile => {
-                    const tileCategory = tile.dataset.category;
-                    if (targetTab === 'all' || !targetTab) {
-                        tile.style.display = '';
-                    } else if (tileCategory === targetTab) {
-                        tile.style.display = '';
-                    } else {
-                        tile.style.display = 'none';
-                    }
-                });
-            }
-            
-            // Also filter all tiles (for featured tile)
-            allTiles.forEach(tile => {
+        }
+
+        // Filter articles in grid
+        if (articlesGrid) {
+            const articleTiles = articlesGrid.querySelectorAll('article');
+            articleTiles.forEach(tile => {
                 const tileCategory = tile.dataset.category;
                 if (targetTab === 'all' || !targetTab) {
                     tile.style.display = '';
@@ -148,6 +246,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     tile.style.display = 'none';
                 }
             });
+        }
+
+        // Also filter all tiles (for featured tile)
+        allTiles.forEach(tile => {
+            const tileCategory = tile.dataset.category;
+            if (targetTab === 'all' || !targetTab) {
+                tile.style.display = '';
+            } else if (tileCategory === targetTab) {
+                tile.style.display = '';
+            } else {
+                tile.style.display = 'none';
+            }
+        });
+    }
+
+    navTabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            navTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+
+            const targetTab = this.dataset.tab;
+            filterArticles(targetTab);
         });
     });
     
@@ -375,27 +496,54 @@ document.addEventListener('DOMContentLoaded', function() {
     window.scrollToTop = scrollToTop;
     
     // Set active mobile nav item based on current page
-    const currentPath = window.location.pathname;
+    const mobileNavPath = window.location.pathname;
     document.querySelectorAll('.mobile-nav-item').forEach(item => {
         const href = item.getAttribute('href');
-        if (currentPath.includes(href) || (currentPath === '/' && href === 'index.html')) {
+        if (mobileNavPath.includes(href) || (mobileNavPath === '/' && href === 'index.html')) {
             item.classList.add('active');
         }
     });
     
     // Initialize weather pill - fetch fresh data on every page load
     async function updateWeatherPill() {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:387',message:'updateWeatherPill called',data:{has_weatherFetcher:!!window.weatherFetcher,has_api_key:!!window.WEATHER_API_KEY,api_key_length:window.WEATHER_API_KEY?window.WEATHER_API_KEY.length:0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
         const weatherPill = document.getElementById('weatherPill');
         const weatherTemp = document.getElementById('weatherTemp');
         const weatherCondition = document.getElementById('weatherCondition');
         const weatherIcon = document.getElementById('weatherIcon');
         
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:393',message:'Weather pill elements check',data:{has_weatherPill:!!weatherPill,has_weatherTemp:!!weatherTemp,has_weatherCondition:!!weatherCondition,has_weatherIcon:!!weatherIcon},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
         if (!weatherPill || !weatherTemp || !weatherCondition || !weatherIcon) {
             return; // Weather pill elements not found
         }
         
-        // Always use 02720 (Fall River) for weather
-        const zipCode = '02720';
+        // Extract zip code from URL path dynamically (e.g., /02720 or /zip_02720/index.html)
+        let zipCode = null;
+        const path = window.location.pathname;
+        
+        // Try path-based routing first: /02720
+        const pathMatch = path.match(/^\/(\d{5})/);
+        if (pathMatch) {
+            zipCode = pathMatch[1];
+        } else {
+            // Try zip-specific path: /zip_02720/...
+            const zipPathMatch = path.match(/\/zip_(\d{5})/);
+            if (zipPathMatch) {
+                zipCode = zipPathMatch[1];
+            } else {
+                // Try localStorage as fallback
+                zipCode = localStorage.getItem('currentZip');
+            }
+        }
+        
+        // Fallback to default only if no zip found (shouldn't happen in production)
+        if (!zipCode || !/^\d{5}$/.test(zipCode)) {
+            zipCode = '02720'; // Default fallback
+        }
         
         // Fetch fresh weather data (no cache)
         if (window.weatherFetcher) {
@@ -406,11 +554,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Set API key if available from window config
                 if (window.WEATHER_API_KEY) {
                     window.weatherFetcher.apiKey = window.WEATHER_API_KEY;
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:408',message:'API key set on weatherFetcher',data:{api_key_set:true,api_key_length:window.WEATHER_API_KEY.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                    // #endregion
                 } else {
                     console.warn('Weather API key not configured. Weather data will not be available.');
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:411',message:'API key missing',data:{api_key_missing:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                    // #endregion
                 }
                 
                 const weather = await window.weatherFetcher.fetchWeather(zipCode);
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:414',message:'Weather fetch result',data:{has_weather:!!weather,has_current:!!(weather&&weather.current),temperature:weather&&weather.current?weather.current.temperature:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                // #endregion
                 
                 if (weather && weather.current) {
                     // Update DOM with fresh weather data

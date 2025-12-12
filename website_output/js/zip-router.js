@@ -254,13 +254,21 @@ function handleZipSubmit(event) {
 
 // Initialize router on page load
 let zipRouter;
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+try {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                zipRouter = new ZipRouter();
+                window.zipRouter = zipRouter;
+            } catch (error) {
+                console.error('Failed to initialize ZipRouter:', error);
+            }
+        });
+    } else {
         zipRouter = new ZipRouter();
         window.zipRouter = zipRouter;
-    });
-} else {
-    zipRouter = new ZipRouter();
-    window.zipRouter = zipRouter;
+    }
+} catch (error) {
+    console.error('Failed to initialize ZipRouter:', error);
 }
 

@@ -8,11 +8,20 @@ import hashlib
 
 
 def get_trending_articles(articles: List[Dict], limit: int = 5) -> List[Dict]:
-    """Get trending articles based on recency and relevance score"""
+    """Get trending articles based on recency and relevance score
+    Ensures source diversity - limits articles per source
+    """
+    from collections import defaultdict
+    
     now = datetime.now()
     trending = []
     
     for article in articles:
+        # EXCLUDE OBITUARIES - Never show in trending
+        article_category = article.get('category', '').lower() if article.get('category') else ''
+        if article_category in ['obituaries', 'obituary']:
+            continue
+        
         # Get publication date
         published = article.get("published")
         if not published:
@@ -38,13 +47,36 @@ def get_trending_articles(articles: List[Dict], limit: int = 5) -> List[Dict]:
                     trending_score += 5  # This week
                 
                 article['_trending_score'] = trending_score
+                article['_sort_date'] = pub_date
                 trending.append(article)
         except:
             continue
     
     # Sort by trending score (highest first)
     trending.sort(key=lambda x: x.get('_trending_score', 0), reverse=True)
-    return trending[:limit]
+    
+    # Ensure source diversity - limit to max 2 articles per source (for limit=5, try to get 3+ sources)
+    source_counts = defaultdict(int)
+    diverse_trending = []
+    max_per_source = max(1, limit // 3)  # At least 1, but try to get 3+ sources
+    
+    for article in trending:
+        source = article.get('source_display', article.get('source', 'Unknown'))
+        if source_counts[source] < max_per_source:
+            diverse_trending.append(article)
+            source_counts[source] += 1
+            if len(diverse_trending) >= limit:
+                break
+    
+    # If we didn't fill the limit, add remaining articles regardless of source
+    if len(diverse_trending) < limit:
+        for article in trending:
+            if article not in diverse_trending:
+                diverse_trending.append(article)
+                if len(diverse_trending) >= limit:
+                    break
+    
+    return diverse_trending
 
 
 def get_source_initials(source: str) -> str:

@@ -44,8 +44,18 @@ class NewsIngestor:
         }
     
     def fetch_articles(self) -> List[Dict]:
-        """Fetch articles from the news source (synchronous wrapper)"""
-        return asyncio.run(self.fetch_articles_async())
+        """Fetch articles from the news source (synchronous wrapper)
+        
+        Note: This method creates a new event loop. For better performance,
+        use fetch_articles_async() directly if you're already in an async context.
+        """
+        try:
+            return asyncio.run(self.fetch_articles_async())
+        except RuntimeError as e:
+            # If there's already a running event loop, this is a programming error
+            # The aggregator should call fetch_articles_async() directly
+            logger.error(f"Cannot run async method: {e}. Use fetch_articles_async() in async context.")
+            raise
     
     async def fetch_articles_async(self) -> List[Dict]:
         """Fetch articles from the news source (async)"""
@@ -78,8 +88,15 @@ class NewsIngestor:
             await self._aiohttp_session.close()
     
     def _fetch_from_rss(self) -> List[Dict]:
-        """Fetch articles from RSS feed (synchronous)"""
-        return asyncio.run(self._fetch_from_rss_async())
+        """Fetch articles from RSS feed (synchronous)
+        
+        Note: Use _fetch_from_rss_async() directly in async contexts.
+        """
+        try:
+            return asyncio.run(self._fetch_from_rss_async())
+        except RuntimeError as e:
+            logger.error(f"Cannot run async method: {e}. Use _fetch_from_rss_async() in async context.")
+            raise
     
     async def _fetch_from_rss_async(self) -> List[Dict]:
         """Fetch articles from RSS feed (async) with retry logic"""
@@ -137,6 +154,38 @@ class NewsIngestor:
                         if not content_text:
                             content_text = entry.get("summary", "")
                         
+                        # Extract image_url from RSS entry
+                        image_url = None
+                        # Try Media RSS (media:content or media:thumbnail)
+                        if hasattr(entry, 'media_content') and entry.media_content:
+                            for media in entry.media_content:
+                                if media.get('type', '').startswith('image/'):
+                                    image_url = media.get('url')
+                                    break
+                        # Try media:thumbnail
+                        if not image_url and hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
+                            image_url = entry.media_thumbnail[0].get('url')
+                        # Try enclosure (for images)
+                        if not image_url and hasattr(entry, 'enclosures') and entry.enclosures:
+                            for enc in entry.enclosures:
+                                if enc.get('type', '').startswith('image/'):
+                                    image_url = enc.get('href')
+                                    break
+                        # Try extracting from summary/content HTML
+                        if not image_url:
+                            html_content = entry.get("summary", "") or content_text
+                            if html_content and "<img" in html_content:
+                                try:
+                                    soup = BeautifulSoup(html_content, 'html.parser')
+                                    img = soup.find('img')
+                                    if img and img.get('src'):
+                                        image_url = img['src']
+                                        # Make absolute URL if relative
+                                        if image_url and not image_url.startswith(('http://', 'https://')):
+                                            image_url = urljoin(entry.get("link", ""), image_url)
+                                except:
+                                    pass
+                        
                         article = {
                             "title": entry.get("title", ""),
                             "url": entry.get("link", ""),
@@ -145,8 +194,17 @@ class NewsIngestor:
                             "source": source_name,
                             "source_type": "news",
                             "content": content_text,
+                            "image_url": image_url,  # Add image_url if found
                             "ingested_at": datetime.now().isoformat()
                         }
+                        # #region agent log
+                        try:
+                            import json
+                            import time
+                            with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"G","location":"ingestors/news_ingestor.py:183","message":"RSS article extracted","data":{"title":(article.get('title') or '')[:50],"has_image_url":bool(image_url),"image_url":(image_url or '')[:80] if image_url else None,"source":source_name},"timestamp":int(time.time()*1000)})+'\n')
+                        except: pass
+                        # #endregion
                         articles.append(article)
                     return articles
                 elif response.status == 403:
@@ -173,8 +231,15 @@ class NewsIngestor:
         return articles
     
     def _fetch_from_web(self) -> List[Dict]:
-        """Scrape articles from website (synchronous)"""
-        return asyncio.run(self._fetch_from_web_async())
+        """Scrape articles from website (synchronous)
+        
+        Note: Use _fetch_from_web_async() directly in async contexts.
+        """
+        try:
+            return asyncio.run(self._fetch_from_web_async())
+        except RuntimeError as e:
+            logger.error(f"Cannot run async method: {e}. Use _fetch_from_web_async() in async context.")
+            raise
     
     async def _fetch_from_web_async(self) -> List[Dict]:
         """Scrape articles from website (async)"""
@@ -239,8 +304,15 @@ class NewsIngestor:
         return False
     
     def _scrape_article(self, url: str) -> Optional[Dict]:
-        """Scrape individual article content (synchronous)"""
-        return asyncio.run(self._scrape_article_async(url))
+        """Scrape individual article content (synchronous)
+        
+        Note: Use _scrape_article_async() directly in async contexts.
+        """
+        try:
+            return asyncio.run(self._scrape_article_async(url))
+        except RuntimeError as e:
+            logger.error(f"Cannot run async method: {e}. Use _scrape_article_async() in async context.")
+            raise
     
     async def _scrape_article_async(self, url: str, semaphore: Optional[asyncio.Semaphore] = None) -> Optional[Dict]:
         """Scrape individual article content (async)"""
@@ -296,6 +368,37 @@ class NewsIngestor:
                         published = date_elem.get('datetime') or date_elem.get_text(strip=True)
                         break
                 
+                # Extract image_url from article page
+                image_url = None
+                # Try Open Graph image first (most reliable)
+                og_image = soup.find('meta', property='og:image') or soup.find('meta', attrs={'name': 'og:image'})
+                if og_image:
+                    image_url = og_image.get('content')
+                # Try Twitter card image
+                if not image_url:
+                    twitter_image = soup.find('meta', attrs={'name': 'twitter:image'}) or soup.find('meta', attrs={'property': 'twitter:image'})
+                    if twitter_image:
+                        image_url = twitter_image.get('content')
+                # Try article image selectors
+                if not image_url:
+                    image_selectors = [
+                        'article img', '.article-image img', '.story-image img',
+                        '.featured-image img', '[itemprop="image"] img', '.hero-image img'
+                    ]
+                    for selector in image_selectors:
+                        img_elem = soup.select_one(selector)
+                        if img_elem and img_elem.get('src'):
+                            image_url = img_elem.get('src')
+                            break
+                # Try first image in article content
+                if not image_url and content_elem:
+                    first_img = content_elem.find('img')
+                    if first_img and first_img.get('src'):
+                        image_url = first_img.get('src')
+                # Make absolute URL if relative
+                if image_url and not image_url.startswith(('http://', 'https://')):
+                    image_url = urljoin(url, image_url)
+                
                 if title and len(content) > 100:  # Only return if we got meaningful content
                     # Parse published date if found, otherwise leave as None (don't use today's date)
                     parsed_published = self._parse_date(published) if published else None
@@ -304,7 +407,8 @@ class NewsIngestor:
                         "url": url,
                         "published": parsed_published,  # None if no date found, not today's date
                         "summary": content[:500] + "..." if len(content) > 500 else content,
-                        "content": content
+                        "content": content,
+                        "image_url": image_url  # Add extracted image URL
                     }
         
         except Exception as e:

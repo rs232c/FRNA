@@ -296,7 +296,11 @@ class NewsFetcher {
 // Initialize news fetcher
 let newsFetcher;
 if (typeof window !== 'undefined') {
-    newsFetcher = new NewsFetcher();
-    window.newsFetcher = newsFetcher;
+    try {
+        newsFetcher = new NewsFetcher();
+        window.newsFetcher = newsFetcher;
+    } catch (error) {
+        console.error('Failed to initialize NewsFetcher:', error);
+    }
 }
 

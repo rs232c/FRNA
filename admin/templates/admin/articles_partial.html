@@ -1,0 +1,93 @@
+{% for article in articles %}
+<div class="article-item {{ 'rejected' if article.get('is_rejected', 0) else '' }}" data-id="{{ article.id }}">
+    <div class="article-info">
+        <div class="article-title" style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>{{ article.title[:80] }}{% if article.title|length > 80 %}...{% endif %}</span>
+            {% if article.url %}
+            <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" title="Open article in new window" style="color: #0078d4; text-decoration: none; font-size: 1.1rem; opacity: 0.7; transition: opacity 0.2s;">🔗</a>
+            {% endif %}
+        </div>
+        <div class="article-meta">
+            {{ article.source }} - {{ article.published[:10] if article.published else 'N/A' }}
+            {% if article.primary_category %}
+            • <span class="category-badge relevance-score-tooltip" data-article-id="{{ article.id }}" style="display: inline-block; padding: 0.2rem 0.5rem; background: #0078d4; color: white; border-radius: 4px; font-size: 0.85rem; font-weight: 600;">
+                {{ article.primary_category }}{% if article.category_confidence %} {{ "%.0f"|format(article.category_confidence) }}%{% endif %}
+            </span>
+            {% elif article.category %}
+            • <span class="relevance-score-tooltip" data-article-id="{{ article.id }}">{{ article.category }}</span>
+            {% endif %}
+            {% if article.relevance_score is defined and article.relevance_score is not none %}
+            • <span class="relevance-score-tooltip" data-article-id="{{ article.id }}">Relevance: <strong style="color: {% if article.relevance_score >= 70 %}#4caf50{% elif article.relevance_score >= 40 %}#ff9800{% else %}#d32f2f{% endif %};">{{ "%.0f"|format(article.relevance_score) }}</strong>/100</span>
+            <span style="display: inline-block; width: 100px; height: 10px; background: #404040; border-radius: 5px; margin-left: 0.5rem; vertical-align: middle; overflow: hidden;">
+                <span style="display: block; width: {{ "%.0f"|format(article.relevance_score) }}%; height: 100%; background: {% if article.relevance_score >= 70 %}#4caf50{% elif article.relevance_score >= 40 %}#ff9800{% else %}#d32f2f{% endif %}; transition: width 0.3s;"></span>
+            </span>
+            {% else %}
+            • Relevance: N/A
+            {% endif %}
+            {% if article.local_score is defined and article.local_score is not none %}
+            • <span class="relevance-score-tooltip" data-article-id="{{ article.id }}">Local: <strong>{{ "%.0f"|format(article.local_score) }}</strong>/100</span>
+            <span style="display: inline-block; width: 100px; height: 10px; background: #404040; border-radius: 5px; margin-left: 0.5rem; vertical-align: middle; overflow: hidden;">
+                <span style="display: block; width: 100px; height: 10px; background: #4caf50; transition: width 0.3s;"></span>
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="article-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+        <button class="relevance-breakdown-btn" data-id="{{ article.id }}" data-action="show-breakdown"
+                style="padding: 0.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;"
+                title="Why rejected? / Score breakdown">
+            📊
+        </button>
+        <button class="thumbs-up-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_good_fit', 0) else 'off' }}" data-action="thumbs-up"
+                style="padding: 0.5rem; background: {% if article.get('is_good_fit', 0) %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_good_fit', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                title="Thumbs up (train relevance + category)">
+            👍
+        </button>
+        <button class="thumbs-down-btn" data-id="{{ article.id }}" data-action="thumbs-down"
+                style="padding: 0.5rem; background: transparent; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: 0.5; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                title="Thumbs down (train relevance + category)">
+            👎
+        </button>
+        <button class="top-story-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top_story', 0) else 'off' }}" data-action="toggle-top-story"
+                style="padding: 0.5rem; background: {% if article.get('is_top_story', 0) %}#ff9800{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_top_story', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                title="Mark as top story (perfect example)">
+            🎩
+        </button>
+        <button class="top-article-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top', 0) else 'off' }}" data-action="toggle-top-article"
+                style="padding: 0.5rem; background: {% if article.get('is_top', 0) %}#ffd700{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_top', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                title="Mark as top article (featured)">
+            ⭐
+        </button>
+        <button class="alert-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_alert', 0) else 'off' }}" data-action="toggle-alert"
+                style="padding: 0.5rem; background: {% if article.get('is_alert', 0) %}#ff4444{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_alert', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
+                title="Mark as alert (urgent notification)">
+            🚨
+        </button>
+        <button class="on-target-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') == 1 else 'off' }}" data-action="on-target"
+                style="padding: 0.5rem; background: {% if article.get('is_on_target') == 1 %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_on_target') == 1 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                title="Mark as on target (relevant for targeting)">
+            🎯
+        </button>
+        <button class="off-target-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') is not none and article.get('is_on_target') == 0 else 'off' }}" data-action="off-target"
+                style="padding: 0.5rem; background: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}#f44336{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1rem; opacity: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                title="Mark as off target (not relevant for targeting)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+        <button class="edit-article-btn" data-id="{{ article.id }}" data-action="edit-article"
+                style="padding: 0.5rem; background: #252525; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;"
+                title="Edit article">
+            ✏️
+        </button>
+        {% if article.get('is_rejected', 0) %}
+        <button class="restore-trash-btn" data-id="{{ article.id }}" data-action="restore-article"
+                title="Restore from trash" style="padding: 0.5rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">↩️</button>
+        {% else %}
+        <button class="trash-btn" data-id="{{ article.id }}" data-action="trash-article"
+                title="Move to trash" style="padding: 0.5rem; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">🗑️</button>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}

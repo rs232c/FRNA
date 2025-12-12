@@ -28,76 +28,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Infinite scroll with article looping
+    // Progressive article loading - show first 20, load more on scroll
     const articlesGrid = document.getElementById('articlesGrid');
     if (articlesGrid) {
-        const allArticles = Array.from(articlesGrid.querySelectorAll('article'));
-        let visibleCount = Math.min(20, allArticles.length);
-        let currentIndex = 0;
-        let loading = false;
+        const allArticles = Array.from(articlesGrid.querySelectorAll('.article-tile'));
+        const initialCount = 20;
+        let visibleCount = initialCount;
         
-        // Initially show first batch
+        // Hide articles beyond initial count
         allArticles.forEach((article, index) => {
-            if (index >= visibleCount) {
+            if (index >= initialCount) {
                 article.style.display = 'none';
+                article.classList.add('lazy-article');
             }
         });
         
-        // Infinite scroll that loops articles
+        // Show "Load More" button if there are more articles
+        if (allArticles.length > initialCount) {
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.textContent = 'Load More Articles';
+            loadMoreBtn.className = 'load-more-btn';
+            loadMoreBtn.style.cssText = 'display: block; margin: 2rem auto; padding: 1rem 2rem; background: #1e88e5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 600;';
+            loadMoreBtn.addEventListener('click', function() {
+                const toShow = Math.min(visibleCount + 10, allArticles.length);
+                for (let i = visibleCount; i < toShow; i++) {
+                    allArticles[i].style.display = '';
+                }
+                visibleCount = toShow;
+                
+                if (visibleCount >= allArticles.length) {
+                    this.style.display = 'none';
+                }
+            });
+            articlesGrid.parentNode.appendChild(loadMoreBtn);
+        }
+        
+        // Infinite scroll (optional - uncomment to enable)
+        /*
+        let loading = false;
         window.addEventListener('scroll', function() {
             if (loading) return;
             
-            // Check if user scrolled near bottom (within 500px)
-            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 1000) {
                 loading = true;
-                
-                // Show next batch of articles
-                const batchSize = 10;
-                const originalLength = allArticles.length;
-                
-                for (let i = 0; i < batchSize && originalLength > 0; i++) {
-                    // Loop back to start if we've shown all articles
-                    const articleIndex = currentIndex % originalLength;
-                    const article = allArticles[articleIndex];
-                    
-                    // If we've already shown all original articles once, clone them for seamless looping
-                    if (currentIndex >= originalLength) {
-                        const clonedArticle = article.cloneNode(true);
-                        clonedArticle.style.display = '';
-                        articlesGrid.appendChild(clonedArticle);
-                        allArticles.push(clonedArticle);
-                    } else {
-                        // Show the original article
-                        article.style.display = '';
-                    }
-                    
-                    currentIndex++;
+                const toShow = Math.min(visibleCount + 10, allArticles.length);
+                for (let i = visibleCount; i < toShow; i++) {
+                    allArticles[i].style.display = '';
                 }
-                
-                // Re-observe new images for lazy loading
-                if ('IntersectionObserver' in window) {
-                    const imageObserver = new IntersectionObserver((entries, observer) => {
-                        entries.forEach(entry => {
-                            if (entry.isIntersecting) {
-                                const img = entry.target;
-                                if (img.dataset.src) {
-                                    img.src = img.dataset.src;
-                                    img.removeAttribute('data-src');
-                                    img.classList.add('loaded');
-                                    observer.unobserve(img);
-                                }
-                            }
-                        });
-                    }, { rootMargin: '50px' });
-                    
-                    articlesGrid.querySelectorAll('img[data-src]').forEach(img => {
-                        imageObserver.observe(img);
-                    });
-                }
-                
+                visibleCount = toShow;
                 loading = false;
             }
         });
+        */
     }
     
     // Navigation tab switching
@@ -383,75 +365,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Initialize weather pill - fetch fresh data on every page load
-    async function updateWeatherPill() {
-        const weatherPill = document.getElementById('weatherPill');
-        const weatherTemp = document.getElementById('weatherTemp');
-        const weatherCondition = document.getElementById('weatherCondition');
-        const weatherIcon = document.getElementById('weatherIcon');
-        
-        if (!weatherPill || !weatherTemp || !weatherCondition || !weatherIcon) {
-            return; // Weather pill elements not found
-        }
-        
-        // Always use 02720 (Fall River) for weather
-        const zipCode = '02720';
-        
-        // Fetch fresh weather data (no cache)
-        if (window.weatherFetcher) {
-            try {
-                // Add updating class for visual feedback
-                weatherPill.classList.add('weather-updating');
-                
-                // Set API key if available from window config
-                if (window.WEATHER_API_KEY) {
-                    window.weatherFetcher.apiKey = window.WEATHER_API_KEY;
-                } else {
-                    console.warn('Weather API key not configured. Weather data will not be available.');
-                }
-                
-                const weather = await window.weatherFetcher.fetchWeather(zipCode);
-                
-                if (weather && weather.current) {
-                    // Update DOM with fresh weather data
-                    weatherTemp.textContent = `${weather.current.temperature}${weather.current.unit}`;
-                    weatherCondition.textContent = weather.current.condition;
-                    weatherIcon.textContent = weather.current.icon || '🌤️';
-                } else {
-                    // Fallback to default
-                    weatherTemp.textContent = '--°F';
-                    weatherCondition.textContent = 'Unable to load';
-                    weatherIcon.textContent = '🌤️';
-                }
-                
-                // Remove updating class and add updated class for smooth transition
-                weatherPill.classList.remove('weather-updating');
-                weatherPill.classList.add('weather-updated');
-                setTimeout(() => {
-                    weatherPill.classList.remove('weather-updated');
-                }, 300);
-            } catch (error) {
-                console.error('Error updating weather pill:', error);
-                weatherTemp.textContent = '--°F';
-                weatherCondition.textContent = 'Error';
-                weatherIcon.textContent = '🌤️';
-                weatherPill.classList.remove('weather-updating');
-            }
-        } else {
-            console.warn('Weather fetcher not available');
-            weatherTemp.textContent = '--°F';
-            weatherCondition.textContent = 'Not available';
-            weatherIcon.textContent = '🌤️';
-        }
-    }
-    
-    // Fetch weather on every page load (no caching) - wait for DOM to be ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', updateWeatherPill);
-    } else {
-        updateWeatherPill();
-    }
-    
     // Newsletter signup
     function handleNewsletterSignup(event) {
         event.preventDefault();
@@ -507,7 +420,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Top Stories Slider
     let currentTopStorySlide = 0;
-    let sliderAutoRotateInterval = null;
     const topStoriesTrack = document.querySelector('.top-stories-track');
     const topStoriesSlides = document.querySelectorAll('.story-slide');
     const topStoriesDots = document.querySelectorAll('.slider-dots .dot');
@@ -518,13 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Update dots
             topStoriesDots.forEach((dot, index) => {
-                if (index === currentTopStorySlide) {
-                    dot.classList.remove('bg-white/40');
-                    dot.classList.add('bg-white');
-                } else {
-                    dot.classList.remove('bg-white');
-                    dot.classList.add('bg-white/40');
-                }
+                dot.classList.toggle('active', index === currentTopStorySlide);
             });
         }
     }
@@ -534,195 +440,26 @@ document.addEventListener('DOMContentLoaded', function() {
         currentTopStorySlide = (currentTopStorySlide + 1) % topStoriesSlides.length;
         updateTopStoriesSlider();
     }
+    window.nextTopStory = nextTopStory;
     
     function prevTopStory() {
         if (!topStoriesSlides || topStoriesSlides.length === 0) return;
         currentTopStorySlide = (currentTopStorySlide - 1 + topStoriesSlides.length) % topStoriesSlides.length;
         updateTopStoriesSlider();
     }
+    window.prevTopStory = prevTopStory;
     
     function goToTopStory(index) {
         if (!topStoriesSlides || index < 0 || index >= topStoriesSlides.length) return;
         currentTopStorySlide = index;
         updateTopStoriesSlider();
     }
-    
-    // Initialize slider on page load
-    if (topStoriesTrack && topStoriesSlides.length > 0) {
-        // Calculate and set track width based on number of slides
-        const slideCount = topStoriesSlides.length;
-        topStoriesTrack.style.width = `${slideCount * 100}%`;
-        
-        updateTopStoriesSlider(); // Set initial position
-        
-        // Auto-advance slider every 8 seconds
-        if (topStoriesSlides.length > 1) {
-            sliderAutoRotateInterval = setInterval(() => {
-                nextTopStory();
-            }, 8000);
-        }
-    }
-    
-    // Expose functions globally for event delegation
-    window.nextTopStory = nextTopStory;
-    window.prevTopStory = prevTopStory;
     window.goToTopStory = goToTopStory;
+    
+    // Auto-advance slider every 5 seconds
+    if (topStoriesSlides && topStoriesSlides.length > 1) {
+        setInterval(() => {
+            nextTopStory();
+        }, 5000);
+    }
 });
-
-// Helper functions for copy functionality - defined globally
-function copyToClipboard(url, button) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(() => {
-            const originalText = button.textContent;
-            button.textContent = '✓';
-            button.style.color = '#4caf50';
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.style.color = '';
-            }, 2000);
-        }).catch(err => {
-            console.error('Failed to copy:', err);
-            fallbackCopy(url, button);
-        });
-    } else {
-        fallbackCopy(url, button);
-    }
-}
-
-// Fallback copy method using document.execCommand
-function fallbackCopy(url, button) {
-    const textArea = document.createElement('textarea');
-    textArea.value = url;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-        document.execCommand('copy');
-        button.textContent = '✓';
-        button.style.color = '#4caf50';
-        setTimeout(() => {
-            button.textContent = '🔗';
-            button.style.color = '';
-        }, 2000);
-    } catch (err) {
-        console.error('Fallback copy failed:', err);
-    }
-    document.body.removeChild(textArea);
-}
-
-// Hero slider event delegation - handle arrow and dot clicks
-document.addEventListener('click', function(e) {
-    // Check for slider navigation buttons
-    const prevBtn = e.target.closest('[data-slider="prev"]');
-    const nextBtn = e.target.closest('[data-slider="next"]');
-    const dotBtn = e.target.closest('[data-slider-dot]');
-    
-    if (prevBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (window.prevTopStory) {
-            window.prevTopStory();
-        }
-        return;
-    }
-    
-    if (nextBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (window.nextTopStory) {
-            window.nextTopStory();
-        }
-        return;
-    }
-    
-    if (dotBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        const index = parseInt(dotBtn.getAttribute('data-slider-dot'), 10);
-        if (!isNaN(index) && window.goToTopStory) {
-            window.goToTopStory(index);
-        }
-        return;
-    }
-}, true); // Use capture phase
-
-// Copy link button handler - MUST be outside DOMContentLoaded to catch all clicks
-// Uses capture phase to intercept clicks before inline handlers execute
-document.addEventListener('click', function(e) {
-    // Check if click is on a copy button or its parent
-    let copyBtn = null;
-    
-    // First, check if target is a button with copy-link-btn class
-    if (e.target.tagName === 'BUTTON' && e.target.classList && e.target.classList.contains('copy-link-btn')) {
-        copyBtn = e.target;
-    }
-    
-    // Also check for buttons with copy-link-btn class using closest
-    if (!copyBtn) {
-        copyBtn = e.target.closest('.copy-link-btn');
-    }
-    
-    // Also check parent elements in case click is on emoji/text inside button
-    if (!copyBtn) {
-        let element = e.target;
-        while (element && element !== document.body) {
-            if (element.tagName === 'BUTTON') {
-                // Check for copy-link-btn class
-                if (element.classList && element.classList.contains('copy-link-btn')) {
-                    copyBtn = element;
-                    break;
-                }
-                // Also check for inline onclick (legacy support)
-                const onclick = element.getAttribute('onclick') || '';
-                if (onclick.includes('copyArticleLink')) {
-                    copyBtn = element;
-                    // Remove inline onclick to prevent double execution
-                    element.removeAttribute('onclick');
-                    break;
-                }
-            }
-            element = element.parentElement;
-        }
-    }
-    
-    if (copyBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        
-        // Extract URL from data attribute (preferred method)
-        let url = copyBtn.dataset.copyUrl;
-        
-        // If no data attribute, try to extract from onclick attribute (legacy support)
-        if (!url) {
-            const onclick = copyBtn.getAttribute('onclick') || '';
-            // Match: copyArticleLink('url', this) or copyArticleLink("url", this)
-            const match = onclick.match(/copyArticleLink\(['"]([^'"]+)['"]/);
-            if (match && match[1]) {
-                url = match[1];
-            }
-        }
-        
-        if (!url) {
-            console.warn('Could not find URL for copy button');
-            return;
-        }
-        
-        // Use the global function if available
-        if (window.copyArticleLink && typeof window.copyArticleLink === 'function') {
-            try {
-                window.copyArticleLink(url, copyBtn);
-            } catch (err) {
-                console.error('Error calling copyArticleLink:', err);
-                // Fallback to direct copy
-                copyToClipboard(url, copyBtn);
-            }
-        } else {
-            // Fallback: copy directly
-            copyToClipboard(url, copyBtn);
-        }
-    }
-}, true); // Use capture phase to intercept before inline handlers
