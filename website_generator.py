@@ -795,7 +795,14 @@ class WebsiteGenerator:
         # Second row links
         for i, (label, href, data_tab, page_key) in enumerate(second_row_tabs):
             # Check if this is the active page
-            is_active = (active_page == page_key) or (page_key == "home" and (active_page == "home" or active_page == "all"))
+            if data_tab in ["submit-tip", "lost-found"]:
+                # Submit Tip and Lost & Found are section links on home page - never highlight them as active
+                # They're not separate pages, just anchors on the home page
+                is_active = False
+            else:
+                # Default logic for other links
+                is_active = (active_page == page_key) or (page_key == "home" and (active_page == "home" or active_page == "all"))
+
             if is_active:
                 active_class = 'text-white font-semibold bg-blue-500/20 border border-blue-500/40'
             else:
