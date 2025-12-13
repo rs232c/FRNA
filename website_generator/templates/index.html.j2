@@ -45,9 +45,8 @@
         .lazy-image { opacity: 0; transition: opacity 0.3s; }
         .lazy-image.loaded { opacity: 1; }
 
-        /* Kill all images when disabled */
-        body.no-images img,
-        body.no-images [style*="background-image"] {
+        /* Kill images when disabled - only hide actual img tags */
+        body.no-images img {
           display: none !important;
         }
 
