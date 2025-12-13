@@ -1765,16 +1765,25 @@ def check_regeneration_needed():
             # Get regeneration interval from settings
             cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('regenerate_interval',))
             interval_row = cursor.fetchone()
-            interval_minutes = int(interval_row[0]) if interval_row else 10
+            interval_minutes = 10  # default
+            if interval_row and interval_row[0]:
+                try:
+                    interval_minutes = int(interval_row[0])
+                except (ValueError, TypeError):
+                    interval_minutes = 10
 
             # Get last regeneration time
             cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('last_regeneration_time',))
             last_regeneration_row = cursor.fetchone()
 
-            if not last_regeneration_row:
+            if not last_regeneration_row or not last_regeneration_row[0]:
                 return jsonify({'needs_regeneration': True, 'reason': 'Never regenerated'})
 
-            last_regeneration = float(last_regeneration_row[0])
+            try:
+                last_regeneration = float(last_regeneration_row[0])
+            except (ValueError, TypeError):
+                return jsonify({'needs_regeneration': True, 'reason': 'Invalid last regeneration time'})
+
             current_time = time.time()
 
             # Check if interval has elapsed
@@ -1791,7 +1800,7 @@ def check_regeneration_needed():
 
     except Exception as e:
         logger.error(f"Error checking regeneration status: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'needs_regeneration': False}), 500
 
 
 @login_required
