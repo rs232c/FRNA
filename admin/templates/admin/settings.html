@@ -57,7 +57,6 @@
                     <input type="checkbox" id="showImagesSettings" {{ 'checked' if (settings.get('show_images') == '1' or settings.get('show_images') == 1) else '' }} onchange="console.log('[DEBUG] Checkbox changed, calling saveImageSetting'); saveImageSetting()">
                     <span class="slider"></span>
                 </label>
-                <!-- DEBUG: show_images value: {{ settings.get('show_images') }} (type: {{ settings.get('show_images')|type }}) -->
             </div>
             <p style="font-size: 0.9rem; color: #666; margin-top: 0.75rem; line-height: 1.4;">
                 Toggling this option changes how the static site renders images, so you must regenerate the website for the new state to appear.
