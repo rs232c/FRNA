@@ -486,11 +486,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Attach event listeners to buttons and interactive elements
 function attachEventListeners() {
-    // Recalc button
-    const recalcButton = document.querySelector('button[onclick*="recalculateCategoryInfo"]');
+    // Recalc button - find by text content since we removed the onclick attribute
+    const buttons = document.querySelectorAll('button');
+    console.log('[DEBUG] Found', buttons.length, 'buttons total');
+    const recalcButton = Array.from(buttons).find(btn => btn.textContent.includes('Recalculate'));
+    console.log('[DEBUG] Recalc button found:', !!recalcButton);
     if (recalcButton) {
-        recalcButton.removeAttribute('onclick');
-        recalcButton.addEventListener('click', recalculateCategoryInfo);
+        recalcButton.addEventListener('click', function() {
+            console.log('[DEBUG] Recalc button clicked!');
+            recalculateCategoryInfo();
+        });
+        console.log('[DEBUG] Recalc button event listener attached');
+    } else {
+        console.log('[DEBUG] Recalc button not found - button texts:', Array.from(buttons).map(btn => btn.textContent));
     }
 
     // Explanation toggle (header div)
