@@ -378,34 +378,34 @@ async function recalculateCategoryInfo() {
     showMessage('Starting category data recalculation...', 'info');
 
     try {
-        // Show step-by-step progress
-        setTimeout(() => {
-            if (button.disabled) { // Only update if still processing
-                button.textContent = '🔄 Loading article data...';
-                showMessage('Loading article data for analysis...', 'info');
-            }
-        }, 2000);
+    // Show step-by-step progress with more detail
+    setTimeout(() => {
+        if (button.disabled) { // Only update if still processing
+            button.textContent = '🔄 Loading article data... (2s)';
+            showMessage('📂 Loading article database for analysis...', 'info');
+        }
+    }, 2000);
 
-        setTimeout(() => {
-            if (button.disabled) {
-                button.textContent = '🔄 Analyzing categories...';
-                showMessage('Analyzing category classifications...', 'info');
-            }
-        }, 8000);
+    setTimeout(() => {
+        if (button.disabled) {
+            button.textContent = '🔄 Analyzing categories... (8s)';
+            showMessage('🧠 Analyzing article categories and classifications...', 'info');
+        }
+    }, 8000);
 
-        setTimeout(() => {
-            if (button.disabled) {
-                button.textContent = '🔄 Updating keyword matches...';
-                showMessage('Updating keyword matching data...', 'info');
-            }
-        }, 15000);
+    setTimeout(() => {
+        if (button.disabled) {
+            button.textContent = '🔄 Updating keyword matches... (15s)';
+            showMessage('🔗 Updating keyword-to-category matching algorithms...', 'info');
+        }
+    }, 15000);
 
-        setTimeout(() => {
-            if (button.disabled) {
-                button.textContent = '🔄 Finalizing updates...';
-                showMessage('Finalizing category updates...', 'info');
-            }
-        }, 22000);
+    setTimeout(() => {
+        if (button.disabled) {
+            button.textContent = '🔄 Finalizing updates... (22s)';
+            showMessage('💾 Saving updated category data to database...', 'info');
+        }
+    }, 22000);
 
         const response = await fetch('/admin/api/recalculate-categories', {
             method: 'POST',
@@ -419,18 +419,23 @@ async function recalculateCategoryInfo() {
         const duration = Math.round((endTime - startTime) / 1000);
 
         if (data.success) {
-            showMessage(`✅ Category data recalculated successfully in ${duration} seconds!`, 'success');
+            // Show prominent completion message
+            showMessage(`🎉 RECALCULATION COMPLETE! ✅`, 'success');
 
             // Reload the page data
             await loadCategoryStats();
             await loadAllCategoryKeywords();
 
-            // Show completion with stats if available
+            // Show detailed stats prominently after a short delay
             if (data.stats) {
                 const stats = data.stats;
                 setTimeout(() => {
-                    showMessage(`Processed ${stats.articles_processed} articles, updated ${stats.categories_updated} categories in ${stats.processing_time_seconds}s`, 'success');
-                }, 1000);
+                    const completionMessage = `📊 Results: ${stats.articles_processed} articles processed, ${stats.categories_updated} categories updated in ${stats.processing_time_seconds} seconds`;
+                    showMessage(completionMessage, 'success');
+
+                    // Add a visual indicator to the page
+                    showRecalculationResults(stats);
+                }, 1500);
             }
         } else {
             showMessage('❌ Error recalculating categories: ' + (data.error || 'Unknown error'), 'error');
@@ -446,6 +451,72 @@ async function recalculateCategoryInfo() {
         button.textContent = originalText;
         button.style.opacity = '1';
     }
+}
+
+// Show recalculation results prominently on the page
+function showRecalculationResults(stats) {
+    // Remove any existing results display
+    const existingResults = document.getElementById('recalcResults');
+    if (existingResults) {
+        existingResults.remove();
+    }
+
+    // Create results display element
+    const resultsDiv = document.createElement('div');
+    resultsDiv.id = 'recalcResults';
+    resultsDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #1a1a1a;
+        border: 2px solid #4caf50;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        z-index: 10000;
+        max-width: 400px;
+        text-align: center;
+        animation: fadeIn 0.5s ease-out;
+    `;
+
+    resultsDiv.innerHTML = `
+        <div style="font-size: 2rem; margin-bottom: 1rem;">🎉</div>
+        <h3 style="color: #4caf50; margin: 0 0 1rem 0; font-size: 1.5rem;">Recalculation Complete!</h3>
+        <div style="color: #cccccc; line-height: 1.6;">
+            <div style="font-size: 1.1rem; font-weight: bold; color: #ffffff; margin-bottom: 1rem;">
+                ${stats.articles_processed} articles processed
+            </div>
+            <div style="margin-bottom: 0.5rem;">
+                <strong style="color: #ffffff;">${stats.categories_updated}</strong> categories updated
+            </div>
+            <div style="margin-bottom: 0.5rem;">
+                <strong style="color: #ffffff;">${stats.processing_time_seconds}s</strong> total time
+            </div>
+            <div style="margin-bottom: 1rem; font-size: 0.9rem; color: #888;">
+                ${stats.zip_code || 'All locations'}
+            </div>
+        </div>
+        <button onclick="this.parentElement.remove()" style="
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 1rem;
+        ">OK</button>
+    `;
+
+    document.body.appendChild(resultsDiv);
+
+    // Auto-remove after 8 seconds
+    setTimeout(() => {
+        if (resultsDiv.parentElement) {
+            resultsDiv.remove();
+        }
+    }, 8000);
 }
 
 // Enter key support is now handled inline for each category input
@@ -635,6 +706,11 @@ function displayCategoryStats(stats) {
 @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 </style>
 
