@@ -1795,9 +1795,11 @@ def regenerate_all():
                 from aggregator import NewsAggregator
                 aggregator = NewsAggregator()
                 if zip_code:
-                    aggregator.run_for_zip(zip_code)
+                    # For zip-specific, aggregate with force_refresh for that zip
+                    aggregator.aggregate(force_refresh=True, zip_code=zip_code)
                 else:
-                    aggregator.run_full_cycle()
+                    # For full regeneration, aggregate everything with force refresh
+                    aggregator.aggregate(force_refresh=True)
                 logger.info("Aggregation completed, starting website regeneration")
 
                 # Then run website regeneration
