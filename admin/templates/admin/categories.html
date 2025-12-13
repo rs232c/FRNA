@@ -36,14 +36,13 @@
 
 <div id="categoriesTab" class="tab-content active">
     <div class="relevance-container">
-        <h2 style="margin-bottom: 1.5rem;">Category Classification System</h2>
+        <h2 style="margin-bottom: 1.5rem; text-align: center;">Category Classification System</h2>
         
         <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(33, 150, 243, 0.1); border-left: 4px solid #2196f3; border-radius: 8px; position: relative; max-width: 1000px; margin-left: auto; margin-right: auto;">
             <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" data-toggle="categoriesExplanation">
                 <h3 style="margin: 0; color: #ffffff;">📚 How Category Classification Works</h3>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <span id="categoriesExplanationToggle" style="font-size: 1.2rem; user-select: none; color: #ffffff;">▼</span>
-                    <button data-close="categoriesExplanation" style="background: rgba(255,255,255,0.1); border: none; color: #ffffff; font-size: 1.2rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold;" title="Close">×</button>
                 </div>
             </div>
             <div id="categoriesExplanation" style="margin-top: 1rem; color: #cccccc; font-size: 0.95rem; line-height: 1.8; display: none;">
@@ -580,14 +579,6 @@ function attachEventListeners() {
         });
     }
 
-    // Close explanation button
-    const closeButton = document.querySelector('[data-close="categoriesExplanation"]');
-    if (closeButton) {
-        closeButton.addEventListener('click', function(event) {
-            event.stopPropagation();
-            closeExplanation('categoriesExplanation');
-        });
-    }
 }
 
 // #region agent log
