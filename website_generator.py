@@ -2187,12 +2187,8 @@ class WebsiteGenerator:
 
             if duplicates:
                 logger.info(f"Trending deduplication removed {len(duplicates)} duplicate articles")
-                # Debug: show what was deduplicated
-                for dup in duplicates[:3]:
-                    logger.info(f"  Removed duplicate: {dup['article'].get('title', '')[:50]}...")
 
             articles = unique_articles  # Use deduplicated list
-            logger.info(f"After deduplication: {len(articles)} unique articles")
 
         except ImportError:
             logger.warning("Semantic deduplication module not available for trending, proceeding without it")
@@ -2263,11 +2259,6 @@ class WebsiteGenerator:
             return (-relevance_score, created_timestamp)
 
         sorted_articles = sorted(filtered_trending, key=sort_key)
-        logger.info(f"Returning {len(sorted_articles[:limit])} trending articles")
-        # Debug: show what we're returning
-        for i, article in enumerate(sorted_articles[:limit][:3]):
-            logger.info(f"  Trending {i+1}: {article.get('title', '')[:50]}... (score: {article.get('_boosted_score', article.get('relevance_score', 0)):.1f})")
-
         return sorted_articles[:limit]
 
     def _get_weather_icon(self, condition: str) -> str:
