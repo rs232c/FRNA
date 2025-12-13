@@ -1702,53 +1702,96 @@ def regenerate_settings():
 @login_required
 @app.route('/admin/api/regenerate', methods=['POST', 'OPTIONS'])
 def regenerate_website():
-    """Regenerate website using existing data"""
+    """Trigger website regeneration using existing data"""
     try:
-        from website_generator import WebsiteGenerator
+        import subprocess
+        import threading
 
         zip_code = request.args.get('zip_code')
-        generator = WebsiteGenerator()
 
-        if zip_code:
-            generator.generate_zip_site(zip_code)
-        else:
-            generator.generate_all_sites()
+        def run_regeneration():
+            try:
+                # Run quick_regenerate.py script
+                cmd = [sys.executable, 'scripts/deployment/quick_regenerate.py']
+                if zip_code:
+                    cmd.extend(['--zip', zip_code])
 
-        return jsonify({'success': True, 'message': 'Website regenerated successfully'})
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)  # 5 minute timeout
+
+                if result.returncode == 0:
+                    logger.info("Website regeneration completed successfully")
+                else:
+                    logger.error(f"Regeneration failed: {result.stderr}")
+
+            except subprocess.TimeoutExpired:
+                logger.error("Regeneration timed out after 5 minutes")
+            except Exception as e:
+                logger.error(f"Regeneration error: {e}")
+
+        # Run regeneration in background thread
+        thread = threading.Thread(target=run_regeneration, daemon=True)
+        thread.start()
+
+        return jsonify({
+            'success': True,
+            'message': 'Website regeneration started in background',
+            'note': 'Check server logs for completion status'
+        })
 
     except Exception as e:
-        logger.error(f"Error regenerating website: {e}")
+        logger.error(f"Error starting regeneration: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @login_required
 @app.route('/admin/api/regenerate-all', methods=['POST', 'OPTIONS'])
 def regenerate_all():
-    """Regenerate website with fresh data"""
+    """Trigger full regeneration with fresh data"""
     try:
-        from website_generator import WebsiteGenerator
-        from aggregator import NewsAggregator
+        import subprocess
+        import threading
 
         zip_code = request.args.get('zip_code')
 
-        # Run full aggregation cycle
-        aggregator = NewsAggregator()
-        if zip_code:
-            aggregator.run_for_zip(zip_code)
-        else:
-            aggregator.run_full_cycle()
+        def run_full_regeneration():
+            try:
+                # First run aggregation to get fresh data
+                from aggregator import NewsAggregator
+                aggregator = NewsAggregator()
+                if zip_code:
+                    aggregator.run_for_zip(zip_code)
+                else:
+                    aggregator.run_full_cycle()
 
-        # Then regenerate website
-        generator = WebsiteGenerator()
-        if zip_code:
-            generator.generate_zip_site(zip_code)
-        else:
-            generator.generate_all_sites()
+                # Then run website regeneration
+                cmd = [sys.executable, 'scripts/deployment/quick_regenerate.py']
+                if zip_code:
+                    cmd.extend(['--zip', zip_code])
 
-        return jsonify({'success': True, 'message': 'Full regeneration completed successfully'})
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)  # 10 minute timeout
+
+                if result.returncode == 0:
+                    logger.info("Full regeneration completed successfully")
+                else:
+                    logger.error(f"Full regeneration failed: {result.stderr}")
+
+            except subprocess.TimeoutExpired:
+                logger.error("Full regeneration timed out after 10 minutes")
+            except Exception as e:
+                logger.error(f"Full regeneration error: {e}")
+
+        # Run full regeneration in background thread
+        thread = threading.Thread(target=run_full_regeneration, daemon=True)
+        thread.start()
+
+        return jsonify({
+            'success': True,
+            'message': 'Full regeneration started in background',
+            'note': 'This may take several minutes. Check server logs for completion.'
+        })
 
     except Exception as e:
-        logger.error(f"Error in full regeneration: {e}")
+        logger.error(f"Error starting full regeneration: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
