@@ -1,8 +1,54 @@
 {% extends "admin/base.html" %}
 
+<!-- #region agent log - Hypothesis E: Jinja2 template start -->
+<script>
+fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+        id: 'log_' + Date.now() + '_jinja2_start',
+        timestamp: Date.now(),
+        location: 'admin/templates/admin/settings.html:jinja_start',
+        message: 'Jinja2 template processing started',
+        data: {
+            zip_code_raw: '{{ zip_code }}',
+            active_tab_raw: '{{ active_tab }}',
+            settings_raw: '{{ settings }}'
+        },
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'E'
+    })
+}).catch(() => {});
+</script>
+<!-- #endregion -->
+
 {% block title %}Settings{% if zip_code %} - Zip {{ zip_code }}{% endif %}{% endblock %}
 
 {% block content %}
+<!-- #region agent log - Hypothesis C: Template rendering -->
+<script>
+fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+        id: 'log_' + Date.now() + '_template_rendered',
+        timestamp: Date.now(),
+        location: 'admin/templates/admin/settings.html:render_start',
+        message: 'Settings template rendered - block content started',
+        data: {
+            zip_code: '{{ zip_code }}',
+            active_tab: '{{ active_tab }}',
+            settings_available: '{{ settings is not none }}'
+        },
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'C'
+    })
+}).catch(() => {});
+</script>
+<!-- #endregion -->
+
 <div id="settingsTab" class="tab-content">
     <div class="settings-container" style="max-width: 700px; margin-left: auto; margin-right: auto;">
         <h2 style="margin-bottom: 1.5rem;">Settings</h2>
