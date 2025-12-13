@@ -788,9 +788,13 @@ function rerunRelevanceScoring() {
     statusDiv.style.display = 'block';
     statusP.textContent = 'Starting relevance recalculation...';
 
+    const zipCode = getZipCodeFromUrl();
+    console.log('[DEBUG] Sending zip_code:', zipCode);
+
     fetch('/admin/api/rerun-relevance-scoring', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'}
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({zip_code: zipCode})
     })
     .then(response => response.json())
     .then(data => {
