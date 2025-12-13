@@ -49,7 +49,30 @@ fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
 </script>
 <!-- #endregion -->
 
-<div id="settingsTab" class="tab-content">
+<div id="settingsTab" class="tab-content {{ 'active' if active_tab == 'settings' else '' }}">
+    <!-- #region agent log - Hypothesis F: SettingsTab div rendered -->
+    <script>
+    fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            id: 'log_' + Date.now() + '_settingstab_div_rendered',
+            timestamp: Date.now(),
+            location: 'admin/templates/admin/settings.html:settingstab_div',
+            message: 'settingsTab div rendered in template',
+            data: {
+                active_tab: '{{ active_tab }}',
+                has_active_class: '{{ "active" if active_tab == "settings" else "" }}' !== '',
+                div_exists: document.getElementById('settingsTab') !== null
+            },
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'F'
+        })
+    }).catch(() => {});
+    </script>
+    <!-- #endregion -->
+
     <div class="settings-container" style="max-width: 700px; margin-left: auto; margin-right: auto;">
         <h2 style="margin-bottom: 1.5rem;">Settings</h2>
 

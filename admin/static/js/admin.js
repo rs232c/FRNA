@@ -631,7 +631,9 @@ fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
         message: 'Settings page JavaScript functions loaded',
         data: {
             functions_defined: typeof regenerateWebsite === 'function',
-            page_has_settings: document.getElementById('settingsTab') !== null
+            page_has_settings: document.getElementById('settingsTab') !== null,
+            ready_state: document.readyState,
+            body_exists: document.body !== null
         },
         sessionId: 'debug-session',
         runId: 'run1',
