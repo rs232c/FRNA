@@ -2003,6 +2003,36 @@ def get_settings_api():
     if request.method == 'POST':
         # Handle setting updates
         data = request.get_json() if request.is_json else request.form
+
+        # Check if this is a batch update (object with multiple settings)
+        if isinstance(data, dict) and not data.get('key'):
+            # Batch update mode - handle multiple settings
+            updated_settings = []
+            try:
+                with get_db() as conn:
+                    cursor = conn.cursor()
+
+                    for key, value in data.items():
+                        if key in ['regenerate_interval', 'source_fetch_interval']:
+                            # Check if setting exists
+                            cursor.execute('SELECT value FROM admin_settings WHERE key = ?', (key,))
+                            existing = cursor.fetchone()
+
+                            if existing:
+                                cursor.execute('UPDATE admin_settings SET value = ? WHERE key = ?', (str(value), key))
+                            else:
+                                cursor.execute('INSERT INTO admin_settings (key, value) VALUES (?, ?)', (key, str(value)))
+
+                            updated_settings.append(key)
+
+                    conn.commit()
+                    return jsonify({'success': True, 'message': f'Settings updated: {", ".join(updated_settings)}'})
+
+            except Exception as e:
+                logger.error(f"Error updating settings batch: {e}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        # Single setting update mode (legacy)
         key = data.get('key')
         value = data.get('value')
         zip_code = data.get('zip_code')

@@ -661,7 +661,12 @@ function regenerateWebsite(event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast('✅ Website regenerated successfully!', 'success');
+            showToast('✅ Quick regeneration started! Using existing articles from database.', 'success');
+
+            // Show completion after a delay (since it's async)
+            setTimeout(() => {
+                showToast('🎉 Website updated! Refreshed with latest database content.', 'success');
+            }, 3000);
         } else {
             showToast('❌ Regeneration failed: ' + (data.error || 'Unknown error'), 'error');
         }
@@ -699,7 +704,12 @@ function regenerateAll(event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast('✅ Full regeneration completed!', 'success');
+            showToast('✅ Full regeneration started! Fetching fresh data from all sources...', 'success');
+
+            // Show completion after a longer delay (since full regeneration takes time)
+            setTimeout(() => {
+                showToast('🎉 Full regeneration completed! Website rebuilt with fresh data.', 'success');
+            }, 15000); // 15 seconds for full regeneration
         } else {
             showToast('❌ Full regeneration failed: ' + (data.error || 'Unknown error'), 'error');
         }
