@@ -1737,8 +1737,10 @@ def regenerate_website():
                 logger.error(f"Traceback: {traceback.format_exc()}")
 
         # Run regeneration in background thread
+        logger.info("Starting background regeneration thread")
         thread = threading.Thread(target=run_regeneration, daemon=True)
         thread.start()
+        logger.info("Background regeneration thread started")
 
         return jsonify({
             'success': True,
@@ -1798,8 +1800,10 @@ def regenerate_all():
                 logger.error(f"Traceback: {traceback.format_exc()}")
 
         # Run full regeneration in background thread
+        logger.info("Starting background full regeneration thread")
         thread = threading.Thread(target=run_full_regeneration, daemon=True)
         thread.start()
+        logger.info("Background full regeneration thread started")
 
         return jsonify({
             'success': True,
