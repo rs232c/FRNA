@@ -93,9 +93,38 @@ def serve_zip_page(zip_code):
     zip_dir = get_zip_dir(zip_code)  # Use the new validator
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     full_zip_dir = os.path.join(project_root, zip_dir)
-    logger.debug(f"Serving from {full_zip_dir}")
+    logger.info(f"[DEBUG] Serving zip page for {zip_code} from {full_zip_dir}")
 
     index_path = os.path.join(full_zip_dir, 'index.html')
+    logger.info(f"[DEBUG] Index path: {index_path}")
+    logger.info(f"[DEBUG] Index file exists: {os.path.exists(index_path)}")
+
+    # Read and check the served content
+    if os.path.exists(index_path):
+        with open(index_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            img_count = content.count('<img')
+            logger.info(f"[DEBUG] Images in served HTML: {img_count}")
+
+            # Check for image URLs
+            if 'src=' in content:
+                # Find first image tag to log
+                import re
+                img_match = re.search(r'<img[^>]*src="([^"]*)"', content)
+                if img_match:
+                    logger.info(f"[DEBUG] First image URL: {img_match.group(1)}")
+
+    # Check current show_images setting
+    try:
+        conn = sqlite3.connect('fallriver_news.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT key, value FROM admin_settings WHERE key="show_images"')
+        result = cursor.fetchone()
+        conn.close()
+        logger.info(f"[DEBUG] show_images setting: {result}")
+    except Exception as e:
+        logger.error(f"[DEBUG] Error checking show_images: {e}")
+
     # No need to check exists again since get_zip_dir() already validated
     return send_file(index_path)
 
