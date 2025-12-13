@@ -1010,51 +1010,60 @@
             const imageContainers = document.querySelectorAll('.image-container');
             const placeholderContainers = document.querySelectorAll('.placeholder-container');
 
-            // Toggle all image containers
-            imageContainers.forEach(container => {
-                if (showImages) {
-                    container.classList.remove('hidden');
-                } else {
-                    container.classList.add('hidden');
-                }
-            });
+            // Only manipulate containers if they exist (admin allows images)
+            if (imageContainers.length > 0) {
+                // Toggle all image containers
+                imageContainers.forEach(container => {
+                    if (showImages) {
+                        container.classList.remove('hidden');
+                    } else {
+                        container.classList.add('hidden');
+                    }
+                });
+            }
 
-            // Toggle all placeholder containers
-            placeholderContainers.forEach(container => {
-                if (showImages) {
-                    container.classList.add('hidden');
-                } else {
-                    container.classList.remove('hidden');
-                }
-            });
+            if (placeholderContainers.length > 0) {
+                // Toggle all placeholder containers
+                placeholderContainers.forEach(container => {
+                    if (showImages) {
+                        container.classList.add('hidden');
+                    } else {
+                        container.classList.remove('hidden');
+                    }
+                });
+            }
 
-            // Save preference
+            // Save preference (only if admin allows images)
+            {% if show_images %}
             localStorage.setItem('showImages', showImages);
+            {% endif %}
         }
 
         // Initialize image toggle
         const imageToggle = document.getElementById('toggle-images');
         if (imageToggle) {
+            {% if show_images %}
+            // Admin allows images - enable toggle functionality
             imageToggle.addEventListener('change', function() {
                 toggleImages(this.checked);
             });
 
-            // Load saved preference on page load (only if admin allows images)
+            // Load saved preference on page load
             const savedPreference = localStorage.getItem('showImages');
-            {% if show_images %}
             if (savedPreference !== null) {
                 const shouldShow = savedPreference === 'true';
                 imageToggle.checked = shouldShow;
                 toggleImages(shouldShow);
             } else {
-                // Default to showing images if no preference saved and admin allows
+                // Default to showing images if no preference saved
                 imageToggle.checked = true;
                 toggleImages(true);
             }
             {% else %}
-            // Admin has disabled images, so always hide them regardless of user preference
+            // Admin has disabled images - completely disable toggle
+            imageToggle.disabled = true;
             imageToggle.checked = false;
-            toggleImages(false);
+            // Don't call toggleImages since no image containers exist to manipulate
             {% endif %}
         }
 
