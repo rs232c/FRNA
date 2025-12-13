@@ -933,6 +933,189 @@ function addSourceCredibility() {
     input.value = '';
 }
 
+// Rule Manager Modal Functions
+let currentRuleCategory = null;
+
+function showRuleManager(category) {
+    console.log('[FRNA Admin] showRuleManager called with category:', category);
+    currentRuleCategory = category;
+    document.getElementById('ruleCategoryTitle').textContent = category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) + ' Rules';
+    document.getElementById('ruleManagerModal').style.display = 'block';
+    loadRulesForCategory(category);
+}
+
+function closeRuleManager() {
+    document.getElementById('ruleManagerModal').style.display = 'none';
+    currentRuleCategory = null;
+    document.getElementById('ruleManagerInput').value = '';
+}
+
+function loadRulesForCategory(category) {
+    console.log('[FRNA Admin] Loading rules for category:', category);
+
+    // Fetch current relevance config from the server
+    fetch('/admin/api/get-relevance-config')
+        .then(response => {
+            console.log('[FRNA Admin] API response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('[FRNA Admin] Received data:', data);
+            const rules = data[category] || [];
+            console.log('[FRNA Admin] Rules for', category, ':', rules);
+
+            const container = document.getElementById('ruleManagerItems');
+            container.innerHTML = '';
+
+            if (rules.length === 0) {
+                container.innerHTML = '<div style="color: #888; font-style: italic;">No rules in this category yet</div>';
+                return;
+            }
+
+            rules.forEach(rule => {
+                const ruleElement = document.createElement('div');
+                ruleElement.style.cssText = 'display: inline-flex; align-items: center; background: #333; padding: 0.5rem 0.75rem; border-radius: 4px; margin: 0.25rem;';
+                ruleElement.innerHTML = `
+                    <span style="color: #e0e0e0; margin-right: 0.5rem;">${rule}</span>
+                    <button onclick="removeRuleFromModal('${category}', '${rule.replace(/'/g, '\\\'')}')"
+                            style="background: #f44336; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.4rem; cursor: pointer; font-size: 0.8rem;">×</button>
+                `;
+                container.appendChild(ruleElement);
+            });
+        })
+        .catch(error => {
+            console.error('[FRNA Admin] Error loading rules:', error);
+            const container = document.getElementById('ruleManagerItems');
+            container.innerHTML = '<div style="color: #f44336;">Error loading rules</div>';
+        });
+}
+
+function addRuleFromModal() {
+    const input = document.getElementById('ruleManagerInput');
+    const value = input.value.trim();
+    if (!value) {
+        showToast('Please enter a rule', 'error');
+        return;
+    }
+
+    addRelevanceItem(currentRuleCategory, value);
+    input.value = '';
+
+    // Reload rules after a short delay
+    setTimeout(() => {
+        loadRulesForCategory(currentRuleCategory);
+    }, 500);
+}
+
+function removeRuleFromModal(category, rule) {
+    if (!confirm(`Remove "${rule}" from ${category.replace('_', ' ')}?`)) {
+        return;
+    }
+
+    removeRelevanceItem(category, rule);
+
+    // Reload rules after a short delay
+    setTimeout(() => {
+        loadRulesForCategory(currentRuleCategory);
+    }, 500);
+}
+
+// Source Manager Functions
+function showSourceManager(sourceName) {
+    document.getElementById('sourceNameTitle').textContent = sourceName;
+    document.getElementById('sourceManagerModal').style.display = 'block';
+
+    // Load current credibility score
+    fetch('/admin/api/get-relevance-config')
+        .then(response => response.json())
+        .then(config => {
+            const sourceCredibility = config.source_credibility || {};
+            const currentScore = sourceCredibility[sourceName.toLowerCase()] || 25;
+            document.getElementById('currentCredibilityScore').textContent = currentScore;
+            document.getElementById('sourceCredibilityInput').value = currentScore;
+
+            // Get article count for this source (placeholder for now)
+            document.getElementById('sourceArticleCount').textContent = '0';
+        })
+        .catch(error => {
+            console.error('Error loading source data:', error);
+        });
+}
+
+function closeSourceManager() {
+    document.getElementById('sourceManagerModal').style.display = 'none';
+}
+
+function updateSourceCredibility() {
+    const sourceName = document.getElementById('sourceNameTitle').textContent;
+    const newScore = parseInt(document.getElementById('sourceCredibilityInput').value);
+
+    if (isNaN(newScore) || newScore < 0 || newScore > 100) {
+        showToast('Please enter a valid score between 0 and 100', 'error');
+        return;
+    }
+
+    // Update source credibility
+    addRelevanceItem('source_credibility', `${sourceName.toLowerCase()}:${newScore}`);
+
+    // Update display
+    document.getElementById('currentCredibilityScore').textContent = newScore;
+    showToast(`Updated ${sourceName} credibility to ${newScore} points`, 'success');
+}
+
+// Category Manager Functions
+function showCategoryManager(categoryName) {
+    console.log('showCategoryManager called with:', categoryName);
+    document.getElementById('categoryNameTitle').textContent = categoryName;
+    document.getElementById('categoryManagerModal').style.display = 'block';
+
+    // Get article count for this category (placeholder for now)
+    document.getElementById('categoryArticleCount').textContent = '0';
+
+    // Load existing keywords for this category
+    loadCategoryKeywords(categoryName.toLowerCase());
+}
+
+// Make sure functions are globally available
+if (typeof window !== 'undefined') {
+    window.showRuleManager = showRuleManager;
+    window.closeRuleManager = closeRuleManager;
+    window.addRuleFromModal = addRuleFromModal;
+    window.removeRuleFromModal = removeRuleFromModal;
+    window.showSourceManager = showSourceManager;
+    window.closeSourceManager = closeSourceManager;
+    window.updateSourceCredibility = updateSourceCredibility;
+    window.showCategoryManager = showCategoryManager;
+    window.closeCategoryManager = closeCategoryManager;
+    window.addCategoryKeyword = addCategoryKeyword;
+}
+
+function closeCategoryManager() {
+    document.getElementById('categoryManagerModal').style.display = 'none';
+    document.getElementById('categoryKeywordInput').value = '';
+}
+
+function loadCategoryKeywords(category) {
+    // This would need to be implemented with a backend API to get category keywords
+    // For now, show a placeholder
+    const container = document.getElementById('categoryKeywordsList');
+    container.innerHTML = '<div style="color: #888; font-style: italic;">Category keyword management coming soon...</div>';
+}
+
+function addCategoryKeyword() {
+    const input = document.getElementById('categoryKeywordInput');
+    const keyword = input.value.trim();
+
+    if (!keyword) {
+        showToast('Please enter a keyword', 'error');
+        return;
+    }
+
+    // This would need backend implementation
+    showToast('Category keyword management coming soon...', 'info');
+    input.value = '';
+}
+
 function saveRelevanceThreshold() {
     console.log('[DEBUG] saveRelevanceThreshold called');
     const thresholdInput = document.getElementById('relevanceThreshold');
@@ -1180,8 +1363,12 @@ function saveImageSetting() {
     .then(data => {
         console.log('[DEBUG] API response data:', data);
         if (data.success) {
-            console.log('[DEBUG] Save successful, showing success toast');
-            showToast(`✅ Images ${showImages ? 'enabled' : 'disabled'} - This will affect article image display. Regenerate website to apply changes.`, 'success');
+            console.log('[DEBUG] Save successful, showing success toast and refreshing page');
+            showToast(`✅ Images ${showImages ? 'enabled' : 'disabled'} - Refreshing page to apply changes...`, 'success');
+            // Refresh the page after a short delay to show the new state
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
         } else {
             console.log('[DEBUG] Save failed:', data.error);
             showToast('❌ Failed to save image setting: ' + (data.error || 'Unknown error'), 'error');

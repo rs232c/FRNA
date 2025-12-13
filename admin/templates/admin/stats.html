@@ -106,6 +106,140 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- Database Statistics Section -->
+        {% if db_stats %}
+        <div class="stats-section" style="margin-top: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; padding: 2rem;">
+            <h2 style="color: white; margin-bottom: 1.5rem; text-align: center;">🗄️ Database Health & Statistics</h2>
+
+            <!-- Database Info -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{{ db_stats.database_info.size_mb }} MB</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">Database Size</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{{ db_stats.database_info.tables }}</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">Tables</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{{ db_stats.health_stats.data_completeness }}%</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">Data Completeness</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{{ db_stats.ai_ml_stats.training_samples }}</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">AI Training Samples</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <!-- Article Stats -->
+                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px;">
+                    <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">📊 Article Statistics</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div><strong>Total Articles:</strong> {{ db_stats.article_stats.total | number_format }}</div>
+                        <div><strong>With Images:</strong> {{ db_stats.article_stats.with_images | number_format }} ({{ db_stats.article_stats.image_percentage }}%)</div>
+                        <div><strong>Last 7 Days:</strong> {{ db_stats.article_stats.recent_7_days | number_format }}</div>
+                        <div><strong>Relevance Score:</strong> {{ db_stats.article_stats.relevance_scores.avg }} ({{ db_stats.article_stats.relevance_scores.min }}-{{ db_stats.article_stats.relevance_scores.max }})</div>
+                    </div>
+                </div>
+
+                <!-- AI/ML Stats -->
+                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px;">
+                    <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">🤖 AI/ML Systems</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div><strong>Relevance Rules:</strong> {{ db_stats.ai_ml_stats.relevance_rules | number_format }}</div>
+                        <div><strong>Training Samples:</strong> {{ db_stats.ai_ml_stats.training_samples | number_format }}</div>
+                        <div><strong>Good Fit:</strong> {{ db_stats.ai_ml_stats.good_fit_samples | number_format }}</div>
+                        <div><strong>Bad Fit:</strong> {{ db_stats.ai_ml_stats.bad_fit_samples | number_format }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Source Breakdown -->
+            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-top: 1rem;">
+                <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">📰 Top Content Sources</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem;">
+                    {% for source in db_stats.source_stats.top_sources %}
+                    <div style="background: rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 6px;">
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">{{ source.source }}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">{{ source.count | number_format }} articles ({{ source.percentage }}%)</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Category Breakdown -->
+            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-top: 1rem;">
+                <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">🏷️ Content Categories</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem;">
+                    {% for cat in db_stats.category_stats.breakdown %}
+                    <div style="background: rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 6px;">
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">{{ cat.category | title }}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">{{ cat.count | number_format }} articles ({{ cat.percentage }}%)</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Management & Performance -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px;">
+                    <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">⚙️ Article Management</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div><strong>Total Entries:</strong> {{ db_stats.management_stats.total_entries | number_format }}</div>
+                        <div><strong>Enabled:</strong> {{ db_stats.management_stats.enabled | number_format }} ({{ db_stats.management_stats.enabled_percentage }}%)</div>
+                        <div><strong>Disabled:</strong> {{ db_stats.management_stats.disabled | number_format }}</div>
+                        <div><strong>Posted:</strong> {{ db_stats.performance_stats.posted_articles | number_format }}</div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px;">
+                    <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">💚 Database Health</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div><strong>Duplicate URLs:</strong> {{ db_stats.health_stats.duplicate_urls | number_format }}</div>
+                        <div><strong>Missing Zip Codes:</strong> {{ db_stats.health_stats.articles_without_zip | number_format }}</div>
+                        <div><strong>Missing Categories:</strong> {{ db_stats.health_stats.articles_without_category | number_format }}</div>
+                        <div><strong>Missing Relevance:</strong> {{ db_stats.health_stats.articles_without_relevance | number_format }}</div>
+                    </div>
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(76, 175, 80, 0.2); border-radius: 4px; border-left: 3px solid #4caf50;">
+                        <strong>✅ Data Quality:</strong> {{ db_stats.health_stats.data_completeness }}% complete
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zip Code Stats -->
+            {% if db_stats.zip_stats.breakdown %}
+            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-top: 1rem;">
+                <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">📍 Geographic Coverage</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem;">
+                    {% for zip in db_stats.zip_stats.breakdown %}
+                    <div style="background: rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 6px; text-align: center;">
+                        <div style="font-weight: bold; font-size: 1.2rem; margin-bottom: 0.25rem;">{{ zip.zip }}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">{{ zip.count | number_format }} articles</div>
+                        <div style="font-size: 0.8rem; opacity: 0.7;">{{ zip.percentage }}%</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- AI Rule Categories -->
+            {% if db_stats.ai_ml_stats.rule_categories %}
+            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-top: 1rem;">
+                <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">🎯 AI Relevance Rules</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem;">
+                    {% for rule in db_stats.ai_ml_stats.rule_categories %}
+                    <div style="background: rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 6px;">
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">{{ rule.category | title }}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">{{ rule.count | number_format }} rules</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

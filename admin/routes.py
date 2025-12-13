@@ -1360,6 +1360,10 @@ def admin_zip_dashboard(zip_code):
         stats = get_stats(zip_code=zip_code)  # Get stats for this zip only
         settings = get_settings()
 
+        # Get database stats for the enhanced stats section
+        from admin.services import get_database_stats
+        db_stats = get_database_stats()
+
         # Get additional metadata
         with get_db() as conn:
             cursor = conn.cursor()
@@ -1613,6 +1617,7 @@ def admin_zip_dashboard(zip_code):
             articles=articles,
             rejected_articles=rejected_articles,
             stats=stats,
+            db_stats=db_stats,
             settings=settings,
             sources=sources_config,
             version=VERSION,
@@ -3021,6 +3026,32 @@ def remove_relevance_item():
     except Exception as e:
         logger.error(f"Error removing relevance item: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@login_required
+@app.route('/admin/api/get-relevance-config', methods=['GET', 'OPTIONS'])
+def get_relevance_config():
+    """Get current relevance configuration from database"""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Get all relevance config items grouped by category
+            cursor.execute('SELECT category, item FROM relevance_config ORDER BY category, item')
+            rows = cursor.fetchall()
+
+            # Group by category
+            relevance_config = {}
+            for row in rows:
+                category, item = row
+                if category not in relevance_config:
+                    relevance_config[category] = []
+                relevance_config[category].append(item)
+
+            return jsonify(relevance_config)
+    except Exception as e:
+        logger.error(f"Error getting relevance config: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @login_required

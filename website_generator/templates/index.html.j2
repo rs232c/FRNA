@@ -62,10 +62,7 @@
         .lazy-image { opacity: 0; transition: opacity 0.3s; }
         .lazy-image.loaded { opacity: 1; }
 
-        /* Kill images when disabled - only hide actual img tags */
-        body.no-images img {
-          display: none !important;
-        }
+        /* Image visibility is controlled by JavaScript adding/removing 'hidden' class */
 
         /* Prevent FOUC - hide content until JS loads */
         .fouc-hidden { opacity: 0; transition: opacity 0.3s; }
@@ -497,17 +494,9 @@
                         {% for hero_article in hero_articles %}
                         <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / {{ hero_articles|length }}); width: calc(100% / {{ hero_articles|length }});">
                             <a href="{{ hero_article.url }}" target="_blank" rel="noopener" class="group block relative w-full h-full">
-                                <!-- Image container - only when images enabled -->
-                                <!-- DEBUG: show_images={{ show_images }}, hero_image={{ hero_article.image_url }}, condition={{ show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) }} -->
-                                {% if show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) %}
+                                <!-- Image container - always present, controlled by CSS/JS -->
                                 <div class="relative h-full overflow-hidden image-container">
-                                    {% if show_images %}
                                     <img src="{{ hero_article.image_url }}" alt="{{ hero_article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
-                                    {% else %}
-                                    <div class="bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg w-full h-full flex items-center justify-center">
-                                        <span class="text-gray-500 text-sm">Images off</span>
-                                    </div>
-                                    {% endif %}
                                     <!-- Light gradient overlay bottom 40% to show source gradients -->
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" style="background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 40%, transparent 100%);"></div>
                                     <!-- Video play icon if video -->
@@ -536,8 +525,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                {% else %}
-                                <!-- Placeholder container - only when images disabled -->
+                                <!-- Placeholder container - always present, controlled by CSS/JS -->
                                 <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient or 'from-purple-500 to-blue-600' }} placeholder-container">
                                     <!-- Subtle pattern overlay -->
                                     <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.05) 20px, rgba(255,255,255,0.05) 40px);"></div>
@@ -552,7 +540,7 @@
                                     </div>
                                     {% endif %}
                                     <!-- Content overlay at bottom -->
-                                    <div class="absolute bottom-0 left-0 right-0 p-6 lg:p-8 pb-12 lg:pb-16 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
+                                    <div class="absolute bottom-0 left-0 right-0 p-6 lg:p-8 pb-12 lg:pb-16">
                                         <h2 class="font-bold text-2xl mb-3 line-clamp-5 group-hover:text-blue-300 transition-colors leading-tight">
                                             {{ hero_article.title }}
                                         </h2>
@@ -567,7 +555,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                {% endif %}
 
                             </a>
                         </div>
@@ -615,25 +602,15 @@
                             {% for article in trending_articles[:8] %}
                             <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group">
                                 <div class="flex items-start gap-3 pb-3 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors hover:bg-gray-800/20">
-                                    <!-- Image container - only when images enabled -->
-                                    {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
+                                    <!-- Image container - always present, controlled by CSS/JS -->
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f] image-container">
-                                        {% if show_images %}
                                         <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
-                                        {% else %}
-                                        <div class="bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg w-full h-full flex items-center justify-center">
-                                            <span class="text-gray-500 text-sm">Images off</span>
-                                        </div>
-                                        {% endif %}
                                     </div>
-                                    {% endif %}
-                                    <!-- Placeholder container - only when images disabled -->
-                                    {% if not (show_images and article.image_url and (article.image_url|default('')|trim)) %}
+                                    <!-- Placeholder container - always present, controlled by CSS/JS -->
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden placeholder-container">
                                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
                                         <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">{{ article.source_initials }}</div>
                                     </div>
-                                    {% endif %}
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-start gap-1.5 mb-1">
                                             <span class="text-orange-500 text-xs mt-0.5 flex-shrink-0">🔥</span>
@@ -717,18 +694,11 @@
                 {% for article in articles[:30] %}
             <article class="group relative bg-[#161616]/60 backdrop-blur-sm rounded-2xl overflow-hidden ring-1 ring-white/5 hover:ring-white/20 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-2 animate-fade-in-up" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}" style="animation-delay: {{ loop.index * 0.1 }}s;">
                 <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
-                    <!-- Image container - only when images enabled -->
-                    {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
-                    <div class="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-gradient-to-br {{ article.source_gradient or 'from-gray-600 to-gray-700' }} image-container">
-                        {% if show_images %}
+                            <!-- Image container - always present, controlled by CSS/JS -->
+                            <div class="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-gradient-to-br {{ article.source_gradient or 'from-gray-600 to-gray-700' }} image-container">
                         <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy"
                              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                              style="aspect-ratio: 4/3;">
-                        {% else %}
-                        <div class="bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg w-full h-full flex items-center justify-center" style="aspect-ratio: 4/3;">
-                            <span class="text-gray-500 text-sm">Images off</span>
-                        </div>
-                        {% endif %}
                         <!-- Premium gradient overlay - lighter to show source gradients -->
                         <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 via-60% to-transparent opacity-40 group-hover:opacity-20 transition-opacity duration-500"></div>
 
@@ -754,8 +724,7 @@
                             </div>
                         </div>
                     </div>
-                    {% else %}
-                    <!-- Placeholder container - only when images disabled -->
+                    <!-- Placeholder container - always present, controlled by CSS/JS -->
                     <div class="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-gradient-to-br {{ article.source_gradient or 'from-gray-600 to-gray-700' }} placeholder-container">
                         <!-- Subtle texture overlay -->
                         <div class="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(45deg,transparent,transparent_20px,rgba(255,255,255,0.03)_20px,rgba(255,255,255,0.03)_40px)]"></div>
@@ -764,9 +733,6 @@
                         <div class="absolute inset-0 flex items-center justify-center">
                             <div class="text-5xl font-black text-white/30 drop-shadow-2xl">{{ article.source_initials }}</div>
                         </div>
-
-                        <!-- Premium gradient overlay -->
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 via-60% to-transparent opacity-80"></div>
 
                         <!-- Premium badges -->
                         <div class="absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-blue-500/90 to-purple-500/90 backdrop-blur-sm border border-white/20 shadow-lg">
@@ -788,7 +754,6 @@
                             </div>
                         </div>
                     </div>
-                    {% endif %}
                 </a>
             </article>
                 {% endfor %}
@@ -1062,28 +1027,40 @@
             const imageContainers = document.querySelectorAll('.image-container');
             const placeholderContainers = document.querySelectorAll('.placeholder-container');
 
-            // Only manipulate containers if they exist (admin allows images)
-            if (imageContainers.length > 0) {
-                // Toggle all image containers
-                imageContainers.forEach(container => {
+            // Toggle containers based on whether they have images
+            imageContainers.forEach(container => {
+                const hasImage = container.querySelector('img') !== null;
+                if (hasImage) {
+                    // Only toggle containers that actually have images
                     if (showImages) {
                         container.classList.remove('hidden');
                     } else {
                         container.classList.add('hidden');
                     }
-                });
-            }
+                } else {
+                    // Containers without images should always be hidden
+                    container.classList.add('hidden');
+                }
+            });
 
-            if (placeholderContainers.length > 0) {
-                // Toggle all placeholder containers
-                placeholderContainers.forEach(container => {
+            placeholderContainers.forEach(container => {
+                // Find the corresponding image container (same parent article)
+                const article = container.closest('article, .story-slide, a');
+                const imageContainer = article ? article.querySelector('.image-container') : null;
+                const hasImage = imageContainer && imageContainer.querySelector('img') !== null;
+
+                if (hasImage) {
+                    // Only toggle placeholders that have corresponding images
                     if (showImages) {
                         container.classList.add('hidden');
                     } else {
                         container.classList.remove('hidden');
                     }
-                });
-            }
+                } else {
+                    // Placeholders without images should always be visible
+                    container.classList.remove('hidden');
+                }
+            });
 
             // Save preference (only if admin allows images)
             {% if show_images %}
@@ -1098,35 +1075,38 @@
             }
         }
 
-        // Initialize image toggle
-        const imageToggle = document.getElementById('toggle-images');
-        if (imageToggle) {
-            {% if show_images %}
-            // Admin allows images - enable toggle functionality
-            imageToggle.addEventListener('change', function() {
-                toggleImages(this.checked);
-            });
+        // Initialize image toggle when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const imageToggle = document.getElementById('toggle-images');
+            if (imageToggle) {
+                {% if show_images %}
+                // Admin allows images - enable toggle functionality
+                imageToggle.addEventListener('change', function() {
+                    toggleImages(this.checked);
+                });
 
-            // Load saved preference on page load
-            const savedPreference = localStorage.getItem('showImages');
-            if (savedPreference !== null) {
-                const shouldShow = savedPreference === 'true';
-                imageToggle.checked = shouldShow;
-                toggleImages(shouldShow);
-            } else {
-                // Default to showing images if no preference saved
-                imageToggle.checked = true;
-                toggleImages(true);
+                // Determine effective state: admin default OR user override
+                const adminDefault = {{ show_images|tojson }};
+                const savedPreference = localStorage.getItem('showImages');
+                let effectiveShowImages = adminDefault; // Start with admin setting
+
+                if (savedPreference !== null) {
+                    // User has a saved preference - use it if admin allows override
+                    effectiveShowImages = savedPreference === 'true';
+                }
+
+                // Apply the effective state
+                imageToggle.checked = effectiveShowImages;
+                toggleImages(effectiveShowImages);
+                {% else %}
+                // Admin has disabled images - force hide all images
+                imageToggle.disabled = true;
+                imageToggle.checked = false;
+                document.body.classList.add('no-images');
+                toggleImages(false);
+                {% endif %}
             }
-            {% else %}
-            // Admin has disabled images - completely disable toggle
-            imageToggle.disabled = true;
-            imageToggle.checked = false;
-            // Ensure images are hidden by adding no-images class and calling toggleImages
-            document.body.classList.add('no-images');
-            toggleImages(false);
-            {% endif %}
-        }
+        });
 
         // Lazy image loading
         document.addEventListener('DOMContentLoaded', function() {

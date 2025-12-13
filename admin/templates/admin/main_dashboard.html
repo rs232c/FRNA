@@ -80,95 +80,92 @@ body { background: #f5f5f5 !important; color: #333 !important; }
             Showing {{ articles|length }} of {{ total_count }} article{{ 's' if total_count != 1 else '' }}
         </div>
         {% for article in articles %}
-        <div class="article-item {{ 'rejected' if article.get('is_rejected', 0) else ('auto-filtered' if article.get('is_auto_filtered', 0) else '') }}" data-id="{{ article.id }}">
-            <div class="article-info">
-                <div class="article-title" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span>{{ article.title[:80] }}{% if article.title|length > 80 %}...{% endif %}</span>
-                    {% if article.url %}
-                    <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" title="Open article in new window" style="color: #0078d4; text-decoration: none; font-size: 1.1rem; opacity: 0.7; transition: opacity 0.2s;">🔗</a>
-                    {% endif %}
+        <div class="article-item {{ 'rejected' if article.get('is_rejected', 0) else ('auto-filtered' if article.get('is_auto_filtered', 0) else '') }}"
+             data-id="{{ article.id }}"
+             style="background: {% if article.get('is_auto_filtered', 0) %}rgba(147, 51, 234, 0.1){% else %}#1a1a1a{% endif %};
+                    border: 1px solid {% if article.get('is_auto_filtered', 0) %}#9333ea{% else %}#404040{% endif %};
+                    border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;
+                    opacity: {% if article.get('is_rejected', 0) %}0.6{% else %}1{% endif %};
+                    transition: all 0.2s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <h3 style="color: #ffffff; font-size: 1rem; font-weight: 600; margin: 0; line-height: 1.3;">{{ article.title[:100] }}{% if article.title|length > 100 %}...{% endif %}</h3>
+                        {% if article.url %}
+                        <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: none; font-size: 1.1rem;">🔗</a>
+                        {% endif %}
+                    </div>
+
+                    <div style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                        {{ article.source }} • {{ article.published[:16] if article.published else 'N/A' }}
+                        {% if article.primary_category %}
+                        • <span style="background: #2563eb; color: white; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600;">
+                            {{ article.primary_category }}{% if article.category_confidence %} {{ "%.0f"|format(article.category_confidence) }}%{% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div style="display: flex; gap: 1.5rem; font-size: 0.875rem;">
+                        {% if article.relevance_score is defined and article.relevance_score is not none %}
+                        <div>
+                            <span style="color: #9ca3af;">Relevance:</span>
+                            <span style="color: {% if article.relevance_score >= 70 %}#10b981{% elif article.relevance_score >= 40 %}#f59e0b{% else %}#ef4444{% endif %}; font-weight: 600;">
+                                {{ "%.0f"|format(article.relevance_score) }}/100
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% if article.local_score is defined and article.local_score is not none %}
+                        <div>
+                            <span style="color: #9ca3af;">Local:</span>
+                            <span style="color: #10b981; font-weight: 600;">{{ "%.0f"|format(article.local_score) }}/100</span>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="article-meta">
-                    {{ article.source }} - {{ article.published[:10] if article.published else 'N/A' }}
-                    {% if article.primary_category %}
-                    • <span class="category-badge relevance-score-tooltip" data-article-id="{{ article.id }}" style="display: inline-block; padding: 0.2rem 0.5rem; background: #0078d4; color: white; border-radius: 4px; font-size: 0.85rem; font-weight: 600;">
-                        {{ article.primary_category }}{% if article.category_confidence %} {{ "%.0f"|format(article.category_confidence) }}%{% endif %}
-                    </span>
-                    {% elif article.category %}
-                    • <span class="relevance-score-tooltip" data-article-id="{{ article.id }}">{{ article.category }}</span>
-                    {% endif %}
-                    {% if article.relevance_score is defined and article.relevance_score is not none %}
-                    • <span class="relevance-score-tooltip" data-article-id="{{ article.id }}">Relevance: <strong style="color: {% if article.relevance_score >= 70 %}#4caf50{% elif article.relevance_score >= 40 %}#ff9800{% else %}#d32f2f{% endif %};">{{ "%.0f"|format(article.relevance_score) }}</strong>/100</span>
-                    <span style="display: inline-block; width: 100px; height: 10px; background: #404040; border-radius: 5px; margin-left: 0.5rem; vertical-align: middle; overflow: hidden;">
-                        <span style="display: block; width: {{ "%.0f"|format(article.relevance_score) }}%; height: 100%; background: {% if article.relevance_score >= 70 %}#4caf50{% elif article.relevance_score >= 40 %}#ff9800{% else %}#d32f2f{% endif %}; transition: width 0.3s;"></span>
-                    </span>
+
+                <div style="display: flex; gap: 0.375rem; align-items: center; flex-shrink: 0;">
+                    <button onclick="showRelevanceBreakdown({{ article.id }})"
+                            style="background: #2563eb; color: white; border: none; border-radius: 6px; width: 2rem; height: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; transition: all 0.2s;"
+                            title="Score breakdown">📊</button>
+
+                    <button onclick="adminAction({{ article.id }}, 'thumbs_up')"
+                            style="background: {% if article.get('is_good_fit', 0) %}#10b981{% else %}transparent{% endif %}; color: white; border: 1px solid {% if article.get('is_good_fit', 0) %}#10b981{% else %}#6b7280{% endif %}; border-radius: 50%; width: 2rem; height: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: {% if article.get('is_good_fit', 0) %}1{% else %}0.6{% endif %}; transition: all 0.2s;"
+                            title="Thumbs up (good fit)">👍</button>
+
+                    <button onclick="adminAction({{ article.id }}, 'thumbs_down')"
+                            style="background: transparent; color: white; border: 1px solid #6b7280; border-radius: 50%; width: 2rem; height: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.6; transition: all 0.2s;"
+                            title="Thumbs down (bad fit)">👎</button>
+
+                    <button onclick="adminAction({{ article.id }}, 'top_story')"
+                            style="background: {% if article.get('is_top_story', 0) %}#f59e0b{% else %}transparent{% endif %}; color: white; border: 1px solid {% if article.get('is_top_story', 0) %}#f59e0b{% else %}#6b7280{% endif %}; border-radius: 50%; width: 2rem; height: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: {% if article.get('is_top_story', 0) %}1{% else %}0.6{% endif %}; transition: all 0.2s;"
+                            title="Top story">🎩</button>
+
+                    <button onclick="adminAction({{ article.id }}, 'top_article')"
+                            style="background: {% if article.get('is_top', 0) %}#fbbf24{% else %}transparent{% endif %}; color: white; border: 1px solid {% if article.get('is_top', 0) %}#fbbf24{% else %}#6b7280{% endif %}; border-radius: 50%; width: 2rem; height: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: {% if article.get('is_top', 0) %}1{% else %}0.6{% endif %}; transition: all 0.2s;"
+                            title="Featured">⭐</button>
+
+                    <button onclick="adminAction({{ article.id }}, 'alert')"
+                            style="background: {% if article.get('is_alert', 0) %}#ef4444{% else %}transparent{% endif %}; color: white; border: 1px solid {% if article.get('is_alert', 0) %}#ef4444{% else %}#6b7280{% endif %}; border-radius: 50%; width: 2rem; height: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: {% if article.get('is_alert', 0) %}1{% else %}0.6{% endif %}; transition: all 0.2s;"
+                            title="Alert">🚨</button>
+
+                    <button onclick="adminAction({{ article.id }}, 'on_target')"
+                            style="background: {% if article.get('is_on_target') == 1 %}#10b981{% else %}transparent{% endif %}; color: white; border: 1px solid {% if article.get('is_on_target') == 1 %}#10b981{% else %}#6b7280{% endif %}; border-radius: 50%; width: 2rem; height: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: {% if article.get('is_on_target') == 1 %}1{% else %}0.6{% endif %}; transition: all 0.2s;"
+                            title="On target">🎯</button>
+
+                    <button onclick="adminAction({{ article.id }}, 'off_target')"
+                            style="background: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}#ef4444{% else %}transparent{% endif %}; color: white; border: 1px solid {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}#ef4444{% else %}#6b7280{% endif %}; border-radius: 50%; width: 2rem; height: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}1{% else %}0.6{% endif %}; transition: all 0.2s;"
+                            title="Off target">❌</button>
+
+                    {% if article.get('is_rejected', 0) %}
+                    <button onclick="adminAction({{ article.id }}, 'restore')"
+                            style="background: {% if article.get('is_auto_filtered', 0) %}#9333ea{% else %}#10b981{% endif %}; color: white; border: none; border-radius: 6px; width: 2rem; height: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                            title="Restore">↩️</button>
                     {% else %}
-                    • Relevance: N/A
-                    {% endif %}
-                    {% if article.local_score is defined and article.local_score is not none %}
-                    • <span class="relevance-score-tooltip" data-article-id="{{ article.id }}">Local: <strong>{{ "%.0f"|format(article.local_score) }}</strong>/100</span>
-                    <span style="display: inline-block; width: 100px; height: 10px; background: #404040; border-radius: 5px; margin-left: 0.5rem; vertical-align: middle; overflow: hidden;">
-                        <span style="display: block; width: {{ "%.0f"|format(article.local_score) }}%; height: 100%; background: #4caf50; transition: width 0.3s;"></span>
-                    </span>
+                    <button onclick="adminAction({{ article.id }}, 'trash')"
+                            style="background: #ef4444; color: white; border: none; border-radius: 6px; width: 2rem; height: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                            title="Trash">🗑️</button>
                     {% endif %}
                 </div>
-            </div>
-            <div class="article-actions" style="display: flex; gap: 0.5rem; align-items: center;">
-                <button class="relevance-breakdown-btn action-icon" data-id="{{ article.id }}" data-action="show-breakdown"
-                        style="background: #0078d4; color: white; border: none; cursor: pointer;"
-                        title="Why rejected? / Score breakdown">
-                    &#128200;
-                </button>
-                <button class="thumbs-up-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_good_fit', 0) else 'off' }}" data-action="thumbs-up"
-                        style="background: {% if article.get('is_good_fit', 0) %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_good_fit', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
-                        title="Thumbs up (train relevance + category)">
-                    &#128077;
-                </button>
-                <button class="thumbs-down-btn action-icon" data-id="{{ article.id }}" data-action="thumbs-down"
-                        style="background: transparent; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: 0.5; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
-                        title="Thumbs down (train relevance + category)">
-                    &#128078;
-                </button>
-                <button class="top-story-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top_story', 0) else 'off' }}" data-action="toggle-top-story"
-                        style="background: {% if article.get('is_top_story', 0) %}#ff9800{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_top_story', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
-                        title="Mark as top story (perfect example)">
-                    &#127913;
-                </button>
-                <button class="top-article-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top', 0) else 'off' }}" data-action="toggle-top-article"
-                        style="background: {% if article.get('is_top', 0) %}#ffd700{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_top', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
-                        title="Mark as top article (featured)">
-                    &#11088;
-                </button>
-                <button class="alert-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_alert', 0) else 'off' }}" data-action="toggle-alert"
-                        style="background: {% if article.get('is_alert', 0) %}#ff4444{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_alert', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
-                        title="Mark as alert (urgent notification)">
-                    &#128680;
-                </button>
-                <button class="on-target-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') == 1 else 'off' }}" data-action="on-target"
-                        style="background: {% if article.get('is_on_target') == 1 %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_on_target') == 1 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
-                        title="Mark as on target (relevant for targeting)">
-                    &#127919;
-                </button>
-                <button class="off-target-btn action-icon" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') is not none and article.get('is_on_target') == 0 else 'off' }}" data-action="off-target"
-                        style="background: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}#f44336{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; opacity: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
-                        title="Mark as off target (not relevant for targeting)">
-                    &#10060;
-                </button>
-                <button class="edit-article-btn action-icon" data-id="{{ article.id }}" data-action="edit-article"
-                        style="background: #252525; color: white; border: none; cursor: pointer;"
-                        title="Edit article">
-                    &#9999;&#65039;
-                </button>
-                {% if article.get('is_rejected', 0) %}
-                <button class="restore-btn action-icon" data-id="{{ article.id }}" data-action="restore-article"
-                        title="Restore article" style="background: #4caf50; color: white; border: none; cursor: pointer;">&#8617;&#65039;</button>
-                {% elif article.get('is_auto_filtered', 0) %}
-                <button class="restore-btn action-icon" data-id="{{ article.id }}" data-action="restore-article"
-                        title="Restore auto-filtered article" style="background: #9c27b0; color: white; border: none; cursor: pointer;">&#8617;&#65039;</button>
-                {% else %}
-                <button class="trash-btn action-icon" data-id="{{ article.id }}" data-action="trash-article"
-                        title="Move to trash" style="background: #d32f2f; color: white; border: none; cursor: pointer;">&#128465;&#65039;</button>
-                {% endif %}
             </div>
         </div>
         {% endfor %}
@@ -331,6 +328,265 @@ body { background: #f5f5f5 !important; color: #333 !important; }
             </div>
         </div>
         {% endif %}
+
+        <!-- Database Statistics Section -->
+        {% if db_stats %}
+        <div class="stats-section" style="margin-top: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; padding: 2rem;">
+            <h2 style="color: white; margin-bottom: 1rem; text-align: center; background: rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 8px; display: inline-block;">🗄️ Database Health & Interactive Management</h2>
+
+            <!-- Management Legend -->
+            <div style="background: rgba(255,255,255,0.1); padding: 1.25rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h4 style="color: white; margin-bottom: 0.75rem; font-size: 1.1rem;">🎯 Click any card below to manage:</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; font-size: 0.9rem; line-height: 1.4;">
+                    <div style="background: rgba(0, 255, 136, 0.15); padding: 0.5rem; border-radius: 4px; border: 1px solid rgba(0, 255, 136, 0.3);"><strong style="color: #00ff88;">🤖 AI Rules:</strong> Keywords that boost or filter articles</div>
+                    <div style="background: rgba(0, 255, 136, 0.15); padding: 0.5rem; border-radius: 4px; border: 1px solid rgba(0, 255, 136, 0.3);"><strong style="color: #00ff88;">📰 Source Credibility:</strong> Trust scores for news outlets</div>
+                    <div style="background: rgba(0, 255, 136, 0.15); padding: 0.5rem; border-radius: 4px; border: 1px solid rgba(0, 255, 136, 0.3);"><strong style="color: #00ff88;">🏷️ Category Keywords:</strong> Auto-classification helpers</div>
+                </div>
+            </div>
+
+            <!-- Database Info -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{{ db_stats.database_info.size_mb }} MB</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">Database Size</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{{ db_stats.database_info.tables }}</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">Tables</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{{ db_stats.health_stats.data_completeness }}%</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">Data Completeness</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">{{ db_stats.ai_ml_stats.training_samples }}</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">AI Training Samples</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <!-- Article Stats -->
+                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px;">
+                    <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">📊 Article Statistics</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div><strong>Total Articles:</strong> {{ db_stats.article_stats.total }}</div>
+                        <div><strong>With Images:</strong> {{ db_stats.article_stats.with_images }} ({{ db_stats.article_stats.image_percentage }}%)</div>
+                        <div><strong>Last 7 Days:</strong> {{ db_stats.article_stats.recent_7_days }}</div>
+                        <div><strong>Relevance Score:</strong> {{ db_stats.article_stats.relevance_scores.avg }} ({{ db_stats.article_stats.relevance_scores.min }}-{{ db_stats.article_stats.relevance_scores.max }})</div>
+                    </div>
+                </div>
+
+                <!-- AI/ML Stats -->
+                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px;">
+                    <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">🤖 AI/ML Systems</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div><strong>Relevance Rules:</strong> {{ db_stats.ai_ml_stats.relevance_rules }}</div>
+                        <div><strong>Training Samples:</strong> {{ db_stats.ai_ml_stats.training_samples }}</div>
+                        <div><strong>Good Fit:</strong> {{ db_stats.ai_ml_stats.good_fit_samples }}</div>
+                        <div><strong>Bad Fit:</strong> {{ db_stats.ai_ml_stats.bad_fit_samples }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Source Breakdown -->
+            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-top: 1rem;">
+                <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">📰 Source Credibility Scores</h3>
+                <div style="margin-bottom: 1rem; font-size: 0.95rem; line-height: 1.4; background: rgba(255,255,255,0.08); padding: 0.75rem; border-radius: 6px; border-left: 4px solid #00ff88;">
+                    Adjust trust scores for news sources. Higher scores (+5-25 pts) boost article rankings, lower scores reduce visibility.
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem;">
+                    {% for source in db_stats.source_stats.top_sources %}
+                    <div style="background: rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="if (typeof showSourceManager !== 'undefined') { showSourceManager('{{ source.source | e }}'); } else { console.error('showSourceManager function not found'); }">
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">{{ source.source }}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">{{ source.count }} articles ({{ source.percentage }}%)</div>
+                        <div style="font-size: 0.9rem; margin-top: 0.25rem; color: #00ff88; font-weight: 600; background: rgba(0, 255, 136, 0.15); padding: 0.2rem 0.4rem; border-radius: 3px; display: inline-block; border: 1px solid rgba(0, 255, 136, 0.3);">Click to adjust score →</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Category Breakdown -->
+            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-top: 1rem;">
+                <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">🏷️ Category Keywords</h3>
+                <div style="margin-bottom: 1rem; font-size: 0.95rem; line-height: 1.4; background: rgba(255,255,255,0.08); padding: 0.75rem; border-radius: 6px; border-left: 4px solid #00ff88;">
+                    Add keywords to help the AI automatically classify articles into the correct categories for better organization.
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem;">
+                    {% for cat in db_stats.category_stats.breakdown %}
+                    <div style="background: rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="if (typeof showCategoryManager !== 'undefined') { showCategoryManager('{{ cat.category | e }}'); } else { console.error('showCategoryManager function not found'); }">
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">{{ cat.category | title }}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">{{ cat.count }} articles ({{ cat.percentage }}%)</div>
+                        <div style="font-size: 0.9rem; margin-top: 0.25rem; color: #00ff88; font-weight: 600; background: rgba(0, 255, 136, 0.15); padding: 0.2rem 0.4rem; border-radius: 3px; display: inline-block; border: 1px solid rgba(0, 255, 136, 0.3);">Click to add keywords →</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Management & Performance -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px;">
+                    <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">⚙️ Article Management</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div><strong>Total Entries:</strong> {{ db_stats.management_stats.total_entries }}</div>
+                        <div><strong>Enabled:</strong> {{ db_stats.management_stats.enabled }} ({{ db_stats.management_stats.enabled_percentage }}%)</div>
+                        <div><strong>Disabled:</strong> {{ db_stats.management_stats.disabled }}</div>
+                        <div><strong>Posted:</strong> {{ db_stats.performance_stats.posted_articles }}</div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px;">
+                    <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">💚 Database Health</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div><strong>Duplicate URLs:</strong> {{ db_stats.health_stats.duplicate_urls }}</div>
+                        <div><strong>Missing Zip Codes:</strong> {{ db_stats.health_stats.articles_without_zip }}</div>
+                        <div><strong>Missing Categories:</strong> {{ db_stats.health_stats.articles_without_category }}</div>
+                        <div><strong>Missing Relevance:</strong> {{ db_stats.health_stats.articles_without_relevance }}</div>
+                    </div>
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(76, 175, 80, 0.2); border-radius: 4px; border-left: 3px solid #4caf50;">
+                        <strong>✅ Data Quality:</strong> {{ db_stats.health_stats.data_completeness }}% complete
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zip Code Stats -->
+            {% if db_stats.zip_stats.breakdown %}
+            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-top: 1rem;">
+                <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">📍 Geographic Coverage</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem;">
+                    {% for zip in db_stats.zip_stats.breakdown %}
+                    <div style="background: rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 6px; text-align: center;">
+                        <div style="font-weight: bold; font-size: 1.2rem; margin-bottom: 0.25rem;">{{ zip.zip }}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">{{ zip.count }} articles</div>
+                        <div style="font-size: 0.8rem; opacity: 0.7;">{{ zip.percentage }}%</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- AI Rule Categories -->
+            {% if db_stats.ai_ml_stats.rule_categories %}
+            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-top: 1rem;">
+                <h3 style="color: white; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">🎯 AI Relevance Rules</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem;">
+                    {% for rule in db_stats.ai_ml_stats.rule_categories %}
+                    <div style="background: rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="if (typeof showRuleManager !== 'undefined') { showRuleManager('{{ rule.category }}'); } else { console.error('showRuleManager function not found'); }">
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">{{ rule.category | title }}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">{{ rule.count }} rules</div>
+                        {% if rule.category == 'high_relevance' %}
+                        <div style="font-size: 0.85rem; margin-top: 0.25rem; color: #00ff00; font-weight: 600; background: rgba(0, 255, 0, 0.2); padding: 0.25rem 0.5rem; border-radius: 3px; display: inline-block; border: 1px solid rgba(0, 255, 0, 0.3);">+10 pts: Fall River mentions</div>
+                        {% elif rule.category == 'local_places' %}
+                        <div style="font-size: 0.85rem; margin-top: 0.25rem; color: #0088ff; font-weight: 600; background: rgba(0, 136, 255, 0.2); padding: 0.25rem 0.5rem; border-radius: 3px; display: inline-block; border: 1px solid rgba(0, 136, 255, 0.3);">+3 pts: Local landmarks</div>
+                        {% elif rule.category == 'topic_keywords' %}
+                        <div style="font-size: 0.85rem; margin-top: 0.25rem; color: #ffaa00; font-weight: 600; background: rgba(255, 170, 0, 0.2); padding: 0.25rem 0.5rem; border-radius: 3px; display: inline-block; border: 1px solid rgba(255, 170, 0, 0.3);">+2-8 pts: News topics</div>
+                        {% elif rule.category == 'medium_relevance' %}
+                        <div style="font-size: 0.85rem; margin-top: 0.25rem; color: #ffaa00; font-weight: 600; background: rgba(255, 170, 0, 0.2); padding: 0.25rem 0.5rem; border-radius: 3px; display: inline-block; border: 1px solid rgba(255, 170, 0, 0.3);">+5 pts: Regional content</div>
+                        {% elif rule.category == 'excluded_towns' %}
+                        <div style="font-size: 0.85rem; margin-top: 0.25rem; color: #ff4444; font-weight: 600; background: rgba(255, 68, 68, 0.2); padding: 0.25rem 0.5rem; border-radius: 3px; display: inline-block; border: 1px solid rgba(255, 68, 68, 0.3);">0 pts: Filter nearby towns</div>
+                        {% elif rule.category == 'clickbait_patterns' %}
+                        <div style="font-size: 0.85rem; margin-top: 0.25rem; color: #dd44ff; font-weight: 600; background: rgba(221, 68, 255, 0.2); padding: 0.25rem 0.5rem; border-radius: 3px; display: inline-block; border: 1px solid rgba(221, 68, 255, 0.3);">-50 pts: Spam detection</div>
+                        {% elif rule.category == 'source_credibility' %}
+                        <div style="font-size: 0.85rem; margin-top: 0.25rem; color: #8888ff; font-weight: 600; background: rgba(136, 136, 255, 0.2); padding: 0.25rem 0.5rem; border-radius: 3px; display: inline-block; border: 1px solid rgba(136, 136, 255, 0.3);">+5-25 pts: Trust scores</div>
+                        {% endif %}
+                        <div style="font-size: 0.9rem; margin-top: 0.25rem; color: #00ff88; font-weight: 600; background: rgba(0, 255, 136, 0.15); padding: 0.2rem 0.4rem; border-radius: 3px; display: inline-block; border: 1px solid rgba(0, 255, 136, 0.3);">Click to manage →</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Rule Management Modal -->
+        <div id="ruleManagerModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; padding: 2rem; box-sizing: border-box;">
+            <div style="background: #252525; border-radius: 12px; padding: 2rem; max-width: 800px; margin: 0 auto; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="color: white; margin: 0;">🎯 Manage <span id="ruleCategoryTitle">Rules</span></h2>
+                    <button onclick="if (typeof closeRuleManager !== 'undefined') { closeRuleManager(); } else { console.error('closeRuleManager function not found'); }" style="background: #f44336; color: white; border: none; border-radius: 4px; padding: 0.5rem 1rem; cursor: pointer; font-size: 1.2rem;">×</button>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                        <input type="text" id="ruleManagerInput" placeholder="Add new rule" style="flex: 1; padding: 0.75rem; border: 1px solid #555; border-radius: 4px; background: #1a1a1a; color: white; font-size: 1rem;">
+                        <button onclick="if (typeof addRuleFromModal !== 'undefined') { addRuleFromModal(); } else { console.error('addRuleFromModal function not found'); }" style="padding: 0.75rem 1.5rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 1rem;">Add Rule</button>
+                    </div>
+                    <div style="margin-bottom: 0.5rem; color: #bbb; font-size: 0.9rem;">
+                        Current rules in this category:
+                    </div>
+                    <div id="ruleManagerItems" style="display: flex; flex-wrap: wrap; gap: 0.5rem; min-height: 100px; padding: 1rem; background: #1a1a1a; border-radius: 4px; border: 1px solid #444; font-size: 0.9rem;">
+                        <!-- Rules will be loaded here -->
+                    </div>
+                </div>
+
+                <div style="text-align: right;">
+                    <button onclick="if (typeof closeRuleManager !== 'undefined') { closeRuleManager(); } else { console.error('closeRuleManager function not found'); }" style="padding: 0.75rem 1.5rem; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Source Management Modal -->
+        <div id="sourceManagerModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; padding: 2rem; box-sizing: border-box;">
+            <div style="background: #252525; border-radius: 12px; padding: 2rem; max-width: 800px; margin: 0 auto; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="color: white; margin: 0;">📰 Adjust <span id="sourceNameTitle">Source</span> Credibility</h2>
+                    <button onclick="closeSourceManager()" style="background: #f44336; color: white; border: none; border-radius: 4px; padding: 0.5rem 1rem; cursor: pointer; font-size: 1.2rem;">×</button>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="color: #eee; margin-bottom: 1rem; font-size: 1rem; line-height: 1.5;">
+                        <strong id="sourceArticleCount" style="color: #00ff88;">0</strong> articles from this source.
+                        <br><strong style="color: #00ff88;">Credibility scores</strong> add +5 to +25 points to articles from trusted sources, helping them rank higher in your feed.
+                        Higher scores = more visibility for this source's articles.
+                    </p>
+
+                    <div style="background: #1a1a1a; padding: 1rem; border-radius: 4px; border: 1px solid #444;">
+                        <h4 style="color: white; margin-bottom: 0.5rem;">Source Credibility Score</h4>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <input type="number" id="sourceCredibilityInput" min="0" max="100" step="1" style="padding: 0.5rem; border: 1px solid #555; border-radius: 4px; background: #333; color: white; width: 100px;">
+                            <button onclick="updateSourceCredibility()" style="padding: 0.5rem 1rem; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">Update Score</button>
+                            <span style="color: #888; font-size: 0.9rem;">Current: <span id="currentCredibilityScore">25</span> points</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: right;">
+                    <button onclick="closeSourceManager()" style="padding: 0.75rem 1.5rem; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Management Modal -->
+        <div id="categoryManagerModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; padding: 2rem; box-sizing: border-box;">
+            <div style="background: #252525; border-radius: 12px; padding: 2rem; max-width: 800px; margin: 0 auto; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="color: white; margin: 0;">🏷️ Add Keywords to <span id="categoryNameTitle">Category</span></h2>
+                    <button onclick="closeCategoryManager()" style="background: #f44336; color: white; border: none; border-radius: 4px; padding: 0.5rem 1rem; cursor: pointer; font-size: 1.2rem;">×</button>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="color: #eee; margin-bottom: 1rem; font-size: 1rem; line-height: 1.5;">
+                        <strong id="categoryArticleCount" style="color: #00ff88;">0</strong> articles in this category.
+                        <br><strong style="color: #00ff88;">Keywords</strong> help the AI automatically classify new articles into the correct categories.
+                        Add relevant terms to improve article organization and filtering.
+                    </p>
+
+                    <div style="background: #1a1a1a; padding: 1rem; border-radius: 4px; border: 1px solid #444;">
+                        <h4 style="color: white; margin-bottom: 0.5rem;">Category Keywords</h4>
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                            <input type="text" id="categoryKeywordInput" placeholder="Add keyword" style="flex: 1; padding: 0.5rem; border: 1px solid #555; border-radius: 4px; background: #333; color: white;">
+                            <button onclick="addCategoryKeyword()" style="padding: 0.5rem 1rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                        </div>
+                        <div id="categoryKeywordsList" style="display: flex; flex-wrap: wrap; gap: 0.5rem; min-height: 50px; padding: 0.5rem; background: #333; border-radius: 4px;">
+                            <!-- Keywords will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: right;">
+                    <button onclick="closeCategoryManager()" style="padding: 0.75rem 1.5rem; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endif %}

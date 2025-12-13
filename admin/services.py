@@ -443,6 +443,194 @@ def get_stats(zip_code=None):
         return stats
 
 
+def get_database_stats():
+    """Get comprehensive database statistics for admin dashboard"""
+    import os
+    from datetime import datetime, timedelta
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        stats = {
+            'database_info': {},
+            'article_stats': {},
+            'source_stats': {},
+            'category_stats': {},
+            'management_stats': {},
+            'ai_ml_stats': {},
+            'performance_stats': {},
+            'health_stats': {}
+        }
+
+        # Database info
+        db_path = conn.execute("PRAGMA database_list").fetchone()[2]
+        db_size = os.path.getsize(db_path) if os.path.exists(db_path) else 0
+        stats['database_info'] = {
+            'path': db_path,
+            'size_mb': round(db_size / (1024 * 1024), 2),
+            'size_bytes': db_size
+        }
+
+        # Get table counts
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        stats['database_info']['tables'] = len(tables)
+
+        # Article stats
+        cursor.execute('SELECT COUNT(*) FROM articles')
+        total_articles = cursor.fetchone()[0]
+
+        # Date ranges
+        cursor.execute('SELECT MIN(created_at), MAX(created_at), MIN(published), MAX(published) FROM articles')
+        min_created, max_created, min_published, max_published = cursor.fetchone()
+
+        # Recent articles
+        seven_days_ago = (datetime.now() - timedelta(days=7)).isoformat()
+        cursor.execute('SELECT COUNT(*) FROM articles WHERE created_at >= ?', (seven_days_ago,))
+        recent_count = cursor.fetchone()[0]
+
+        # Source breakdown (top 10)
+        cursor.execute('SELECT source, COUNT(*) FROM articles GROUP BY source ORDER BY COUNT(*) DESC LIMIT 10')
+        sources = cursor.fetchall()
+
+        # Category breakdown
+        cursor.execute('SELECT category, COUNT(*) FROM articles WHERE category IS NOT NULL GROUP BY category ORDER BY COUNT(*) DESC')
+        categories = cursor.fetchall()
+
+        # Zip code breakdown
+        cursor.execute('SELECT zip_code, COUNT(*) FROM articles WHERE zip_code IS NOT NULL GROUP BY zip_code ORDER BY COUNT(*) DESC')
+        zip_codes = cursor.fetchall()
+
+        # Relevance scores
+        cursor.execute('SELECT AVG(relevance_score), MIN(relevance_score), MAX(relevance_score) FROM articles WHERE relevance_score IS NOT NULL')
+        relevance_result = cursor.fetchone()
+        if relevance_result and relevance_result[0] is not None:
+            avg_score, min_score, max_score = relevance_result
+            relevance_stats = {
+                'avg': round(avg_score, 1),
+                'min': round(min_score, 1),
+                'max': round(max_score, 1)
+            }
+        else:
+            relevance_stats = {'avg': 0, 'min': 0, 'max': 0}
+
+        # Articles with images
+        cursor.execute('SELECT COUNT(*) FROM articles WHERE image_url IS NOT NULL AND image_url != ""')
+        with_images = cursor.fetchone()[0]
+
+        stats['article_stats'] = {
+            'total': total_articles,
+            'with_images': with_images,
+            'image_percentage': round((with_images/total_articles)*100, 1) if total_articles > 0 else 0,
+            'recent_7_days': recent_count,
+            'date_range': {
+                'created_start': min_created,
+                'created_end': max_created,
+                'published_start': min_published,
+                'published_end': max_published
+            },
+            'relevance_scores': relevance_stats
+        }
+
+        stats['source_stats'] = {
+            'total_sources': len(sources),
+            'top_sources': [{'source': row[0], 'count': row[1], 'percentage': round((row[1]/total_articles)*100, 1)} for row in sources]
+        }
+
+        stats['category_stats'] = {
+            'total_categories': len(categories),
+            'breakdown': [{'category': row[0], 'count': row[1], 'percentage': round((row[1]/total_articles)*100, 1)} for row in categories]
+        }
+
+        stats['zip_stats'] = {
+            'total_zips': len(zip_codes),
+            'breakdown': [{'zip': row[0], 'count': row[1], 'percentage': round((row[1]/total_articles)*100, 1)} for row in zip_codes]
+        }
+
+        # Article management stats
+        cursor.execute('SELECT COUNT(*) FROM article_management')
+        total_mgmt = cursor.fetchone()[0]
+
+        cursor.execute('SELECT enabled, COUNT(*) FROM article_management GROUP BY enabled')
+        enabled_stats = cursor.fetchall()
+        enabled_count = sum(count for enabled, count in enabled_stats if enabled)
+        disabled_count = sum(count for enabled, count in enabled_stats if not enabled)
+
+        stats['management_stats'] = {
+            'total_entries': total_mgmt,
+            'enabled': enabled_count,
+            'disabled': disabled_count,
+            'enabled_percentage': round((enabled_count/total_mgmt)*100, 1) if total_mgmt > 0 else 0
+        }
+
+        # AI/ML stats
+        cursor.execute('SELECT COUNT(*) FROM relevance_config')
+        relevance_rules = cursor.fetchone()[0]
+
+        cursor.execute('SELECT category, COUNT(*) FROM relevance_config GROUP BY category ORDER BY COUNT(*) DESC')
+        rule_categories = cursor.fetchall()
+
+        cursor.execute('SELECT COUNT(*) FROM training_data')
+        training_count = cursor.fetchone()[0]
+
+        if training_count > 0:
+            cursor.execute('SELECT good_fit, COUNT(*) FROM training_data GROUP BY good_fit')
+            fit_stats = cursor.fetchall()
+            good_fit = sum(count for fit, count in fit_stats if fit)
+            bad_fit = sum(count for fit, count in fit_stats if not fit)
+        else:
+            good_fit = bad_fit = 0
+
+        stats['ai_ml_stats'] = {
+            'relevance_rules': relevance_rules,
+            'rule_categories': [{'category': row[0], 'count': row[1]} for row in rule_categories],
+            'training_samples': training_count,
+            'good_fit_samples': good_fit,
+            'bad_fit_samples': bad_fit
+        }
+
+        # Posted articles stats
+        cursor.execute('SELECT COUNT(*) FROM posted_articles')
+        total_posted = cursor.fetchone()[0]
+
+        cursor.execute('SELECT platform, COUNT(*) FROM posted_articles GROUP BY platform ORDER BY COUNT(*) DESC')
+        platforms = cursor.fetchall()
+
+        stats['performance_stats'] = {
+            'posted_articles': total_posted,
+            'platforms': [{'platform': row[0], 'count': row[1]} for row in platforms]
+        }
+
+        # Health stats
+        cursor.execute('SELECT COUNT(*) FROM articles WHERE zip_code IS NULL')
+        null_zip = cursor.fetchone()[0]
+
+        cursor.execute('SELECT COUNT(*) FROM articles WHERE category IS NULL')
+        null_category = cursor.fetchone()[0]
+
+        cursor.execute('SELECT COUNT(*) FROM articles WHERE relevance_score IS NULL')
+        null_relevance = cursor.fetchone()[0]
+
+        cursor.execute('''
+            SELECT COUNT(*) FROM (
+                SELECT url, COUNT(*) as cnt FROM articles
+                WHERE url IS NOT NULL AND url != '' AND url != '#'
+                GROUP BY url HAVING cnt > 1
+            )
+        ''')
+        duplicate_urls = cursor.fetchone()[0]
+
+        stats['health_stats'] = {
+            'articles_without_zip': null_zip,
+            'articles_without_category': null_category,
+            'articles_without_relevance': null_relevance,
+            'duplicate_urls': duplicate_urls,
+            'data_completeness': round(((total_articles - null_zip - null_category - null_relevance) / total_articles) * 100, 1) if total_articles > 0 else 0
+        }
+
+        return stats
+
+
 def get_settings():
     """Get admin settings"""
     with get_db() as conn:

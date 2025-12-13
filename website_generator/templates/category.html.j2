@@ -290,7 +290,7 @@
                         <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / {{ hero_articles|length }}); width: calc(100% / {{ hero_articles|length }});">
                             <a href="{{ hero_article.url }}" target="_blank" rel="noopener" class="group block relative w-full h-full">
                                 <!-- Image container - always present -->
-                                <div class="relative h-full overflow-hidden image-container {% if not (show_images and hero_article.image_url and (hero_article.image_url|default('')|trim)) %}hidden{% endif %}">
+                                <div class="relative h-full overflow-hidden image-container">
                                     <img src="{{ hero_article.image_url }}" alt="{{ hero_article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
                                     <!-- Dark gradient overlay bottom 40% -->
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" style="background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 40%, transparent 100%);"></div>
@@ -322,7 +322,7 @@
                                 </div>
 
                                 <!-- Placeholder container - always present -->
-                                <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient }} placeholder-container {% if show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) %}hidden{% endif %}">
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient }} placeholder-container">
                                     <!-- Subtle pattern overlay -->
                                     <div class="absolute inset-0 opacity-5" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                                     <!-- City skyline silhouette -->
@@ -397,16 +397,15 @@
                             {% for article in trending_articles[:8] %}
                             <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group">
                                 <div class="flex items-center gap-3 pb-2 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors" onmouseover="this.style.background='rgba(26, 26, 26, 0.3)';" onmouseout="this.style.background='transparent';">
-                                    {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f]">
+                                    <!-- Image container - always present, controlled by CSS/JS -->
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f] image-container">
                                         <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
                                     </div>
-                                    {% else %}
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden">
+                                    <!-- Placeholder container - always present, controlled by CSS/JS -->
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden placeholder-container">
                                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
                                         <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">{{ article.source_initials }}</div>
                                     </div>
-                                    {% endif %}
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-1 mb-1">
                                             <span class="text-sm">🔥</span>
@@ -433,7 +432,7 @@
             <article class="rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]" style="background: rgba(16, 16, 16, 0.4); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(16, 16, 16, 0.5)'; this.style.border='1px solid rgba(255, 255, 255, 0.2)'; this.style.boxShadow='0 0 20px rgba(255, 255, 255, 0.1)';" onmouseout="this.style.background='rgba(16, 16, 16, 0.4)'; this.style.border='1px solid rgba(255, 255, 255, 0.1)'; this.style.boxShadow='';" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}">
                 <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
                     <!-- Image container - always present -->
-                    <div class="relative aspect-square overflow-hidden {% if not (show_images and article.image_url and (article.image_url|default('')|trim)) %}hidden{% endif %} image-container" style="border-radius: 12px;">
+                    <div class="relative aspect-square overflow-hidden image-container" style="border-radius: 12px;">
                         <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover">
                         <!-- Source initials in top-right corner -->
                         <div class="absolute top-3 right-3 px-3 py-1.5 rounded-full text-sm font-bold text-white" style="background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 10px {{ article.source_glow_color }};">
@@ -456,7 +455,7 @@
                     </div>
 
                     <!-- Placeholder container - always present -->
-                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br {{ article.source_gradient }} {% if show_images and article.image_url and (article.image_url|default('')|trim) %}hidden{% endif %} placeholder-container" style="border-radius: 12px;">
+                    <div class="relative aspect-square overflow-hidden bg-gradient-to-br {{ article.source_gradient }} placeholder-container" style="border-radius: 12px;">
                         <!-- Subtle pattern overlay for texture -->
                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                         <!-- Source initials in top-right corner -->
