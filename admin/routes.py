@@ -2525,13 +2525,17 @@ def recategorize_all():
 def rerun_relevance_scoring():
     """Rerun relevance scoring for all articles"""
     try:
+        print(f"[DEBUG SERVER] rerun_relevance_scoring called")
         from utils.relevance_calculator import calculate_relevance_score_with_tags
         from utils.bayesian_learner import BayesianLearner
         import sqlite3
         from config import DATABASE_CONFIG
 
         # Get zip_code from request
-        zip_code = request.get_json().get('zip_code')
+        data = request.get_json()
+        print(f"[DEBUG SERVER] request data: {data}")
+        zip_code = data.get('zip_code') if data else None
+        print(f"[DEBUG SERVER] zip_code: {zip_code}")
 
         # Connect to database and get relevance threshold
         conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
@@ -2703,16 +2707,22 @@ def remove_relevance_item():
 def save_relevance_threshold():
     """Save the relevance threshold setting"""
     try:
+        print(f"[DEBUG SERVER] save_relevance_threshold called")
         data = request.get_json()
+        print(f"[DEBUG SERVER] request data: {data}")
         threshold = data.get('threshold')
+        print(f"[DEBUG SERVER] threshold: {threshold}, type: {type(threshold)}")
 
         if threshold is None or not isinstance(threshold, (int, float)) or threshold < 0 or threshold > 100:
+            print(f"[DEBUG SERVER] Invalid threshold validation failed")
             return jsonify({'success': False, 'error': 'Invalid threshold value'}), 400
 
         # Save to database
+        print(f"[DEBUG SERVER] Connecting to database")
         conn = sqlite3.connect('fallriver_news.db')
         cursor = conn.cursor()
 
+        print(f"[DEBUG SERVER] Executing INSERT for threshold: {threshold}")
         cursor.execute('''
             INSERT OR REPLACE INTO admin_settings (key, value)
             VALUES (?, ?)
@@ -2720,10 +2730,14 @@ def save_relevance_threshold():
 
         conn.commit()
         conn.close()
+        print(f"[DEBUG SERVER] Database operation completed successfully")
 
         return jsonify({'success': True})
 
     except Exception as e:
+        print(f"[DEBUG SERVER] Exception in save_relevance_threshold: {e}")
+        import traceback
+        print(f"[DEBUG SERVER] Traceback: {traceback.format_exc()}")
         logger.error(f"Error saving relevance threshold: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
