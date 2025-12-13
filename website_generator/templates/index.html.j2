@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // Image display controlled by admin setting: show_images = {{ show_images }}
+        console.log('[IMAGE DEBUG] Template show_images value:', {{ show_images }});
+        console.log('[IMAGE DEBUG] Template show_images type:', typeof {{ show_images }});
 
         // Count actual img tags in DOM
         document.addEventListener('DOMContentLoaded', function() {
@@ -1135,7 +1137,9 @@
             // #endregion
             imageToggle.disabled = true;
             imageToggle.checked = false;
-            // Don't call toggleImages since no image containers exist to manipulate
+            // Ensure images are hidden by adding no-images class and calling toggleImages
+            document.body.classList.add('no-images');
+            toggleImages(false);
             {% endif %}
         }
 
