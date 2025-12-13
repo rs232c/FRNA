@@ -10,9 +10,9 @@ console.log('[FRNA Admin] Build timestamp:', new Date().toISOString());
 // Force dark theme - wait for DOM to be ready
 function applyDarkTheme() {
     if (document.body) {
-        document.documentElement.classList.add('dark');
-        document.body.style.background = '#0a0a0a';
-        document.body.style.color = '#ffffff';
+document.documentElement.classList.add('dark');
+document.body.style.background = '#0a0a0a';
+document.body.style.color = '#ffffff';
     }
 }
 

@@ -1247,6 +1247,15 @@ def admin_zip_dashboard(zip_code):
                 active_tab=tab
             )
 
+        if tab == 'relevance':
+            return render_template('admin/relevance.html',
+                zip_code=zip_code,
+                version=VERSION,
+                active_tab=tab,
+                relevance_config=relevance_config,
+                settings=settings
+            )
+
         if tab == 'settings':
             return render_template('admin/settings.html',
                 zip_code=zip_code,
