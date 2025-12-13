@@ -2625,6 +2625,126 @@ def rerun_relevance_scoring():
 
 
 @login_required
+@app.route('/admin/api/add-relevance-item', methods=['POST', 'OPTIONS'])
+def add_relevance_item():
+    """Add an item to a relevance category"""
+    try:
+        data = request.get_json()
+        category = data.get('category')
+        value = data.get('value')
+
+        if not category or not value:
+            return jsonify({'success': False, 'error': 'Missing category or value'}), 400
+
+        # Load current relevance config
+        relevance_config = WEBSITE_CONFIG.get('relevance', {})
+
+        # Initialize category if it doesn't exist
+        if category not in relevance_config:
+            relevance_config[category] = []
+
+        # Add the item if it doesn't already exist
+        if value not in relevance_config[category]:
+            relevance_config[category].append(value)
+
+            # Save back to config (in memory for now)
+            WEBSITE_CONFIG['relevance'] = relevance_config
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        logger.error(f"Error adding relevance item: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@login_required
+@app.route('/admin/api/remove-relevance-item', methods=['POST', 'OPTIONS'])
+def remove_relevance_item():
+    """Remove an item from a relevance category"""
+    try:
+        data = request.get_json()
+        category = data.get('category')
+        item = data.get('item')
+
+        if not category or not item:
+            return jsonify({'success': False, 'error': 'Missing category or item'}), 400
+
+        # Load current relevance config
+        relevance_config = WEBSITE_CONFIG.get('relevance', {})
+
+        # Remove the item if it exists
+        if category in relevance_config and item in relevance_config[category]:
+            relevance_config[category].remove(item)
+
+            # Save back to config (in memory for now)
+            WEBSITE_CONFIG['relevance'] = relevance_config
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        logger.error(f"Error removing relevance item: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@login_required
+@app.route('/admin/api/save-relevance-threshold', methods=['POST', 'OPTIONS'])
+def save_relevance_threshold():
+    """Save the relevance threshold setting"""
+    try:
+        data = request.get_json()
+        threshold = data.get('threshold')
+
+        if threshold is None or not isinstance(threshold, (int, float)) or threshold < 0 or threshold > 100:
+            return jsonify({'success': False, 'error': 'Invalid threshold value'}), 400
+
+        # Save to database
+        conn = sqlite3.connect('fallriver_news.db')
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT OR REPLACE INTO admin_settings (key, value)
+            VALUES (?, ?)
+        ''', ('relevance_threshold', str(int(threshold))))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        logger.error(f"Error saving relevance threshold: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@login_required
+@app.route('/admin/api/get-bayesian-stats', methods=['GET', 'OPTIONS'])
+def get_bayesian_stats():
+    """Get Bayesian learning statistics"""
+    try:
+        from utils.bayesian_learner import BayesianLearner
+
+        learner = BayesianLearner()
+        stats = learner.get_statistics()
+
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting Bayesian stats: {e}")
+        return jsonify({
+            'success': False,
+            'stats': {
+                'total_examples': 0,
+                'is_active': False,
+                'rejection_rate': 0,
+                'accuracy': 0
+            }
+        }), 500
+
+
+@login_required
 @app.route('/admin/api/recalculate-categories', methods=['POST', 'OPTIONS'])
 def recalculate_categories():
     """Recalculate category relevance scores for all articles"""

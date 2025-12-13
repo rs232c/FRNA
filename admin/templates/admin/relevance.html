@@ -8,11 +8,11 @@
         <h2 style="margin-bottom: 1.5rem; color: #e0e0e0;">Relevance Scoring Configuration</h2>
         
         <div class="relevance-section" style="margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white; position: relative;">
-            <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="toggleExplanation('bayesianExplanation')">
+            <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" data-toggle="bayesianExplanation">
                 <h3 style="margin: 0; color: white; font-size: 1.3rem;">🧠 Bayesian Learning System</h3>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <span id="bayesianExplanationToggle" style="font-size: 1.2rem; user-select: none; color: white;">▼</span>
-                    <button onclick="event.stopPropagation(); closeExplanation('bayesianExplanation')" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold;" title="Close">×</button>
+                    <button class="close-explanation-btn" data-target="bayesianExplanation" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold;" title="Close">×</button>
                 </div>
             </div>
             <div id="bayesianExplanation" style="margin-top: 1rem; display: none;">
@@ -54,7 +54,7 @@
                 Recalculate relevance scores for all existing articles using current relevance settings. 
                 Articles that fail the relevance threshold or Bayesian filtering will be automatically moved to trash.
             </p>
-            <button id="rerunRelevanceBtn" onclick="rerunRelevanceScoring()" 
+            <button id="rerunRelevanceBtn"
                     style="padding: 0.75rem 1.5rem; background: #ffc107; color: #1a1a1a; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 1rem;">
                 🔄 Rerun Relevance Scoring on All Articles
             </button>
@@ -69,7 +69,7 @@
             <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">High Relevance Keywords ({{ relevance_config.get('high_relevance_points', 15) }} points each)</h3>
             <div style="margin-bottom: 1rem;">
                 <input type="text" id="highRelevanceInput" placeholder="Add keyword" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
-                <button onclick="addRelevanceItem('high_relevance', document.getElementById('highRelevanceInput').value)" style="padding: 0.5rem 1rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                <button class="add-relevance-btn" data-category="high_relevance" data-input="highRelevanceInput" style="padding: 0.5rem 1rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
             </div>
             <div class="relevance-items" id="highRelevanceItems">
                 {% for item in relevance_config.get('high_relevance', []) %}
@@ -86,7 +86,7 @@
             <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Medium Relevance Keywords (5 points each)</h3>
             <div style="margin-bottom: 1rem;">
                 <input type="text" id="mediumRelevanceInput" placeholder="Add keyword" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
-                <button onclick="addRelevanceItem('medium_relevance', document.getElementById('mediumRelevanceInput').value)" style="padding: 0.5rem 1rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                <button class="add-relevance-btn" data-category="medium_relevance" data-input="mediumRelevanceInput" style="padding: 0.5rem 1rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
             </div>
             <div class="relevance-items" id="mediumRelevanceItems">
                 {% for item in relevance_config.get('medium_relevance', []) %}
@@ -103,7 +103,7 @@
             <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Local Places ({{ relevance_config.get('local_places_points', 3) }} points each)</h3>
             <div style="margin-bottom: 1rem;">
                 <input type="text" id="localPlacesInput" placeholder="Add place" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
-                <button onclick="addRelevanceItem('local_places', document.getElementById('localPlacesInput').value)" style="padding: 0.5rem 1rem; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                <button class="add-relevance-btn" data-category="local_places" data-input="localPlacesInput" style="padding: 0.5rem 1rem; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
             </div>
             <div class="relevance-items" id="localPlacesItems">
                 {% for item in relevance_config.get('local_places', []) %}
@@ -121,7 +121,7 @@
             <div style="margin-bottom: 1rem;">
                 <input type="text" id="topicKeywordInput" placeholder="Keyword" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 200px; margin-right: 0.5rem;">
                 <input type="number" id="topicPointsInput" placeholder="Points" step="0.1" min="0" max="100" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100px; margin-right: 0.5rem;">
-                <button onclick="addTopicKeyword()" style="padding: 0.5rem 1rem; background: #9c27b0; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                <button class="add-topic-keyword-btn" style="padding: 0.5rem 1rem; background: #9c27b0; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
             </div>
             <div class="relevance-items" id="topicKeywordsItems">
                 {% for keyword, points in relevance_config.get('topic_keywords', {}).items() %}
@@ -139,7 +139,7 @@
             <div style="margin-bottom: 1rem;">
                 <input type="text" id="sourceInput" placeholder="Source name" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 200px; margin-right: 0.5rem;">
                 <input type="number" id="sourcePointsInput" placeholder="Points" step="0.1" min="0" max="100" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 100px; margin-right: 0.5rem;">
-                <button onclick="addSourceCredibility()" style="padding: 0.5rem 1rem; background: #00bcd4; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                <button class="add-source-credibility-btn" style="padding: 0.5rem 1rem; background: #00bcd4; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
             </div>
             <div class="relevance-items" id="sourceCredibilityItems">
                 {% for source, points in relevance_config.get('source_credibility', {}).items() %}
@@ -156,7 +156,7 @@
             <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1a1a1a;">Clickbait Patterns (Negative Impact)</h3>
             <div style="margin-bottom: 1rem;">
                 <input type="text" id="clickbaitInput" placeholder="Add pattern" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
-                <button onclick="addRelevanceItem('clickbait_patterns', document.getElementById('clickbaitInput').value)" style="padding: 0.5rem 1rem; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                <button class="add-relevance-btn" data-category="clickbait_patterns" data-input="clickbaitInput" style="padding: 0.5rem 1rem; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
             </div>
             <div class="relevance-items" id="clickbaitPatternsItems">
                 {% for item in relevance_config.get('clickbait_patterns', []) %}
@@ -177,7 +177,7 @@
             </p>
             <div style="margin-bottom: 1rem;">
                 <input type="text" id="excludedTownInput" placeholder="Add town (e.g., 'somerset')" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 300px; margin-right: 0.5rem;">
-                <button onclick="addRelevanceItem('excluded_towns', document.getElementById('excludedTownInput').value)" style="padding: 0.5rem 1rem; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                <button class="add-relevance-btn" data-category="excluded_towns" data-input="excludedTownInput" style="padding: 0.5rem 1rem; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
             </div>
             <div class="relevance-items" id="excludedTownsItems">
                 {% for item in relevance_config.get('excluded_towns', []) %}

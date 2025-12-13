@@ -637,7 +637,261 @@ let showImagesTogglePromise = Promise.resolve();
         }
     });
     console.log('[FRNA Admin] ✅ Unified button event handler attached inside DOMContentLoaded');
+
+    // Relevance page event listeners
+    document.querySelectorAll('[data-toggle]').forEach(el => {
+        el.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-toggle');
+            toggleExplanation(targetId);
+        });
+    });
+
+    document.querySelectorAll('.remove-relevance-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const category = this.getAttribute('data-category');
+            const item = this.getAttribute('data-item');
+            removeRelevanceItem(category, decodeURIComponent(item));
+        });
+    });
+
+    // Save threshold button
+    const saveThresholdBtn = document.querySelector('.save-threshold-btn');
+    if (saveThresholdBtn) {
+        saveThresholdBtn.addEventListener('click', saveRelevanceThreshold);
+    }
+
+    // Load Bayesian stats on page load
+    if (document.getElementById('bayesianStats')) {
+        loadBayesianStats();
+    }
+
+    // Relevance page button handlers
+    document.querySelectorAll('.add-relevance-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const category = this.getAttribute('data-category');
+            const inputId = this.getAttribute('data-input');
+            const input = document.getElementById(inputId);
+            if (input) {
+                addRelevanceItem(category, input.value);
+                input.value = ''; // Clear input after adding
+            }
+        });
+    });
+
+    document.querySelectorAll('.add-topic-keyword-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            addTopicKeyword();
+        });
+    });
+
+    document.querySelectorAll('.add-source-credibility-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            addSourceCredibility();
+        });
+    });
+
+    document.querySelectorAll('.close-explanation-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const targetId = this.getAttribute('data-target');
+            closeExplanation(targetId);
+        });
+    });
+
+    // Rerun relevance button
+    const rerunBtn = document.getElementById('rerunRelevanceBtn');
+    if (rerunBtn) {
+        rerunBtn.addEventListener('click', rerunRelevanceScoring);
+    }
+
 })();
+
+
+// Relevance page functions
+function toggleExplanation(explanationId) {
+    const explanation = document.getElementById(explanationId);
+    const toggle = document.getElementById(explanationId + 'Toggle');
+    if (explanation && toggle) {
+        const isVisible = explanation.style.display !== 'none';
+        explanation.style.display = isVisible ? 'none' : 'block';
+        toggle.textContent = isVisible ? '▶' : '▼';
+    }
+}
+
+function closeExplanation(explanationId) {
+    const explanation = document.getElementById(explanationId);
+    const toggle = document.getElementById(explanationId + 'Toggle');
+    if (explanation && toggle) {
+        explanation.style.display = 'none';
+        toggle.textContent = '▶';
+    }
+}
+
+function rerunRelevanceScoring() {
+    const btn = document.getElementById('rerunRelevanceBtn');
+    const statusDiv = document.getElementById('rerunRelevanceStatus');
+    const statusP = statusDiv.querySelector('p');
+
+    btn.disabled = true;
+    btn.innerHTML = '🔄 <span class="spinner"></span> Processing...';
+    statusDiv.style.display = 'block';
+    statusP.textContent = 'Starting relevance recalculation...';
+
+    fetch('/admin/api/rerun-relevance-scoring', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const processed = data.processed_count || 0;
+            const duration = data.duration || 'unknown';
+            statusP.textContent = `✅ Completed! Processed ${processed} articles in ${duration} seconds.`;
+            showToast(`Relevance scoring completed! Processed ${processed} articles.`, 'success');
+        } else {
+            statusP.textContent = '❌ Error: ' + (data.error || 'Unknown error');
+            showToast('Failed to rerun relevance scoring', 'error');
+        }
+    })
+    .catch(error => {
+        statusP.textContent = '❌ Network error occurred';
+        showToast('Network error during relevance scoring', 'error');
+        console.error('Relevance scoring error:', error);
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '🔄 Rerun Relevance Scoring on All Articles';
+    });
+}
+
+function addRelevanceItem(category, value) {
+    if (!value || !value.trim()) {
+        showToast('Please enter a value', 'error');
+        return;
+    }
+
+    fetch('/admin/api/add-relevance-item', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({category: category, value: value.trim()})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Refresh to show new item
+        } else {
+            showToast('Failed to add item: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Network error adding item', 'error');
+        console.error('Add relevance item error:', error);
+    });
+}
+
+function removeRelevanceItem(category, item) {
+    if (!confirm(`Remove "${item}" from ${category.replace('_', ' ')}?`)) {
+        return;
+    }
+
+    fetch('/admin/api/remove-relevance-item', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({category: category, item: item})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Refresh to update list
+        } else {
+            showToast('Failed to remove item: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Network error removing item', 'error');
+        console.error('Remove relevance item error:', error);
+    });
+}
+
+function addTopicKeyword() {
+    const input = document.getElementById('topicKeywordInput');
+    const value = input.value.trim();
+    if (!value) {
+        showToast('Please enter a topic keyword', 'error');
+        return;
+    }
+
+    addRelevanceItem('topic_keywords', value);
+    input.value = '';
+}
+
+function addSourceCredibility() {
+    const input = document.getElementById('sourceCredibilityInput');
+    const value = input.value.trim();
+    if (!value) {
+        showToast('Please enter a source', 'error');
+        return;
+    }
+
+    addRelevanceItem('source_credibility', value);
+    input.value = '';
+}
+
+function saveRelevanceThreshold() {
+    const thresholdInput = document.getElementById('relevanceThreshold');
+    const threshold = parseInt(thresholdInput.value);
+
+    if (isNaN(threshold) || threshold < 0 || threshold > 100) {
+        showToast('Please enter a valid threshold between 0 and 100', 'error');
+        return;
+    }
+
+    fetch('/admin/api/save-relevance-threshold', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({threshold: threshold})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Relevance threshold saved: ${threshold}`, 'success');
+        } else {
+            showToast('Failed to save threshold: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Network error saving threshold', 'error');
+        console.error('Save threshold error:', error);
+    });
+}
+
+function loadBayesianStats() {
+    const statsDiv = document.getElementById('bayesianStats');
+    if (!statsDiv) return;
+
+    fetch('/admin/api/get-bayesian-stats')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const stats = data.stats;
+            statsDiv.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div><strong>Total Training Examples:</strong> ${stats.total_examples || 0}</div>
+                    <div><strong>Active Filtering:</strong> ${stats.is_active ? 'Yes' : 'No'}</div>
+                    <div><strong>Rejection Rate:</strong> ${stats.rejection_rate || 0}%</div>
+                    <div><strong>Accuracy:</strong> ${stats.accuracy || 0}%</div>
+                </div>
+                ${stats.total_examples < 50 ? '<p style="margin-top: 1rem; color: rgba(255,255,255,0.8);"><em>Need ' + (50 - stats.total_examples) + ' more rejections to activate auto-filtering.</em></p>' : ''}
+            `;
+        } else {
+            statsDiv.innerHTML = '<p style="color: rgba(255,255,255,0.8);">Failed to load statistics.</p>';
+        }
+    })
+    .catch(error => {
+        statsDiv.innerHTML = '<p style="color: rgba(255,255,255,0.8);">Error loading statistics.</p>';
+        console.error('Load Bayesian stats error:', error);
+    });
+}
 
 
 // Settings page functions
