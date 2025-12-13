@@ -88,7 +88,7 @@
             </p>
 
                 <!-- Category Keywords List -->
-            <div id="categoriesKeywordsList" style="max-width: 1000px; margin: 0 auto;">
+            <div id="categoriesKeywordsList" style="max-width: none; margin: 0 auto;">
                 <p style="color: #cccccc; text-align: center; margin: 2rem 0;">Loading categories...</p>
             </div>
         </div>
@@ -152,7 +152,8 @@ function displayAllCategories(categoriesData) {
 
     categoriesData.forEach(category => {
         const categoryDiv = document.createElement('div');
-        categoryDiv.style.cssText = 'margin-bottom: 2rem; padding: 1.5rem; background: #252525; border-radius: 8px; border: 1px solid #404040; max-width: 850px; margin-left: auto; margin-right: auto;';
+        categoryDiv.style.cssText = 'margin-bottom: 2rem; padding: 1.5rem; background: #252525; border-radius: 8px; border: 1px solid #404040; max-width: 850px !important; margin-left: auto; margin-right: auto;';
+        console.log(`Creating category div for ${category.name} with max-width: 850px`);
 
         // Category header with add keyword input
         const headerDiv = document.createElement('div');
