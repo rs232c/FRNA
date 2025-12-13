@@ -1214,7 +1214,8 @@ def admin_zip_dashboard(zip_code):
             # #endregion
             return render_template('admin/categories.html',
                 zip_code=zip_code,
-                version=VERSION
+                version=VERSION,
+                active_tab=tab
             )
 
         # #region agent log
