@@ -210,6 +210,13 @@ NEWS_SOURCES = {
         "category": "weather",
         "enabled": True,
         "location": "Fall River, MA"
+    },
+    "crime_radar": {
+        "name": "CrimeRadar Fall River",
+        "url": "https://www.crimeradar.us/fall-river-ma",
+        "category": "scanner",
+        "enabled": True,
+        "require_fall_river": False  # Already Fall River specific
     }
 }
 
@@ -244,6 +251,11 @@ ARTICLE_CATEGORIES = {
         "name": "Media",
         "icon": "🎥",
         "color": "#c2185b"  # Deep pink/magenta
+    },
+    "scanner": {
+        "name": "Scanner",
+        "icon": "📻",
+        "color": "#ff6f00"  # Orange for emergency/ scanner
     }
 }
 

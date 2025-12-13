@@ -22,13 +22,32 @@ def calculate_relevance_score(article: Dict, zip_code: Optional[str] = None) -> 
     content = article.get("content", article.get("summary", "")).lower()
     title = article.get("title", "").lower()
     combined = f"{title} {content}"
+    source = article.get("source", "").lower()
 
     score = 0.0
+    local_politics_override = False  # Flag for local politics that should override national penalties
+
+    # === LOCAL POLITICS DETECTION (must check first) ===
+    # Detect if this is local politics/government that should override national politics penalties
+    local_politics_keywords = [
+        "school committee", "school board", "city council", "mayor", "mayor paul coogan",
+        "city hall", "police department", "fire department", "fall river police",
+        "fall river fire", "fall river school", "bmc durfee", "durfee high",
+        "city budget", "tax rate", "zoning", "planning board", "local government",
+        "municipal", "city officials", "school officials", "police chief", "fire chief"
+    ]
+
+    for keyword in local_politics_keywords:
+        if keyword in combined:
+            local_politics_override = True
+            score += 15  # Base boost for local politics
+            break
 
     # === HIGH-RELEVANCE LOCAL CONTENT (40-60 points) ===
     # Fall River mentions get massive boost - this is the core of local relevance
     fall_river_keywords = ["fall river", "fallriver", "fall river ma", "fall river, ma",
-                          "fall river mass", "fall river mass.", "fall river massachusetts"]
+                          "fall river mass", "fall river mass.", "fall river massachusetts",
+                          "fall river, massachusetts", "fr ma", "fall river, mass"]
     fall_river_boost = 0
 
     for keyword in fall_river_keywords:
@@ -42,55 +61,70 @@ def calculate_relevance_score(article: Dict, zip_code: Optional[str] = None) -> 
             fall_river_boost += 10  # Extra boost if in title
         score += fall_river_boost
 
-    # === LOCAL PLACES & INSTITUTIONS (5-20 points) ===
+        # Extra boost for Fall River + local politics combination
+        if local_politics_override:
+            score += 10  # Fall River politics gets maximum boost
+
+    # === LOCAL PLACES & INSTITUTIONS (5-25 points) ===
     local_places = [
-        # High-value landmarks (8 points each)
+        # High-value landmarks (10 points each)
         "durfee", "bmc durfee", "durfee high", "city hall", "fall river city hall",
         "st. anne's", "st. anne's hospital", "battleship cove", "lizzie borden",
+        "bishop connolly", "diman", "diman regional",
 
-        # Medium-value landmarks (5 points each)
+        # Medium-value landmarks (7 points each)
         "highlands", "north end", "south end", "watuppa", "quequechan",
-        "taunton river", "marine museum", "gates of the city",
+        "taunton river", "marine museum", "gates of the city", "pleasant street",
 
-        # Standard local places (3 points each)
-        "pleasant street", "south main street", "north main street", "eastern avenue",
-        "kennedy park", "lafayette park", "riker park", "bicentennial park",
+        # Government & services (6 points each)
         "fall river chamber", "fall river economic development", "fall river housing authority",
-        "fall river water department", "fall river gas company", "fall river public schools"
+        "fall river water department", "fall river gas company", "fall river public schools",
+        "fall river police", "fall river fire department",
+
+        # Standard local places (4 points each)
+        "south main street", "north main street", "eastern avenue",
+        "kennedy park", "lafayette park", "riker park", "bicentennial park",
+        "maplewood", "flint village", "the hill"
     ]
 
     local_place_matches = 0
     for place in local_places:
         if place in combined:
-            if place in ["durfee", "city hall", "st. anne's", "battleship cove", "lizzie borden"]:
-                score += 8  # High-value local landmarks
-            elif place in ["highlands", "north end", "south end", "watuppa", "marine museum"]:
-                score += 5  # Medium-value landmarks
+            if place in ["durfee", "city hall", "st. anne's", "battleship cove", "lizzie borden",
+                        "fall river police", "fall river fire department"]:
+                score += 10  # High-value local landmarks and services
+            elif place in ["highlands", "north end", "south end", "watuppa", "marine museum",
+                          "fall river chamber", "fall river economic development"]:
+                score += 7  # Medium-value landmarks and services
             else:
-                score += 3  # Other local places
+                score += 4  # Other local places
             local_place_matches += 1
-            if local_place_matches >= 5:  # Cap at 5 matches to prevent inflation
+            if local_place_matches >= 6:  # Cap at 6 matches to prevent inflation
                 break
 
-    # === TOPIC RELEVANCE (10-30 points) ===
+    # === TOPIC RELEVANCE (10-35 points) ===
     topic_scoring = {
-        # Government & Politics (6-8 points)
-        "city council": 8, "mayor": 8, "mayor paul coogan": 10, "school committee": 7, "school board": 7,
-        "city budget": 7, "tax rate": 7, "zoning": 6, "planning board": 6,
+        # Government & Politics (8-12 points)
+        "city council": 10, "mayor": 10, "mayor paul coogan": 12, "school committee": 9, "school board": 9,
+        "city budget": 9, "tax rate": 8, "zoning": 8, "planning board": 8,
+        "city hall": 10, "municipal": 7, "government": 6,
 
-        # Crime & Safety (5-7 points)
-        "police": 6, "arrest": 7, "crime": 6, "court": 5, "charges": 6, "suspect": 6,
-        "investigation": 5, "murder": 7, "robbery": 6, "assault": 6,
+        # Crime & Safety (6-9 points)
+        "police": 8, "arrest": 9, "crime": 7, "court": 6, "charges": 7, "suspect": 7,
+        "investigation": 6, "murder": 9, "robbery": 8, "assault": 8,
+        "fire department": 8, "emergency": 6,
 
-        # Schools & Education (4-6 points)
-        "school": 5, "student": 5, "teacher": 5, "education": 4, "principal": 5,
-        "graduation": 5, "college": 4, "university": 4,
+        # Schools & Education (5-8 points)
+        "school": 7, "student": 6, "teacher": 7, "education": 5, "principal": 7,
+        "graduation": 6, "college": 5, "university": 5, "academic": 5,
 
-        # Local Business & Economy (3-5 points)
-        "business": 4, "restaurant": 5, "opening": 4, "closing": 4, "job": 4, "employment": 4,
+        # Local Business & Economy (4-7 points)
+        "business": 5, "restaurant": 7, "opening": 5, "closing": 5, "job": 5, "employment": 6,
+        "economic": 5, "commerce": 5, "development": 5,
 
-        # Events & Community (2-4 points)
-        "event": 3, "festival": 4, "concert": 4, "community": 3, "fundraiser": 3, "charity": 3
+        # Events & Community (3-6 points)
+        "event": 4, "festival": 6, "concert": 6, "community": 4, "fundraiser": 4, "charity": 4,
+        "local event": 5, "town meeting": 7
     }
 
     topic_score = 0
@@ -98,7 +132,7 @@ def calculate_relevance_score(article: Dict, zip_code: Optional[str] = None) -> 
         if keyword in combined:
             topic_score += points
 
-    score += min(topic_score, 30)  # Cap topic score at 30
+    score += min(topic_score, 35)  # Cap topic score at 35
 
     # === SOURCE CREDIBILITY (5-25 points) ===
     source = article.get("source", "").lower()
@@ -112,7 +146,9 @@ def calculate_relevance_score(article: Dict, zip_code: Optional[str] = None) -> 
             score += points
             break
 
-    # === RECENCY BONUS (multiplier 0.7-2.0) ===
+    # === RECENCY BONUS (multiplier 0.7-2.5) ===
+    # Local articles get stronger recency weighting - recent local news matters more
+    # Local articles get stronger recency weighting - recent local news matters more
     published = article.get("published")
     recency_multiplier = 1.0
     if published:
@@ -120,14 +156,30 @@ def calculate_relevance_score(article: Dict, zip_code: Optional[str] = None) -> 
             pub_date = datetime.fromisoformat(published.replace('Z', '+00:00').split('+')[0])
             hours_old = (datetime.now() - pub_date.replace(tzinfo=None)).total_seconds() / 3600
 
+            # Base recency multipliers (for non-local content)
             if hours_old < 6:
-                recency_multiplier = 2.0  # Breaking news boost
+                base_multiplier = 2.0  # Breaking news boost
             elif hours_old < 24:
-                recency_multiplier = 1.5  # Recent news boost
+                base_multiplier = 1.5  # Recent news boost
             elif hours_old < 72:
-                recency_multiplier = 1.0  # Normal recency
+                base_multiplier = 1.0  # Normal recency
             else:
-                recency_multiplier = 0.7  # Older news penalty
+                base_multiplier = 0.7  # Older news penalty
+
+            # Local articles get enhanced recency weighting
+            if fall_river_boost > 0 or local_politics_override:
+                if hours_old < 6:
+                    recency_multiplier = 2.5  # Breaking LOCAL news gets maximum boost
+                elif hours_old < 24:
+                    recency_multiplier = 2.0  # Recent LOCAL news very important
+                elif hours_old < 72:
+                    recency_multiplier = 1.3  # LOCAL news still gets slight boost
+                else:
+                    recency_multiplier = 0.8  # LOCAL news ages more gracefully
+            else:
+                # Non-local content gets standard recency weighting
+                recency_multiplier = base_multiplier
+
         except:
             pass
 
@@ -142,10 +194,20 @@ def calculate_relevance_score(article: Dict, zip_code: Optional[str] = None) -> 
     if any(word in combined for word in ["sponsored", "advertisement", "ad", "promo", "brought to you by"]):
         junk_penalties -= 40
 
-    # National politics (unless it has local angle)
-    national_keywords = ["trump", "biden", "president", "congress", "senate", "washington dc"]
-    if any(kw in combined for kw in national_keywords) and fall_river_boost == 0:
-        junk_penalties -= 30
+    # National politics - ONLY penalize if NO local connection AND not local politics
+    national_keywords = ["trump", "biden", "president", "congress", "senate", "washington dc", "white house"]
+    has_national_keywords = any(kw in combined for kw in national_keywords)
+
+    if has_national_keywords:
+        # Don't penalize if article has Fall River boost OR local politics override
+        if fall_river_boost == 0 and not local_politics_override:
+            # Only penalize if the national content appears to be the main focus
+            national_mentions = sum(1 for kw in national_keywords if kw in combined)
+            if national_mentions >= 2 or score < 40:
+                junk_penalties -= 25  # Reduced penalty, only for clear national politics focus
+        # If it has local politics override, actually give a small boost for national context
+        elif local_politics_override:
+            score += 5  # Local official commenting on national issues = still relevant
 
     # Clickbait patterns
     clickbait_patterns = ["you won't believe", "this one trick", "number 7 will shock you",

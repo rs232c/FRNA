@@ -50,7 +50,9 @@ class NWSWeatherAlertsIngestor(NewsIngestor):
                             "ingested_at": datetime.now().isoformat(),
                             "is_alert": True,
                             "alert_type": "weather",
-                            "alert_priority": alert["priority"]
+                            "alert_priority": alert["priority"],
+                            "alert_start_time": alert.get("alert_start_time"),
+                            "alert_end_time": alert.get("alert_end_time")
                         })
 
                     logger.info(f"✅ Fetched {len(articles)} weather alerts from NWS")
@@ -101,7 +103,9 @@ class NWSWeatherAlertsIngestor(NewsIngestor):
                                 "published": datetime.now().isoformat(),
                                 "priority": self._determine_alert_priority(alert_text),
                                 "alert_dates": date_time_info.get('dates', []),
-                                "alert_times": date_time_info.get('times', [])
+                                "alert_times": date_time_info.get('times', []),
+                                "alert_start_time": date_time_info.get('alert_start_time'),
+                                "alert_end_time": date_time_info.get('alert_end_time')
                             })
 
             # If no alerts found, look for general weather information that might be relevant
@@ -140,7 +144,9 @@ class NWSWeatherAlertsIngestor(NewsIngestor):
                                 "published": datetime.now().isoformat(),
                                 "priority": self._determine_alert_priority(alert_text),
                                 "alert_dates": date_time_info.get('dates', []),
-                                "alert_times": date_time_info.get('times', [])
+                                "alert_times": date_time_info.get('times', []),
+                                "alert_start_time": date_time_info.get('alert_start_time'),
+                                "alert_end_time": date_time_info.get('alert_end_time')
                             })
 
                 # If still no alerts, create a fallback alert with current weather conditions
@@ -171,7 +177,9 @@ class NWSWeatherAlertsIngestor(NewsIngestor):
                                     "published": datetime.now().isoformat(),
                                     "priority": "info",
                                     "alert_dates": date_time_info.get('dates', []),
-                                    "alert_times": date_time_info.get('times', [])
+                                    "alert_times": date_time_info.get('times', []),
+                                    "alert_start_time": date_time_info.get('alert_start_time'),
+                                    "alert_end_time": date_time_info.get('alert_end_time')
                                 })
                                 break  # Only add one fallback alert
 
@@ -215,10 +223,181 @@ class NWSWeatherAlertsIngestor(NewsIngestor):
             matches = re.findall(pattern, text, re.IGNORECASE)
             times.extend(matches)
 
+        # Extract alert duration information
+        duration_info = self._parse_alert_duration(text)
+
         return {
             'dates': list(set(dates)),  # Remove duplicates
-            'times': list(set(times))   # Remove duplicates
+            'times': list(set(times)),   # Remove duplicates
+            'alert_start_time': duration_info.get('start_time'),
+            'alert_end_time': duration_info.get('end_time')
         }
+
+    def _parse_alert_duration(self, text: str) -> Dict:
+        """Parse alert duration from text patterns like 'from X until Y'"""
+        from datetime import datetime, timezone, timedelta
+
+        # Find all complete date/time expressions in the text
+        datetime_patterns = [
+            r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?(?:,?\s*\d{4})?(?:,?\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))?(?:\s*(?:EST|EDT|ET))?',
+            r'\d{1,2}/\d{1,2}(?:/\d{2,4})?(?:,?\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))?(?:\s*(?:EST|EDT|ET))?',
+            r'\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)(?:\s*(?:EST|EDT|ET))?',
+        ]
+
+        all_datetimes = []
+        for pattern in datetime_patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            for match in matches:
+                try:
+                    dt = self._parse_datetime_string_with_context(match, text)
+                    if dt:
+                        # Store both the parsed datetime and the original string
+                        all_datetimes.append((dt, match))
+                except Exception as e:
+                    continue
+
+        # Remove duplicates and sort by position in text
+        seen = set()
+        unique_datetimes = []
+        for dt, match_str in all_datetimes:
+            if match_str not in seen:
+                unique_datetimes.append((dt, match_str))
+                seen.add(match_str)
+
+        unique_datetimes.sort(key=lambda x: text.find(x[1]))
+
+        # Look for duration indicators
+        duration_keywords = ['from', 'until', 'to', 'through', 'thru']
+
+        # If we have exactly 2 datetime expressions, assume first is start, second is end
+        if len(unique_datetimes) == 2:
+            start_time, end_time = unique_datetimes[0][0], unique_datetimes[1][0]
+
+            # If end time is before start time, it might be the next day
+            if end_time < start_time:
+                # Check if the end time should be the next day
+                end_time_next_day = end_time + timedelta(days=1)
+                # Only adjust if it makes sense (end time becomes after start time)
+                if end_time_next_day > start_time:
+                    end_time = end_time_next_day
+
+            return {
+                'start_time': start_time.isoformat(),
+                'end_time': end_time.isoformat()
+            }
+
+        # If we have more than 2, try to find ones associated with duration keywords
+        elif len(unique_datetimes) > 2:
+            # Find datetimes near duration keywords
+            start_candidates = []
+            end_candidates = []
+
+            for dt, match_str in unique_datetimes:
+                pos = text.lower().find(match_str.lower())
+                if pos >= 0:
+                    # Find the positions of duration keywords
+                    from_pos = text.lower().find('from')
+                    until_pos = text.lower().find('until')
+                    to_pos = text.lower().find('to')
+
+                    # Check if this datetime appears after 'from' and before 'until'
+                    if from_pos >= 0 and pos > from_pos and (until_pos < 0 or pos < until_pos):
+                        start_candidates.append(dt)
+                    # Check if this datetime appears after 'until' or 'to'
+                    elif (until_pos >= 0 and pos > until_pos) or (to_pos >= 0 and pos > to_pos):
+                        end_candidates.append(dt)
+
+            if start_candidates and end_candidates:
+                start_time = min(start_candidates)  # Earliest start time
+                end_time = max(end_candidates)    # Latest end time
+                return {
+                    'start_time': start_time.isoformat(),
+                    'end_time': end_time.isoformat()
+                }
+
+        return {}
+
+    def _parse_datetime_string(self, datetime_str: str) -> datetime:
+        """Parse a datetime string with various formats and timezones"""
+        import dateutil.parser
+        from datetime import datetime, timezone
+
+        # Clean up the string
+        datetime_str = datetime_str.strip()
+
+        # Add current year if not present (for relative dates)
+        current_year = datetime.now().year
+        if not re.search(r'\b20\d{2}\b', datetime_str):
+            # Look for month/day patterns and add year
+            month_day_match = re.search(r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}', datetime_str, re.IGNORECASE)
+            if month_day_match:
+                datetime_str = f"{datetime_str}, {current_year}"
+
+        try:
+            # Try to parse with dateutil (handles various formats)
+            dt = dateutil.parser.parse(datetime_str, fuzzy=True)
+
+            # If no timezone specified, assume EST (Eastern Standard Time)
+            if dt.tzinfo is None:
+                # EST is UTC-5, EDT is UTC-4 - we'll assume EST for winter alerts
+                from datetime import timezone, timedelta
+                est_tz = timezone(timedelta(hours=-5))
+                dt = dt.replace(tzinfo=est_tz)
+
+            return dt
+        except Exception as e:
+            logger.warning(f"Failed to parse datetime '{datetime_str}': {e}")
+            return None
+
+    def _parse_datetime_string_with_context(self, datetime_str: str, full_text: str) -> datetime:
+        """Parse a datetime string using full text context for better accuracy"""
+        import dateutil.parser
+        from datetime import datetime, timezone
+
+        # Clean up the string
+        datetime_str = datetime_str.strip()
+
+        # Extract year from full text if available
+        year_match = re.search(r'\b(20\d{2})\b', full_text)
+        year = year_match.group(1) if year_match else str(datetime.now().year)
+
+        # If datetime_str doesn't have a year, try to find it in the full text
+        if not re.search(r'\b20\d{2}\b', datetime_str):
+            # Look for month patterns and add year
+            month_patterns = [
+                r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}',
+                r'\b\d{1,2}/\d{1,2}',
+            ]
+            for pattern in month_patterns:
+                if re.search(pattern, datetime_str, re.IGNORECASE):
+                    # Check if there's a year nearby in the full text
+                    text_around = full_text[max(0, full_text.find(datetime_str) - 50):full_text.find(datetime_str) + len(datetime_str) + 50]
+                    year_in_context = re.search(r'\b(20\d{2})\b', text_around)
+                    if year_in_context:
+                        year = year_in_context.group(1)
+                    datetime_str = f"{datetime_str}, {year}"
+                    break
+
+        # Handle "today" references
+        if 'today' in datetime_str.lower():
+            today = datetime.now()
+            datetime_str = datetime_str.lower().replace('today', f'{today.month}/{today.day}/{today.year}')
+
+        try:
+            # Try to parse with dateutil (handles various formats)
+            dt = dateutil.parser.parse(datetime_str, fuzzy=True)
+
+            # If no timezone specified, assume EST (Eastern Standard Time)
+            if dt.tzinfo is None:
+                from datetime import timezone, timedelta
+                est_tz = timezone(timedelta(hours=-5))
+                dt = dt.replace(tzinfo=est_tz)
+
+            return dt
+        except Exception as e:
+            logger.warning(f"Failed to parse datetime '{datetime_str}' with context: {e}")
+            # Fall back to original method
+            return self._parse_datetime_string(datetime_str)
 
     def _create_alert_title(self, alert_text: str) -> str:
         """Create a concise title from alert text"""

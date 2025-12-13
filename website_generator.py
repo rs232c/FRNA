@@ -485,6 +485,23 @@ class WebsiteGenerator:
                 if is_weather_alert:
                     print(f"WEATHER ALERT FOUND: {article.get('id')} - relevance: {relevance_score}")
 
+                # Check if weather alert has expired
+                alert_expired = False
+                if is_weather_alert:
+                    alert_end_time = article.get('alert_end_time')
+                    if alert_end_time:
+                        try:
+                            from datetime import datetime
+                            end_time = datetime.fromisoformat(alert_end_time.replace('Z', '+00:00'))
+                            current_time = datetime.now(end_time.tzinfo) if end_time.tzinfo else datetime.now()
+                            if current_time > end_time:
+                                alert_expired = True
+                                print(f"WEATHER ALERT EXPIRED: {article.get('id')} - end_time: {alert_end_time}, current_time: {current_time}")
+                        except Exception as e:
+                            print(f"Error checking alert expiration for {article.get('id')}: {e}")
+                            # If we can't parse the time, assume it's not expired (safer)
+                            alert_expired = False
+
                 # CRITICAL: Filter out junk articles - higher threshold for premium content only
                 # Weather alerts bypass relevance filtering
                 min_relevance_threshold = 50  # Only show high-quality, highly relevant content
@@ -503,13 +520,15 @@ class WebsiteGenerator:
                     'test', 'placeholder', 'example', 'sample', 'demo', 'fake'
                 ])
 
-                if article_id and is_enabled and is_relevant and has_fall_river and not is_test_content:
+                if article_id and (is_enabled or is_weather_alert) and is_relevant and has_fall_river and not is_test_content and not alert_expired:
                     # Article is enabled AND has sufficient relevance score
                     enabled_articles.append(article)
                 elif article_id and not is_relevant:
                     logger.debug(f"Article {article_id} filtered out - relevance {relevance_score} < {min_relevance_threshold}: {article.get('title', '')[:50]}")
                 elif article_id and not has_fall_river:
                     logger.debug(f"Article {article_id} filtered out - no Fall River connection: {article.get('title', '')[:50]}")
+                elif article_id and alert_expired:
+                    logger.debug(f"Article {article_id} filtered out - weather alert expired: {article.get('title', '')[:50]}")
 
             # Sort by: relevance score (highest first), then management display order, then recency
             def sort_key(article):
@@ -697,8 +716,14 @@ class WebsiteGenerator:
         sports_articles = [a for a in articles if a.get('category') == 'sports'][:20]
         
         # For home page, prioritize news articles first
-        all_articles = news_articles + [a for a in articles if a.get('category') != 'news'][:30]
-        
+        non_news_articles = [a for a in articles if a.get('category') != 'news']
+
+        # Always include weather alerts, even if they're not in the top 30
+        weather_alerts = [a for a in non_news_articles if a.get('is_alert') and a.get('alert_type') == 'weather']
+        other_non_news = [a for a in non_news_articles if not (a.get('is_alert') and a.get('alert_type') == 'weather')][:30-len(weather_alerts)]
+
+        all_articles = news_articles + weather_alerts + other_non_news
+
         # If no articles, show message
         if not all_articles:
             all_articles = articles  # Fallback to all if filtered list is empty
@@ -743,9 +768,9 @@ class WebsiteGenerator:
         # Get trending articles (recent articles with high relevance scores)
         # Excludes obituaries and returns top 10 (client-side will filter to top 5 based on user preferences)
         try:
-            trending_articles = self._get_trending_articles(all_articles, limit=10)
+            trending_articles = self._get_trending_articles(articles, limit=10)
         except ImportError:
-            trending_articles = all_articles[:10]  # Fallback if method doesn't exist
+            trending_articles = articles[:10]  # Fallback if method doesn't exist
         
         # Add category slug and format trending date (no year) to each trending article
         for article in trending_articles:
@@ -2121,7 +2146,60 @@ class WebsiteGenerator:
 
     def _get_trending_articles(self, articles: List[Dict], limit: int = 10) -> List[Dict]:
         """Get trending articles with same quality filtering as main content"""
-        # Apply the same filtering as main articles: enabled + relevance >=50 + Fall River connection
+        # Get ALL articles from database for trending (not just the enabled ones passed in)
+        try:
+            with self.get_db_cursor() as cursor:
+                cursor.execute('''
+                    SELECT a.id, a.title, a.content, a.summary, a.source, a.published, a.relevance_score, a.url,
+                           COALESCE(am.enabled, 1) as enabled
+                    FROM articles a
+                    LEFT JOIN article_management am ON a.id = am.article_id AND am.zip_code = '02720'
+                    WHERE a.zip_code = '02720' AND a.relevance_score IS NOT NULL AND a.relevance_score > 0
+                    ORDER BY a.relevance_score DESC, a.published DESC
+                    LIMIT 200  -- Get top 200 candidates to find the best trending articles
+                ''')
+
+                all_articles = []
+                for row in cursor.fetchall():
+                    all_articles.append({
+                        'id': row[0],
+                        'title': row[1] or '',
+                        'content': row[2] or '',
+                        'summary': row[3] or '',
+                        'source': row[4] or '',
+                        'published': row[5] or '',
+                        'relevance_score': row[6] or 0,
+                        'url': row[7] or '',
+                        'enabled': bool(row[8])
+                    })
+
+                articles = all_articles  # Use all articles for trending selection
+
+        except Exception as e:
+            logger.warning(f"Could not fetch all articles for trending, falling back to passed articles: {e}")
+            # Fall back to the passed articles if database query fails
+
+        # Apply semantic deduplication to trending candidates (same as main ingestion)
+        try:
+            from utils.semantic_deduplication import SemanticDeduplicator
+            deduplicator = SemanticDeduplicator()
+            unique_articles, duplicates = deduplicator.deduplicate_batch(articles, threshold=0.85)
+
+            if duplicates:
+                logger.info(f"Trending deduplication removed {len(duplicates)} duplicate articles")
+                # Debug: show what was deduplicated
+                for dup in duplicates[:3]:
+                    logger.info(f"  Removed duplicate: {dup['article'].get('title', '')[:50]}...")
+
+            articles = unique_articles  # Use deduplicated list
+            logger.info(f"After deduplication: {len(articles)} unique articles")
+
+        except ImportError:
+            logger.warning("Semantic deduplication module not available for trending, proceeding without it")
+        except Exception as e:
+            logger.warning(f"Error during trending deduplication: {e}, proceeding with original list")
+
+        # Apply trending filtering: enabled + relevance >=50 + Fall River connection
         min_relevance_threshold = 50  # Same as main filtering
 
         filtered_trending = []
@@ -2141,8 +2219,9 @@ class WebsiteGenerator:
             if any(word in combined_text for word in ['fire', 'police', 'arrest', 'shooting', 'accident', 'emergency']):
                 relevance_score += 10
 
-            # Same filtering as main articles
-            if relevance_score >= min_relevance_threshold:
+            # Same filtering as main articles: enabled + relevance threshold + Fall River connection
+            is_enabled = article.get('enabled', True)  # Check if article is enabled
+            if is_enabled and relevance_score >= min_relevance_threshold:
                 # Check Fall River connection
                 has_fall_river = ('fall river' in title_lower or 'fallriver' in title_lower or
                                 'fall river' in content_lower or 'fallriver' in content_lower)
@@ -2184,6 +2263,11 @@ class WebsiteGenerator:
             return (-relevance_score, created_timestamp)
 
         sorted_articles = sorted(filtered_trending, key=sort_key)
+        logger.info(f"Returning {len(sorted_articles[:limit])} trending articles")
+        # Debug: show what we're returning
+        for i, article in enumerate(sorted_articles[:limit][:3]):
+            logger.info(f"  Trending {i+1}: {article.get('title', '')[:50]}... (score: {article.get('_boosted_score', article.get('relevance_score', 0)):.1f})")
+
         return sorted_articles[:limit]
 
     def _get_weather_icon(self, condition: str) -> str:

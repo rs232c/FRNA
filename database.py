@@ -731,6 +731,15 @@ class ArticleDatabase:
                             except: pass
                             # #endregion
 
+                        # Update relevance score for existing articles (always update to ensure latest calculation)
+                        if relevance_score is not None:
+                            cursor.execute('''
+                                UPDATE articles
+                                SET relevance_score = ?
+                                WHERE id = ?
+                            ''', (relevance_score, existing_id))
+                            logger.debug(f"Updated existing article (ID: {existing_id}) with relevance_score: {relevance_score:.1f} - {title[:50]}")
+
                         logger.debug(f"Article already exists (ID: {existing_id}): {title[:50]}")
                         new_ids.append(existing_id)
                         continue
@@ -969,8 +978,8 @@ class ArticleDatabase:
                          image_url, post_id, ingested_at, relevance_score, local_score, zip_code,
                          city_name, state_abbrev, city_state,
                          category, primary_category, secondary_category, category_confidence, category_override,
-                         is_alert, alert_type, alert_priority)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         is_alert, alert_type, alert_priority, alert_start_time, alert_end_time)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         title,
                         url,
@@ -995,7 +1004,9 @@ class ArticleDatabase:
                         category_override,
                         article.get("is_alert", 0),
                         article.get("alert_type"),
-                        article.get("alert_priority", "info")
+                        article.get("alert_priority", "info"),
+                        article.get("alert_start_time"),
+                        article.get("alert_end_time")
                     ))
                     
                     article_id = cursor.lastrowid

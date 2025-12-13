@@ -12,6 +12,7 @@ from ingestors.fun107_ingestor import Fun107Ingestor
 from ingestors.facebook_ingestor import FacebookIngestor
 from ingestors.weather_ingestor import WeatherIngestor
 from ingestors.nws_weather_alerts_ingestor import NWSWeatherAlertsIngestor
+from ingestors.crime_radar_ingestor import CrimeRadarIngestor
 from config import (
     NEWS_SOURCES, AGGREGATION_CONFIG, LOCALE_HASHTAG, HASHTAGS, ARTICLE_CATEGORIES
 )
@@ -35,6 +36,7 @@ class NewsAggregator:
         self.news_ingestors = {}
         self.facebook_ingestor = FacebookIngestor()
         self.nws_weather_alerts_ingestor = NWSWeatherAlertsIngestor({"name": "NWS Weather Alerts", "url": "https://forecast.weather.gov"})
+        self.crime_radar_ingestor = CrimeRadarIngestor({"name": "CrimeRadar Fall River", "url": "https://www.crimeradar.us/fall-river-ma"})
         self.database = ArticleDatabase()
         self.cache = get_cache()
         self._source_fetch_interval = self._load_source_fetch_interval()  # Load from admin settings
@@ -375,6 +377,15 @@ class NewsAggregator:
             logger.info(f"Fetched {len(weather_alerts)} weather alerts from NWS")
         except Exception as e:
             logger.error(f"Error fetching NWS weather alerts: {e}")
+
+        # Collect incident reports from CrimeRadar
+        try:
+            logger.info("Fetching CrimeRadar incident reports...")
+            crime_incidents = await self.crime_radar_ingestor.fetch_articles_async()
+            all_articles.extend(crime_incidents)
+            logger.info(f"Fetched {len(crime_incidents)} incidents from CrimeRadar")
+        except Exception as e:
+            logger.error(f"Error fetching CrimeRadar incidents: {e}")
         
         # Close all aiohttp sessions
         for source_key, ingestor in self.news_ingestors.items():
@@ -792,8 +803,18 @@ class NewsAggregator:
             article_category = (article.get('category', '') or article.get('primary_category', '') or '').lower()
             is_obituary = article_category in ['obituaries', 'obituary', 'obits']
 
-            # STRONG AUTO-REJECT: Score < 30 (completely irrelevant)
-            if relevance_score < 30 and not is_obituary:
+            # SOURCE-AWARE FILTERING: Different rules for different sources
+            source_filter_result = self._apply_source_aware_filtering(article, relevance_score, zip_code)
+            if not source_filter_result['should_include']:
+                logger.info(f"🎯 SOURCE FILTER: Article '{title_lower[:50]}...' from {source} - {source_filter_result['reason']}")
+
+                # Save source-filtered article to database for review
+                self._save_filtered_article(article, relevance_score, source_filter_result['reason'], zip_code)
+                continue
+
+            # STRONG AUTO-REJECT: Score < threshold (source-aware threshold)
+            source_threshold = source_filter_result.get('threshold', 25)
+            if relevance_score < source_threshold and not is_obituary:
                 logger.info(f"🚫 AUTO-REJECT: Article '{title_lower[:50]}...' has critically low relevance: {relevance_score:.1f} < 30")
 
                 # Save auto-rejected article to database for review
@@ -804,9 +825,9 @@ class NewsAggregator:
                     conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
                     cursor = conn.cursor()
 
-                    # Save article first
+                    # Save article first (insert if new, update relevance score if exists)
                     cursor.execute('''
-                        INSERT OR IGNORE INTO articles
+                        INSERT OR REPLACE INTO articles
                         (title, url, published, summary, content, source, source_type, ingested_at, relevance_score)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
@@ -857,9 +878,9 @@ class NewsAggregator:
 
                 continue
 
-            # SOFT AUTO-FILTER: Score below admin threshold (but > 30)
-            elif relevance_score < relevance_threshold and not is_obituary:
-                logger.info(f"⚠️  SOFT FILTER: Article '{title_lower[:50]}...' below relevance threshold: {relevance_score:.1f} < {relevance_threshold}")
+            # SOFT AUTO-FILTER: Score below source-aware threshold
+            elif relevance_score < source_threshold and not is_obituary:
+                logger.info(f"⚠️  SOFT FILTER: Article '{title_lower[:50]}...' below source threshold: {relevance_score:.1f} < {source_threshold}")
 
                 # Save soft-filtered article to database for potential review
                 try:
@@ -869,9 +890,9 @@ class NewsAggregator:
                     conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
                     cursor = conn.cursor()
 
-                    # Save article first
+                    # Save article first (insert if new, update relevance score if exists)
                     cursor.execute('''
-                        INSERT OR IGNORE INTO articles
+                        INSERT OR REPLACE INTO articles
                         (title, url, published, summary, content, source, source_type, ingested_at, relevance_score)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
@@ -896,7 +917,7 @@ class NewsAggregator:
 
                     if article_id:
                         # Mark as soft-filtered (can be reviewed and potentially enabled)
-                        reason = f"SOFT FILTER: Relevance score {relevance_score:.1f} < admin threshold {relevance_threshold}"
+                        reason = f"SOFT FILTER: Relevance score {relevance_score:.1f} < source threshold {source_threshold}"
                         if tag_info.get('matched') or tag_info.get('missing'):
                             tag_details = []
                             if tag_info.get('matched'):
@@ -1005,11 +1026,11 @@ class NewsAggregator:
                         conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
                         cursor = conn.cursor()
                         
-                        # Save article first
+                        # Save article first (insert if new, update relevance score if exists)
                         cursor.execute('''
-                            INSERT OR IGNORE INTO articles 
-                            (title, url, published, summary, content, source, source_type, ingested_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            INSERT OR REPLACE INTO articles
+                            (title, url, published, summary, content, source, source_type, ingested_at, relevance_score)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ''', (
                             article.get("title", ""),
                             article.get("url", ""),
@@ -1018,7 +1039,8 @@ class NewsAggregator:
                             article.get("content", ""),
                             article.get("source", ""),
                             article.get("source_type", ""),
-                            article.get("ingested_at", "")
+                            article.get("ingested_at", ""),
+                            relevance_score  # Include the calculated relevance score
                         ))
                         
                         # Get article ID (either new or existing)
@@ -1834,12 +1856,12 @@ class NewsAggregator:
             from config import DATABASE_CONFIG
             conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
             cursor = conn.cursor()
-            
+
             # Check if last_403_error column exists
             try:
                 cursor.execute('SELECT last_403_error FROM source_fetch_tracking WHERE source_key = ?', (source_key,))
                 row = cursor.fetchone()
-                
+
                 last_403_str = row[0] if row and row[0] else None
                 if last_403_str:
                     last_403 = datetime.fromisoformat(last_403_str)
@@ -1853,4 +1875,116 @@ class NewsAggregator:
         except:
             pass
         return False
+
+    def _apply_source_aware_filtering(self, article: Dict, relevance_score: float, zip_code: str) -> Dict:
+        """
+        Apply source-aware filtering logic based on source content patterns.
+
+        Returns: {
+            'should_include': bool,
+            'reason': str,
+            'threshold': int (optional custom threshold)
+        }
+        """
+        source = article.get("source", "").lower()
+        title = article.get("title", "").lower()
+        content = f"{article.get('content', '')} {article.get('summary', '')}".lower()
+
+        # FALL RIVER REPORTER: Trust higher, lower threshold
+        if "fall river reporter" in source:
+            # Accept if: High relevance OR contains local keywords OR is clearly local politics
+            if relevance_score >= 50:
+                return {'should_include': True, 'threshold': 25}
+
+            # Check for local politics keywords
+            local_politics_keywords = [
+                "school committee", "city council", "mayor", "city hall", "police department",
+                "fire department", "fall river school", "fall river police", "fall river fire"
+            ]
+            if any(kw in content for kw in local_politics_keywords):
+                return {'should_include': True, 'threshold': 20, 'reason': 'Local politics override'}
+
+            # Accept articles with Fall River + local topics
+            if "fall river" in content and relevance_score >= 35:
+                return {'should_include': True, 'threshold': 25}
+
+            return {'should_include': False, 'reason': 'Fall River Reporter - below local threshold'}
+
+        # HERALD NEWS: More skeptical, requires stronger local signals
+        elif "herald news" in source:
+            # Herald posts statewide content, so require explicit Fall River focus
+            fall_river_in_title = "fall river" in title
+            local_indicators = sum(1 for kw in ["fall river", "durfee", "city hall", "highlands", "north end"]
+                                 if kw in content)
+
+            if fall_river_in_title and relevance_score >= 60:
+                return {'should_include': True, 'threshold': 40}
+            elif local_indicators >= 2 and relevance_score >= 50:
+                return {'should_include': True, 'threshold': 40}
+
+            return {'should_include': False, 'reason': 'Herald News - insufficient local focus'}
+
+        # GOOGLE NEWS: Most skeptical, needs multiple local indicators
+        elif "google news" in source:
+            # Google aggregates everything tagged "Fall River" - verify it's actually local
+            fall_river_mentions = content.count("fall river")
+            local_indicators = sum(1 for kw in [
+                "durfee", "city hall", "st. anne's", "battleship cove", "highlands",
+                "north end", "south end", "police department", "fire department"
+            ] if kw in content)
+
+            # Require multiple strong local signals
+            if fall_river_mentions >= 1 and local_indicators >= 1 and relevance_score >= 70:
+                return {'should_include': True, 'threshold': 50}
+
+            return {'should_include': False, 'reason': 'Google News - not sufficiently local'}
+
+        # OTHER SOURCES: Standard filtering with slightly lower threshold
+        else:
+            return {'should_include': True, 'threshold': 20}  # Lower threshold for unknown sources
+
+    def _save_filtered_article(self, article: Dict, relevance_score: float, reason: str, zip_code: str):
+        """Save filtered article to database for review"""
+        try:
+            import sqlite3
+            from config import DATABASE_CONFIG
+            conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+            cursor = conn.cursor()
+
+            # Save article first (insert if new, update relevance score if exists)
+            cursor.execute('''
+                INSERT OR REPLACE INTO articles
+                (title, url, published, summary, content, source, source_type, ingested_at, relevance_score)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                article.get("title", ""),
+                article.get("url", ""),
+                article.get("published", ""),
+                article.get("summary", ""),
+                article.get("content", ""),
+                article.get("source", ""),
+                article.get("source_type", ""),
+                article.get("ingested_at", ""),
+                relevance_score
+            ))
+
+            # Get article ID
+            if article.get("url"):
+                cursor.execute('SELECT id FROM articles WHERE url = ?', (article.get("url"),))
+                row = cursor.fetchone()
+                article_id = row[0] if row else cursor.lastrowid
+            else:
+                article_id = cursor.lastrowid
+
+            if article_id:
+                cursor.execute('''
+                    INSERT OR REPLACE INTO article_management
+                    (article_id, enabled, is_auto_filtered, auto_reject_reason, zip_code)
+                    VALUES (?, 0, 1, ?, ?)
+                ''', (article_id, reason, zip_code))
+
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.warning(f"Could not save filtered article: {e}")
 
