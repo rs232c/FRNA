@@ -1753,6 +1753,84 @@ def regenerate_all():
 
 
 @login_required
+@app.route('/admin/api/check-regeneration-needed', methods=['GET', 'OPTIONS'])
+def check_regeneration_needed():
+    """Check if regeneration is needed based on last regeneration time and interval"""
+    try:
+        zip_code = request.args.get('zip_code')
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Get regeneration interval from settings
+            cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('regenerate_interval',))
+            interval_row = cursor.fetchone()
+            interval_minutes = int(interval_row[0]) if interval_row else 10
+
+            # Get last regeneration time
+            cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('last_regeneration_time',))
+            last_regeneration_row = cursor.fetchone()
+
+            if not last_regeneration_row:
+                return jsonify({'needs_regeneration': True, 'reason': 'Never regenerated'})
+
+            last_regeneration = float(last_regeneration_row[0])
+            current_time = time.time()
+
+            # Check if interval has elapsed
+            time_since_last = (current_time - last_regeneration) / 60  # minutes
+            needs_regeneration = time_since_last >= interval_minutes
+
+            return jsonify({
+                'needs_regeneration': needs_regeneration,
+                'last_regeneration': last_regeneration,
+                'current_time': current_time,
+                'time_since_minutes': time_since_last,
+                'interval_minutes': interval_minutes
+            })
+
+    except Exception as e:
+        logger.error(f"Error checking regeneration status: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@login_required
+@app.route('/admin/api/save-weather-api-key', methods=['POST', 'OPTIONS'])
+def save_weather_api_key():
+    """Save weather API key for a specific zip code"""
+    try:
+        data = request.get_json()
+        zip_code = data.get('zip_code', '02720')
+        api_key = data.get('api_key', '').strip()
+
+        if not api_key:
+            return jsonify({'success': False, 'message': 'API key cannot be empty'}), 400
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Check if setting exists
+            cursor.execute('SELECT value FROM admin_settings WHERE key = ? AND zip_code = ?',
+                         (f'weather_api_key_{zip_code}', zip_code))
+            existing = cursor.fetchone()
+
+            if existing:
+                cursor.execute('UPDATE admin_settings SET value = ? WHERE key = ? AND zip_code = ?',
+                             (api_key, f'weather_api_key_{zip_code}', zip_code))
+            else:
+                cursor.execute('INSERT INTO admin_settings (key, value, zip_code) VALUES (?, ?, ?)',
+                             (f'weather_api_key_{zip_code}', api_key, zip_code))
+
+            conn.commit()
+
+        return jsonify({'success': True, 'message': 'Weather API key saved successfully'})
+
+    except Exception as e:
+        logger.error(f"Error saving weather API key: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@login_required
 @app.route('/admin/api/get-article', methods=['GET', 'OPTIONS'])
 def get_article():
     """Get a specific article by ID"""
