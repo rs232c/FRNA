@@ -21,10 +21,160 @@ from .services import (
     toggle_article, get_sources, get_stats, get_settings, trash_article, restore_article,
     toggle_top_story, toggle_top_article, toggle_alert, toggle_good_fit, train_relevance
 )
+from database import ArticleDatabase
+from jinja2 import Environment, FileSystemLoader
+from pathlib import Path
 from config import DATABASE_CONFIG, NEWS_SOURCES, WEBSITE_CONFIG, VERSION
 
 # Load environment variables
 load_dotenv()
+
+def render_dynamic_index(articles, active_category='local', zip_code='02720'):
+    """Render the index template dynamically with articles and active category"""
+    try:
+        # Setup Jinja2 environment
+        template_dir = Path(__file__).parent.parent / "website_generator" / "templates"
+        jinja_env = Environment(loader=FileSystemLoader(str(template_dir)))
+
+        # Get the index template
+        template = jinja_env.get_template('index.html.j2')
+
+        # Generate navigation tabs with correct active state
+        nav_tabs = generate_nav_tabs(active_category)
+
+        # Prepare template context
+        context = {
+            'title': 'Fall River, MA News Aggregator',
+            'description': 'Latest news from Fall River, MA',
+            'articles': articles,
+            'active_category': active_category,
+            'current_time': datetime.now().strftime('%Y%m%d%H%M%S'),
+            'show_images': True,  # Default to showing images
+            'zip_code': zip_code,
+            'nav_tabs': nav_tabs
+        }
+
+        # Render template
+        html_content = template.render(**context)
+        return html_content
+
+    except Exception as e:
+        logger.error(f"Error rendering dynamic index: {e}")
+        return f"Error rendering page: {e}", 500
+
+def generate_nav_tabs(active_category='local'):
+    """Generate navigation HTML with correct active state"""
+    # Map active_category to the page_key used in navigation
+    category_to_page_key = {
+        'local': 'home',
+        'police-fire': 'category-crime',
+        'sports': 'category-sports',
+        'obituaries': 'category-obituaries',
+        'food': 'category-food',
+        'scanner': 'category-scanner',
+        'meetings': 'category-meetings',
+        'events': 'category-events'
+    }
+
+    active_page = category_to_page_key.get(active_category, 'home')
+
+    # Top row: Primary navigation (big, bold)
+    top_row_tabs = [
+        ("Local", "/", "home"),
+        ("Police & Fire", "/category/police-fire", "category-crime"),
+        ("Sports", "/category/sports", "category-sports"),
+        ("Obituaries", "/category/obituaries", "category-obituaries"),
+        ("Food & Drink", "/category/food", "category-food"),
+    ]
+
+    # Second row: Secondary navigation (slightly smaller, lighter)
+    second_row_tabs = [
+        ("Scanner", "/category/scanner", "category-scanner"),
+        ("Meetings", "/category/meetings", "category-meetings"),
+        ("Submit Tip", "/#submit", "home"),
+        ("Lost & Found", "/#lost-found", "home"),
+        ("Events", "/category/events", "category-events"),
+    ]
+
+    # Build navigation HTML with two-row structure
+    nav_html = '''
+    <!-- Desktop Navigation: Two Rows - Centered -->
+    <div class="hidden lg:flex flex-col items-center gap-3 w-full">
+        <!-- Top Row: Primary Navigation (Big, Bold) -->
+        <div class="flex flex-wrap items-center justify-center gap-2 lg:gap-3">
+'''
+
+    # Top row links
+    for label, href, page_key in top_row_tabs:
+        # Check if this is the active page
+        is_active = (active_page == page_key)
+        if is_active:
+            active_class = 'text-white font-bold bg-blue-500/20 border border-blue-500/40'
+        else:
+            active_class = 'text-gray-300 hover:text-white font-bold border border-transparent hover:border-gray-700 hover:bg-gray-900/30'
+
+        nav_html += f'''            <a href="{href}" class="px-3 py-2 rounded-lg transition-all duration-200 {active_class}">{label}</a>
+'''
+
+    nav_html += '''
+        </div>
+
+        <!-- Second Row: Secondary Navigation (Smaller, Lighter) - Centered under first row -->
+        <div class="flex flex-wrap items-center justify-center gap-2 lg:gap-3">
+'''
+
+    # Second row links
+    for label, href, page_key in second_row_tabs:
+        # Check if this is the active page
+        is_active = (active_page == page_key)
+        if is_active:
+            active_class = 'text-white font-semibold bg-blue-400/20 border border-blue-400/30'
+        else:
+            active_class = 'text-sm text-gray-400 hover:text-white font-semibold border border-transparent hover:border-gray-600 hover:bg-gray-900/30'
+
+        nav_html += f'''            <a href="{href}" class="px-2 py-1 rounded-md transition-all duration-200 {active_class}">{label}</a>
+'''
+
+    nav_html += '''
+        </div>
+    </div>
+
+    <!-- Mobile Navigation Menu -->
+    <div id="mobileNavMenu" class="hidden fixed inset-0 z-[1000] transition-opacity duration-300" style="opacity: 0;">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999]" onclick="closeHamburgerMenu()"></div>
+        <!-- Side Drawer -->
+        <div id="hamburgerDrawer" class="fixed top-0 right-0 h-full w-80 bg-[#161616] shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-out z-[1000]" style="transform: translateX(100%);" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-8">
+                    <div class="text-xl font-bold text-blue-400">Navigation</div>
+                    <button onclick="closeHamburgerMenu()" class="text-gray-400 hover:text-white p-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+'''
+
+    # Mobile menu links - combine both rows
+    all_tabs = top_row_tabs + second_row_tabs
+    for label, href, page_key in all_tabs:
+        is_active = (active_page == page_key)
+        if is_active:
+            mobile_class = 'text-blue-400 border-blue-400/30 bg-blue-500/10'
+        else:
+            mobile_class = 'text-gray-300 hover:text-white hover:bg-gray-800 border-transparent'
+
+        nav_html += f'''                <a href="{href}" class="block px-6 py-3 text-lg {mobile_class} transition-colors duration-200 border-b border-gray-700" onclick="closeHamburgerMenu()">{label}</a>
+'''
+
+    nav_html += '''
+            </div>
+        </div>
+    </div>
+'''
+
+    return nav_html
 
 # Import zip resolver for city-based directory resolution
 try:
@@ -370,13 +520,23 @@ def index():
         logger.info(f"Redirecting to zip code: {zip_code}")
         return redirect(f'/{zip_code}')
 
-    # Serve default zip (Fall River)
-    return serve_zip_page('02720')
+    # Get recent articles for the homepage (all categories)
+    db = ArticleDatabase()
+    articles = db.get_recent_articles(hours=48, limit=50, zip_code='02720')
+
+    # Render dynamic page with all articles and 'local' as active category
+    html_content = render_dynamic_index(articles, active_category='local', zip_code='02720')
+
+    if isinstance(html_content, tuple):  # Error case
+        return html_content
+
+    from flask import Response
+    return Response(html_content, mimetype='text/html')
 
 
 @app.route('/category/<path:category_slug>')
 def category_page(category_slug):
-    """Serve category page"""
+    """Serve category page with dynamic filtering"""
     # Strip .html extension if present (frontend links include .html)
     if category_slug.endswith('.html'):
         category_slug = category_slug[:-5]
@@ -387,15 +547,35 @@ def category_page(category_slug):
         zip_code = get_current_zip_from_request()
         return serve_zip_category_page(zip_code, category_slug)
 
-    # Calculate the correct path to the build directory
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    category_path = os.path.join(project_root, 'build', 'category', f'{category_slug}.html')
+    # Map URL slug to database category name
+    category_map = {
+        'local': 'local-news',  # 'local' slug maps to 'local-news' category
+        'police-fire': 'crime',
+        'sports': 'sports',
+        'obituaries': 'obituaries',
+        'food': 'food',
+        'entertainment': 'entertainment',
+        'business': 'business',
+        'schools': 'schools',
+        'events': 'events',
+        'weather': 'weather'
+    }
 
-    try:
-        return send_file(category_path)
-    except (ValueError, OSError) as e:
-        logger.error(f"Error serving category page {category_slug}: {e}")
-        return "Category page not found", 404
+    # Get the database category name
+    db_category = category_map.get(category_slug, category_slug)
+
+    # Get filtered articles from database
+    db = ArticleDatabase()
+    articles = db.get_articles_by_category(db_category, limit=50, zip_code='02720')
+
+    # Render dynamic page with filtered articles
+    html_content = render_dynamic_index(articles, active_category=category_slug, zip_code='02720')
+
+    if isinstance(html_content, tuple):  # Error case
+        return html_content
+
+    from flask import Response
+    return Response(html_content, mimetype='text/html')
 
 
 @app.route('/admin/main', strict_slashes=False)

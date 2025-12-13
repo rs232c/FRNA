@@ -1,8 +1,19 @@
-"""Backfill image_url for existing articles by scraping their pages"""
+"""
+Backfill image_url for existing articles by scraping their pages.
+
+⚠️  IMPORTANT: This script makes HTTP requests to external websites.
+   Default settings are conservative to avoid violating terms of service:
+   - Max 2 concurrent requests
+   - 1-3 second delays between requests
+   - 5 second pauses between batches
+
+   Adjust settings carefully and respect robots.txt!
+"""
 import asyncio
 import sqlite3
 import argparse
 import time
+import random
 from ingestors.news_ingestor import NewsIngestor
 from database import ArticleDatabase
 from config import DATABASE_CONFIG
@@ -11,20 +22,24 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-async def process_article(article, ingestor, db_conn, semaphore, stats):
+async def process_article(article, ingestor, db_conn, semaphore, stats, request_delay=1.0):
     """Process a single article to extract and save image_url"""
     async with semaphore:
         url = article.get('url')
         article_id = article.get('id')
         title = article.get('title', '')[:50]
-        
+
         if not url:
             stats['skipped'] += 1
             return
-        
+
         try:
+            # Add random delay between requests to be respectful (0.5-2.5 seconds)
+            delay = request_delay + random.uniform(0.5, 1.5)
+            await asyncio.sleep(delay)
+
             scraped = await ingestor._do_scrape_article(url)
-            
+
             if scraped and scraped.get('image_url'):
                 image_url = scraped['image_url']
                 cursor = db_conn.cursor()
@@ -59,14 +74,20 @@ async def process_article(article, ingestor, db_conn, semaphore, stats):
                 progress = (stats['processed'] / stats['total']) * 100
                 logger.info(f"Progress: {progress:.1f}% ({stats['processed']}/{stats['total']}) - Updated: {stats['updated']}, No image: {stats['no_image']}, Errors: {stats['errors']}")
 
-async def backfill_image_urls(limit=100, concurrency=10, offset=0, process_all=False):
-    """Scrape article pages to get image_url for existing articles
-    
+async def backfill_image_urls(limit=50, concurrency=2, offset=0, process_all=False, request_delay=1.0):
+    """
+    Scrape article pages to get image_url for existing articles.
+
+    ⚠️  RESPECTFUL SCRAPING: This function implements conservative rate limiting
+    to avoid overwhelming servers or violating terms of service. Always check
+    robots.txt before running at scale.
+
     Args:
-        limit: Maximum number of articles to process per batch
-        concurrency: Maximum number of concurrent requests
+        limit: Maximum number of articles to process per batch (default: 50)
+        concurrency: Maximum concurrent requests - keep low! (default: 2)
         offset: Starting offset for pagination
         process_all: If True, process all articles in batches
+        request_delay: Base delay between requests (adds random 0.5-1.5s)
     """
     db = ArticleDatabase()
     db_path = DATABASE_CONFIG.get("path", "fallriver_news.db")
@@ -95,21 +116,21 @@ async def backfill_image_urls(limit=100, concurrency=10, offset=0, process_all=F
             logger.info(f"Processing batch: {current_offset} to {current_offset + batch_limit} (of {total_articles})")
             logger.info(f"{'='*60}")
             
-            batch_stats = await process_batch(batch_limit, concurrency, current_offset, db_path)
+            batch_stats = await process_batch(batch_limit, concurrency, current_offset, db_path, request_delay)
             total_processed += batch_stats['processed']
             current_offset += batch_limit
-            
+
             if current_offset < total_articles:
                 logger.info(f"\nBatch complete. Continuing to next batch...")
-                await asyncio.sleep(2)  # Brief pause between batches
+                await asyncio.sleep(5)  # Respectful pause between batches (5 seconds)
         
         logger.info(f"\n{'='*60}")
         logger.info(f"All batches complete! Total processed: {total_processed}")
         logger.info(f"{'='*60}")
     else:
-        await process_batch(limit, concurrency, offset, db_path)
+        await process_batch(limit, concurrency, offset, db_path, request_delay)
 
-async def process_batch(limit, concurrency, offset, db_path):
+async def process_batch(limit, concurrency, offset, db_path, request_delay=1.0):
     """Process a single batch of articles"""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
@@ -152,7 +173,7 @@ async def process_batch(limit, concurrency, offset, db_path):
     
     # Process articles in parallel
     start_time = time.time()
-    tasks = [process_article(article, ingestor, conn, semaphore, stats) for article in articles]
+    tasks = [process_article(article, ingestor, conn, semaphore, stats, request_delay) for article in articles]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     
     # Handle any exceptions that weren't caught
@@ -182,22 +203,38 @@ async def process_batch(limit, concurrency, offset, db_path):
     return stats
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Backfill image_url for articles missing images')
-    parser.add_argument('limit', type=int, nargs='?', default=100, 
-                       help='Number of articles to process (default: 100)')
-    parser.add_argument('--concurrency', '-c', type=int, default=10,
-                       help='Maximum concurrent requests (default: 10)')
+    parser = argparse.ArgumentParser(description='Backfill image_url for articles missing images (with respectful rate limiting)')
+    parser.add_argument('limit', type=int, nargs='?', default=50,
+                       help='Number of articles to process per batch (default: 50)')
+    parser.add_argument('--concurrency', '-c', type=int, default=2,
+                       help='Maximum concurrent requests - be respectful! (default: 2)')
     parser.add_argument('--offset', '-o', type=int, default=0,
                        help='Starting offset for pagination (default: 0)')
     parser.add_argument('--all', '-a', action='store_true',
                        help='Process all articles in batches')
-    
+    parser.add_argument('--delay', '-d', type=float, default=1.0,
+                       help='Base delay between requests in seconds (default: 1.0, adds 0.5-1.5s random)')
+
     args = parser.parse_args()
-    
+
+    # Safety check for concurrency
+    if args.concurrency > 5:
+        logger.warning(f"⚠️  High concurrency ({args.concurrency}) may violate terms of service. Consider using 2-3 for safety.")
+    if args.concurrency > 10:
+        logger.error("🚫 Concurrency too high! Maximum allowed: 10. Use --concurrency 2 for safety.")
+        exit(1)
+
+    logger.info(f"🛡️  Starting backfill with safe settings:")
+    logger.info(f"   • Concurrency: {args.concurrency} (max simultaneous requests)")
+    logger.info(f"   • Request delay: {args.delay:.1f}s + random(0.5-1.5s)")
+    logger.info(f"   • Batch size: {args.limit}")
+    logger.info(f"   • Process all: {args.all}")
+
     asyncio.run(backfill_image_urls(
         limit=args.limit,
         concurrency=args.concurrency,
         offset=args.offset,
-        process_all=args.all
+        process_all=args.all,
+        request_delay=args.delay
     ))
 

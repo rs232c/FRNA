@@ -1284,6 +1284,7 @@ class WebsiteGenerator:
             'generation_timestamp': generation_timestamp,
             'current_year': datetime.now().year,
             'location_badge_text': f"{locale.split(',')[0] if ',' in locale else locale} · {zip_code or '02720'}",
+            'zip_code': zip_code or "02720",
             'show_images': settings.get('show_images', '1') == '1',
             'weather_station_url': weather.get('station_url', '#'),
             'weather_icon': '☀️',  # Default icon

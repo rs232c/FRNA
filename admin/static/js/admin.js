@@ -553,6 +553,27 @@ let showImagesTogglePromise = Promise.resolve();
         let actionType = btn.getAttribute('data-action');
         console.log('[DEBUG] Button clicked:', btn.className, 'data-action:', actionType);
 
+        // Map data-action values to backend action names
+        if (actionType) {
+            const actionMap = {
+                'trash-article': 'trash',
+                'restore-article': 'restore',
+                'edit-article': 'edit',
+                'show-breakdown': 'show-breakdown',
+                'thumbs-up': 'thumbs_up',
+                'thumbs-down': 'thumbs_down',
+                'toggle-top-story': 'top_story',
+                'toggle-top-article': 'top_article',
+                'toggle-alert': 'alert',
+                'on-target': 'on_target',
+                'off-target': 'off_target'
+            };
+
+            if (actionMap[actionType]) {
+                actionType = actionMap[actionType];
+            }
+        }
+
         if (!actionType) {
             if (btn.classList.contains('trash-btn')) actionType = 'trash';
             else if (btn.classList.contains('restore-btn') || btn.classList.contains('restore-trash-btn') || btn.classList.contains('restore-auto-btn')) actionType = 'restore';

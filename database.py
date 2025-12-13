@@ -1226,7 +1226,64 @@ class ArticleDatabase:
         
         conn.close()
         return articles
-    
+
+    def get_articles_by_category(self, category: str, limit: int = 50, zip_code: Optional[str] = None, city_state: Optional[str] = None) -> List[Dict]:
+        """Get articles filtered by category, sorted by publication date (newest first)
+
+        Args:
+            category: Category name (e.g., 'crime', 'sports', 'obituaries')
+            limit: Maximum number of articles to return
+            zip_code: Optional zip code to filter by (resolves to city_state)
+            city_state: Optional city_state to filter by (e.g., "Fall River, MA")
+        """
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Resolve zip_code to city_state if provided
+        if zip_code and not city_state:
+            try:
+                from zip_resolver import get_city_state_for_zip
+                city_state = get_city_state_for_zip(zip_code)
+            except Exception as e:
+                logger.warning(f"Error resolving city_state for zip {zip_code}: {e}")
+
+        # Build query with filters
+        base_query = '''
+            SELECT * FROM articles
+            WHERE category = ?
+        '''
+
+        params = [category]
+
+        # Add city_state filter if provided
+        if city_state:
+            base_query += " AND city_state = ?"
+            params.append(city_state)
+        elif zip_code:
+            # Fallback: filter by zip_code if city_state resolution failed
+            base_query += " AND (city_state = (SELECT city_state FROM city_zip_mapping WHERE zip_code = ?) OR zip_code = ?)"
+            params.extend([zip_code, zip_code])
+
+        # Order by published date first, then by ingested date
+        base_query += '''
+            ORDER BY
+                CASE
+                    WHEN published IS NOT NULL THEN published
+                    ELSE ingested_at
+                END DESC,
+                created_at DESC
+            LIMIT ?
+        '''
+        params.append(limit)
+
+        cursor.execute(base_query, params)
+        rows = cursor.fetchall()
+
+        articles = [dict(row) for row in rows]
+        conn.close()
+        return articles
+
     def mark_as_posted(self, article_id: int, platform: str, success: bool = True):
         """Mark an article as posted to a platform"""
         conn = sqlite3.connect(self.db_path)

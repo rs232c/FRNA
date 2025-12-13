@@ -531,8 +531,9 @@ def get_js_content() -> str:
     
     function updateTopStoriesSlider() {
         if (topStoriesTrack && topStoriesSlides.length > 0) {
-            topStoriesTrack.style.transform = `translateX(-${currentTopStorySlide * 100}%)`;
-            
+            const slidePercentage = 100 / topStoriesSlides.length;
+            topStoriesTrack.style.transform = `translateX(-${currentTopStorySlide * slidePercentage}%)`;
+
             // Update dots
             topStoriesDots.forEach((dot, index) => {
                 if (index === currentTopStorySlide) {
