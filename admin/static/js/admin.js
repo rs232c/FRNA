@@ -620,27 +620,6 @@ let showImagesTogglePromise = Promise.resolve();
     console.log('[FRNA Admin] ✅ Unified button event handler attached inside DOMContentLoaded');
 })();
 
-// #region agent log - Hypothesis D: JavaScript loading
-fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-        id: 'log_' + Date.now() + '_js_settings_loaded',
-        timestamp: Date.now(),
-        location: 'admin/static/js/admin.js:settings_functions',
-        message: 'Settings page JavaScript functions loaded',
-        data: {
-            functions_defined: typeof regenerateWebsite === 'function',
-            page_has_settings: document.getElementById('settingsTab') !== null,
-            ready_state: document.readyState,
-            body_exists: document.body !== null
-        },
-        sessionId: 'debug-session',
-        runId: 'run1',
-        hypothesisId: 'D'
-    })
-}).catch(() => {});
-// #endregion
 
 // Settings page functions
 function regenerateWebsite(event) {

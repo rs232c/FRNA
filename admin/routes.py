@@ -1219,52 +1219,6 @@ def admin_zip_dashboard(zip_code):
             )
 
         if tab == 'settings':
-            # #region agent log - Hypothesis A: Route execution
-            try:
-                with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
-                    json.dump({
-                        "id": f"log_{int(time.time()*1000)}_settings_branch",
-                        "timestamp": int(time.time()*1000),
-                        "location": "admin/routes.py:settings_route",
-                        "message": "Settings branch executed - route reached",
-                        "data": {
-                            "tab": tab,
-                            "zip_code": zip_code,
-                            "settings_keys": list(settings.keys()) if settings else None,
-                            "settings_type": type(settings).__name__
-                        },
-                        "sessionId": "debug-session",
-                        "runId": "run1",
-                        "hypothesisId": "A"
-                    }, f)
-                    f.write('\n')
-            except Exception as e:
-                pass
-            # #endregion
-
-            # #region agent log - Hypothesis B: Template render attempt
-            try:
-                with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
-                    json.dump({
-                        "id": f"log_{int(time.time()*1000)}_template_render_attempt",
-                        "timestamp": int(time.time()*1000),
-                        "location": "admin/routes.py:settings_render",
-                        "message": "About to call render_template for settings.html",
-                        "data": {
-                            "zip_code": zip_code,
-                            "version": VERSION,
-                            "active_tab": tab,
-                            "settings_available": settings is not None
-                        },
-                        "sessionId": "debug-session",
-                        "runId": "run1",
-                        "hypothesisId": "B"
-                    }, f)
-                    f.write('\n')
-            except Exception as e:
-                pass
-            # #endregion
-
             return render_template('admin/settings.html',
                 zip_code=zip_code,
                 version=VERSION,
