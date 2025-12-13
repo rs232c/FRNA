@@ -2710,6 +2710,7 @@ def remove_relevance_item():
 def save_relevance_threshold():
     """Save the relevance threshold setting"""
     try:
+        import sqlite3
         print(f"[DEBUG SERVER] save_relevance_threshold called")
         data = request.get_json()
         print(f"[DEBUG SERVER] request data: {data}")
