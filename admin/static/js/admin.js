@@ -811,7 +811,8 @@ function saveImageSetting() {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            show_images: showImages ? 1 : 0
+            key: 'show_images',
+            value: showImages ? 1 : 0
         })
     })
     .then(response => response.json())
