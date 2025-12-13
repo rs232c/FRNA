@@ -498,6 +498,7 @@
                         <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / {{ hero_articles|length }}); width: calc(100% / {{ hero_articles|length }});">
                             <a href="{{ hero_article.url }}" target="_blank" rel="noopener" class="group block relative w-full h-full">
                                 <!-- Image container - only when images enabled -->
+                                <!-- DEBUG: show_images={{ show_images }}, hero_image={{ hero_article.image_url }}, condition={{ show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) }} -->
                                 {% if show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) %}
                                 <div class="relative h-full overflow-hidden image-container">
                                     {% if show_images %}
