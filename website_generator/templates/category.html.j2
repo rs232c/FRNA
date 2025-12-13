@@ -289,9 +289,8 @@
                         {% for hero_article in hero_articles %}
                         <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / {{ hero_articles|length }}); width: calc(100% / {{ hero_articles|length }});">
                             <a href="{{ hero_article.url }}" target="_blank" rel="noopener" class="group block relative w-full h-full">
-                                {% if show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) %}
-                                <!-- Image container -->
-                                <div class="relative h-full overflow-hidden">
+                                <!-- Image container - always present -->
+                                <div class="relative h-full overflow-hidden image-container {% if not (show_images and hero_article.image_url and (hero_article.image_url|default('')|trim)) %}hidden{% endif %}">
                                     <img src="{{ hero_article.image_url }}" alt="{{ hero_article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
                                     <!-- Dark gradient overlay bottom 40% -->
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" style="background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 40%, transparent 100%);"></div>
@@ -321,9 +320,9 @@
                                         </div>
                                     </div>
                                 </div>
-                                {% else %}
-                                <!-- Placeholder container -->
-                                <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient }}">
+
+                                <!-- Placeholder container - always present -->
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient }} placeholder-container {% if show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) %}hidden{% endif %}">
                                     <!-- Subtle pattern overlay -->
                                     <div class="absolute inset-0 opacity-5" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);"></div>
                                     <!-- City skyline silhouette -->
@@ -358,7 +357,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                {% endif %}
                             </a>
                         </div>
                         {% endfor %}

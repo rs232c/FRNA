@@ -478,9 +478,8 @@
                         {% for hero_article in hero_articles %}
                         <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / {{ hero_articles|length }}); width: calc(100% / {{ hero_articles|length }});">
                             <a href="{{ hero_article.url }}" target="_blank" rel="noopener" class="group block relative w-full h-full">
-                                {% if show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) %}
-                                <!-- Image container -->
-                                <div class="relative h-full overflow-hidden">
+                                <!-- Image container - always present -->
+                                <div class="relative h-full overflow-hidden image-container {% if not (show_images and hero_article.image_url and (hero_article.image_url|default('')|trim)) %}hidden{% endif %}">
                                     <img src="{{ hero_article.image_url }}" alt="{{ hero_article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
                                     <!-- Light gradient overlay bottom 40% to show source gradients -->
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" style="background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 40%, transparent 100%);"></div>
@@ -510,9 +509,9 @@
                                         </div>
                                     </div>
                                 </div>
-                                {% else %}
-                                <!-- Placeholder container -->
-                                <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient or 'from-purple-500 to-blue-600' }}">
+
+                                <!-- Placeholder container - always present -->
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient or 'from-purple-500 to-blue-600' }} placeholder-container {% if show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) %}hidden{% endif %}">
                                     <!-- Subtle pattern overlay -->
                                     <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.05) 20px, rgba(255,255,255,0.05) 40px);"></div>
                                     <!-- Video play icon if video -->
@@ -541,7 +540,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                {% endif %}
                             </a>
                         </div>
                         {% endfor %}

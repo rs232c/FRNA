@@ -42,16 +42,55 @@ def render_dynamic_index(articles, active_category='local', zip_code='02720'):
         # Generate navigation tabs with correct active state
         nav_tabs = generate_nav_tabs(active_category)
 
-        # Prepare template context
+        # Format articles (add source initials and gradients like the website generator does)
+        formatted_articles = []
+        for article in articles:
+            formatted_article = dict(article)
+            # Add source formatting
+            source = article.get('source', '')
+            formatted_article['source_initials'] = _generate_smart_initials(source)
+            formatted_article['source_gradient'] = _get_source_gradient(source)
+            formatted_articles.append(formatted_article)
+
+        # Prepare different article collections like the website generator
+        hero_articles = formatted_articles[:3] if formatted_articles else []  # Top 3 articles as heroes
+        trending_articles = formatted_articles[:5]  # Use first 5 as trending
+        latest_stories = formatted_articles[:5]
+        newest_articles = formatted_articles[:10]
+        entertainment_articles = [a for a in formatted_articles if 'entertainment' in (a.get('category') or '')][:5]
+        top_article = formatted_articles[0] if formatted_articles else None
+
+        # Get unique sources
+        unique_sources = list(set(a.get('source', '') for a in formatted_articles if a.get('source')))
+
+        # Prepare template context (similar to website_generator.py)
+        current_time = datetime.now().strftime("%I:%M %p")
+        generation_timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+
         context = {
             'title': 'Fall River, MA News Aggregator',
             'description': 'Latest news from Fall River, MA',
-            'articles': articles,
+            'articles': formatted_articles,
+            'hero_articles': hero_articles,
+            'trending_articles': trending_articles,
+            'latest_stories': latest_stories,
+            'newest_articles': newest_articles,
+            'entertainment_articles': entertainment_articles,
+            'top_article': top_article,
             'active_category': active_category,
-            'current_time': datetime.now().strftime('%Y%m%d%H%M%S'),
-            'show_images': True,  # Default to showing images
+            'current_time': current_time,
+            'generation_timestamp': generation_timestamp,
+            'last_db_update': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'nav_tabs': nav_tabs,
+            'unique_sources': unique_sources,
+            'location_badge_text': f"{zip_code} Area",
             'zip_code': zip_code,
-            'nav_tabs': nav_tabs
+            'weather_station_url': f"https://weather.com/weather/today/l/{zip_code}",
+            'weather_api_key': '',
+            'weather_icon': '🌤️',
+            'zip_pin_editable': False,
+            'show_images': True,
+            'current_year': datetime.now().year
         }
 
         # Render template
@@ -60,7 +99,57 @@ def render_dynamic_index(articles, active_category='local', zip_code='02720'):
 
     except Exception as e:
         logger.error(f"Error rendering dynamic index: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return f"Error rendering page: {e}", 500
+
+def _generate_smart_initials(source):
+    """Generate smart initials for source (copied from website_generator.py)"""
+    if not source:
+        return "NN"
+
+    # Handle common sources with better initials
+    source_lower = source.lower()
+    if 'herald news' in source_lower:
+        return "HN"
+    elif 'taunton' in source_lower:
+        return "TD"
+    elif 'fall river' in source_lower or 'frna' in source_lower:
+        return "FR"
+    elif 'new bedford' in source_lower:
+        return "NB"
+    elif 'providence' in source_lower:
+        return "PR"
+    elif 'boston' in source_lower:
+        return "BO"
+
+    # Default: take first letter of each word
+    words = source.split()
+    if len(words) >= 2:
+        return (words[0][0] + words[1][0]).upper()
+    elif len(words) == 1 and len(words[0]) > 0:
+        return words[0][:2].upper()
+    else:
+        return "NN"
+
+def _get_source_gradient(source):
+    """Get gradient class for source (simplified version)"""
+    if not source:
+        return "from-gray-500 to-gray-600"
+
+    # Simple hash-based gradient assignment
+    gradients = [
+        "from-blue-500 to-blue-600",
+        "from-green-500 to-green-600",
+        "from-purple-500 to-purple-600",
+        "from-red-500 to-red-600",
+        "from-yellow-500 to-yellow-600",
+        "from-pink-500 to-pink-600",
+        "from-indigo-500 to-indigo-600",
+        "from-teal-500 to-teal-600"
+    ]
+
+    return gradients[hash(source) % len(gradients)]
 
 def generate_nav_tabs(active_category='local'):
     """Generate navigation HTML with correct active state"""
@@ -760,14 +849,63 @@ def admin_main():
 
 @app.route('/<zip_code>')
 def zip_page(zip_code):
-    """Serve zip-specific index page from clean zip structure"""
-    return serve_zip_page(zip_code)
+    """Serve zip-specific index page with dynamic content"""
+    if not validate_zip_code(zip_code):
+        return "Invalid zip code", 404
+
+    # Get recent articles for the zip-specific homepage
+    db = ArticleDatabase()
+    articles = db.get_recent_articles(hours=48, limit=50, zip_code=zip_code)
+
+    # Render dynamic page with all articles and 'local' as active category
+    html_content = render_dynamic_index(articles, active_category='local', zip_code=zip_code)
+
+    if isinstance(html_content, tuple):  # Error case
+        return html_content
+
+    from flask import Response
+    return Response(html_content, mimetype='text/html')
 
 
 @app.route('/<zip_code>/category/<path:category_slug>')
 def zip_category_page(zip_code, category_slug):
-    """Serve zip-specific category page from clean zip structure"""
-    return serve_zip_category_page(zip_code, category_slug)
+    """Serve zip-specific category page with dynamic filtering"""
+    if not validate_zip_code(zip_code):
+        return "Invalid zip code", 404
+
+    # Strip .html extension if present (frontend links include .html)
+    if category_slug.endswith('.html'):
+        category_slug = category_slug[:-5]
+
+    # Map URL slug to database category name
+    category_map = {
+        'local': 'local-news',  # 'local' slug maps to 'local-news' category
+        'police-fire': 'crime',
+        'sports': 'sports',
+        'obituaries': 'obituaries',
+        'food': 'food',
+        'entertainment': 'entertainment',
+        'business': 'business',
+        'schools': 'schools',
+        'events': 'events',
+        'weather': 'weather'
+    }
+
+    # Get the database category name
+    db_category = category_map.get(category_slug, category_slug)
+
+    # Get filtered articles from database
+    db = ArticleDatabase()
+    articles = db.get_articles_by_category(db_category, limit=50, zip_code=zip_code)
+
+    # Render dynamic page with filtered articles
+    html_content = render_dynamic_index(articles, active_category=category_slug, zip_code=zip_code)
+
+    if isinstance(html_content, tuple):  # Error case
+        return html_content
+
+    from flask import Response
+    return Response(html_content, mimetype='text/html')
 
 
 @app.route('/css/<path:filename>')
