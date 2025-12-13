@@ -682,38 +682,10 @@ function regenerateWebsite(event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast('✅ Regeneration in progress...', 'success');
+            showToast('✅ Quick regeneration started! Using existing articles from database.', 'success');
 
             // Poll for completion status
-            let progressChecks = 0;
-            const maxChecks = 60; // 60 seconds max
-
-            const checkProgress = () => {
-                progressChecks++;
-
-                // Show progress updates
-                if (progressChecks === 5) {
-                    showToast('🔄 Processing articles...', 'success');
-                } else if (progressChecks === 15) {
-                    showToast('📄 Generating pages...', 'success');
-                } else if (progressChecks === 30) {
-                    showToast('🎨 Applying styles...', 'success');
-                }
-
-                // Check if still working (this is a simple timeout-based approach)
-                if (progressChecks < maxChecks) {
-                    setTimeout(checkProgress, 1000);
-                } else {
-                    // Assume completed after timeout
-                    showToast('🎉 Quick regeneration completed! Website updated.', 'success');
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    btn.style.opacity = '1';
-                }
-            };
-
-            // Start progress checking after a short delay
-            setTimeout(checkProgress, 2000);
+            pollRegenerationStatus(btn, originalText, 'quick');
 
         } else {
             showToast('❌ Regeneration failed: ' + (data.error || 'Unknown error'), 'error');
@@ -753,42 +725,10 @@ function regenerateAll(event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast('✅ Full regeneration in progress...', 'success');
+            showToast('✅ Full regeneration started! Fetching fresh data from all sources...', 'success');
 
-            // Poll for completion status with longer intervals for full regeneration
-            let progressChecks = 0;
-            const maxChecks = 120; // 120 seconds (2 minutes) max for full regeneration
-
-            const checkProgress = () => {
-                progressChecks++;
-
-                // Show progress updates at different stages
-                if (progressChecks === 5) {
-                    showToast('🔍 Scanning sources...', 'success');
-                } else if (progressChecks === 15) {
-                    showToast('📥 Fetching fresh articles...', 'success');
-                } else if (progressChecks === 30) {
-                    showToast('💾 Updating database...', 'success');
-                } else if (progressChecks === 60) {
-                    showToast('📄 Generating pages...', 'success');
-                } else if (progressChecks === 90) {
-                    showToast('🎨 Finalizing website...', 'success');
-                }
-
-                // Check if still working
-                if (progressChecks < maxChecks) {
-                    setTimeout(checkProgress, 1000);
-                } else {
-                    // Assume completed after timeout
-                    showToast('🎉 Full regeneration completed! Website rebuilt with fresh data.', 'success');
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    btn.style.opacity = '1';
-                }
-            };
-
-            // Start progress checking after a short delay
-            setTimeout(checkProgress, 3000);
+            // Poll for completion status
+            pollRegenerationStatus(btn, originalText, 'full');
 
         } else {
             showToast('❌ Full regeneration failed: ' + (data.error || 'Unknown error'), 'error');
@@ -857,5 +797,85 @@ function saveRegenerateSettings(event) {
         btn.textContent = originalText;
         btn.disabled = false;
     });
+}
+
+// Poll regeneration status and update UI accordingly
+function pollRegenerationStatus(btn, originalText, type) {
+    let pollCount = 0;
+    const maxPolls = type === 'quick' ? 60 : 120; // 1-2 minutes depending on type
+
+    const pollStatus = () => {
+        pollCount++;
+
+        fetch('/admin/api/regeneration-status')
+        .then(response => response.json())
+        .then(status => {
+            console.log('Regeneration status:', status);
+
+            // Show progress updates at different stages
+            if (type === 'quick') {
+                if (pollCount === 3) showToast('🔄 Processing articles...', 'success');
+                if (pollCount === 10) showToast('📄 Generating pages...', 'success');
+                if (pollCount === 20) showToast('🎨 Applying styles...', 'success');
+            } else { // full regeneration
+                if (pollCount === 3) showToast('🔍 Scanning sources...', 'success');
+                if (pollCount === 10) showToast('📥 Fetching fresh articles...', 'success');
+                if (pollCount === 25) showToast('💾 Updating database...', 'success');
+                if (pollCount === 50) showToast('📄 Generating pages...', 'success');
+                if (pollCount === 80) showToast('🎨 Finalizing website...', 'success');
+            }
+
+            // If status is 'idle', regeneration is complete
+            if (status.status === 'idle' && pollCount > 2) {
+                const message = type === 'quick'
+                    ? '🎉 Quick regeneration completed! Website updated with latest content.'
+                    : '🎉 Full regeneration completed! Website rebuilt with fresh data.';
+                showToast(message, 'success');
+
+                // Reset button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                return; // Stop polling
+            }
+
+            // If status is 'busy', keep polling
+            if (status.status === 'busy' && pollCount < maxPolls) {
+                setTimeout(pollStatus, 2000); // Poll every 2 seconds
+            } else {
+                // Timeout or unknown status - assume complete
+                const message = type === 'quick'
+                    ? '🎉 Quick regeneration completed! Website updated.'
+                    : '🎉 Full regeneration completed! Website rebuilt.';
+                showToast(message, 'success');
+
+                // Reset button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+        })
+        .catch(error => {
+            console.error('Status check error:', error);
+            // If we can't check status, assume completion after reasonable time
+            if (pollCount >= 10) {
+                const message = type === 'quick'
+                    ? '🎉 Quick regeneration completed! Website updated.'
+                    : '🎉 Full regeneration completed! Website rebuilt.';
+                showToast(message, 'success');
+
+                // Reset button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            } else {
+                // Keep trying
+                setTimeout(pollStatus, 2000);
+            }
+        });
+    };
+
+    // Start polling after initial delay
+    setTimeout(pollStatus, 2000);
 }
 

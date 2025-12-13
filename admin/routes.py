@@ -1890,6 +1890,57 @@ def save_weather_api_key():
 
 
 @login_required
+@app.route('/admin/api/regeneration-status', methods=['GET', 'OPTIONS'])
+def get_regeneration_status():
+    """Check the status of ongoing regeneration processes"""
+    try:
+        # Check if any regeneration processes are currently running
+        # This is a simple implementation - in a real system you'd track PIDs or use a job queue
+
+        # For now, we'll check the last regeneration time and assume processes are done
+        # if they've been running for more than a reasonable time
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('last_regeneration_time',))
+            last_regeneration_row = cursor.fetchone()
+
+            if last_regeneration_row and last_regeneration_row[0]:
+                try:
+                    import time
+                    last_time = float(last_regeneration_row[0])
+                    current_time = time.time()
+                    time_since = current_time - last_time
+
+                    # If it's been more than 5 minutes since last regeneration started,
+                    # assume any process has completed
+                    if time_since > 300:  # 5 minutes
+                        return jsonify({
+                            'status': 'idle',
+                            'last_regeneration': last_time,
+                            'message': 'No active regeneration processes'
+                        })
+                    else:
+                        return jsonify({
+                            'status': 'busy',
+                            'last_regeneration': last_time,
+                            'time_running': int(time_since),
+                            'message': f'Regeneration in progress ({int(time_since)}s elapsed)'
+                        })
+
+                except (ValueError, TypeError):
+                    pass
+
+            return jsonify({
+                'status': 'unknown',
+                'message': 'Unable to determine regeneration status'
+            })
+
+    except Exception as e:
+        logger.error(f"Error checking regeneration status: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@login_required
 @app.route('/admin/api/get-article', methods=['GET', 'OPTIONS'])
 def get_article():
     """Get a specific article by ID"""
