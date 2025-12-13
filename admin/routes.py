@@ -1218,6 +1218,34 @@ def admin_zip_dashboard(zip_code):
                 active_tab=tab
             )
 
+        if tab == 'settings':
+            # #region agent log
+            try:
+                with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                    json.dump({
+                        "id": f"log_{int(time.time()*1000)}_settings_branch",
+                        "timestamp": int(time.time()*1000),
+                        "location": "admin/routes.py:1220",
+                        "message": "Settings branch executed",
+                        "data": {
+                            "tab": tab,
+                            "zip_code": zip_code
+                        },
+                        "sessionId": "debug-session",
+                        "runId": "run1",
+                        "hypothesisId": "A"
+                    }, f)
+                    f.write('\n')
+            except Exception as e:
+                pass
+            # #endregion
+            return render_template('admin/settings.html',
+                zip_code=zip_code,
+                version=VERSION,
+                active_tab=tab,
+                settings=settings
+            )
+
         # #region agent log
         try:
             with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
