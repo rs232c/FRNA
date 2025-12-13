@@ -309,54 +309,62 @@ def get_stats(zip_code=None):
         else:
             cursor.execute('SELECT COUNT(*) FROM articles')
         stats['total_articles'] = cursor.fetchone()[0]
+        print(f"[DEBUG] Stats for zip_code={zip_code}: total_articles={stats['total_articles']}")
 
-        # Active articles (not rejected)
+        # Active articles (not rejected) - avoid duplicates by using DISTINCT or proper grouping
         if zip_code:
             cursor.execute('''
-                SELECT COUNT(*) FROM articles a
-                LEFT JOIN article_management am ON a.id = am.article_id
+                SELECT COUNT(DISTINCT a.id) FROM articles a
+                LEFT JOIN article_management am ON a.id = am.article_id AND am.zip_code = a.zip_code
                 WHERE a.zip_code = ? AND (am.is_rejected IS NULL OR am.is_rejected = 0)
             ''', (zip_code,))
         else:
             cursor.execute('''
-                SELECT COUNT(*) FROM articles a
-                LEFT JOIN article_management am ON a.id = am.article_id
+                SELECT COUNT(DISTINCT a.id) FROM articles a
+                LEFT JOIN article_management am ON a.id = am.article_id AND am.zip_code = a.zip_code
                 WHERE am.is_rejected IS NULL OR am.is_rejected = 0
             ''')
         stats['active_articles'] = cursor.fetchone()[0]
+        print(f"[DEBUG] active_articles={stats['active_articles']}")
 
-        # Rejected articles (manually rejected only, not auto-filtered)
+        # Rejected articles (manually rejected only, not auto-filtered) - use DISTINCT to avoid duplicates
         if zip_code:
             cursor.execute('''
-                SELECT COUNT(*) FROM article_management am
+                SELECT COUNT(DISTINCT am.article_id) FROM article_management am
                 JOIN articles a ON am.article_id = a.id
-                WHERE am.is_rejected = 1 AND am.is_auto_filtered = 0 AND a.zip_code = ?
-            ''', (zip_code,))
+                WHERE am.is_rejected = 1 AND am.is_auto_filtered = 0 AND a.zip_code = ? AND am.zip_code = ?
+            ''', (zip_code, zip_code))
         else:
-            cursor.execute('SELECT COUNT(*) FROM article_management WHERE is_rejected = 1 AND is_auto_filtered = 0')
+            cursor.execute('''
+                SELECT COUNT(DISTINCT am.article_id) FROM article_management am
+                WHERE am.is_rejected = 1 AND am.is_auto_filtered = 0
+            ''')
         stats['rejected_articles'] = cursor.fetchone()[0]
+        print(f"[DEBUG] rejected_articles={stats['rejected_articles']}")
 
-        # Top stories (is_top_story = 1)
+        # Top stories (is_top_story = 1) - use DISTINCT to avoid duplicates
         if zip_code:
             cursor.execute('''
-                SELECT COUNT(*) FROM article_management am
+                SELECT COUNT(DISTINCT am.article_id) FROM article_management am
                 JOIN articles a ON am.article_id = a.id
-                WHERE am.is_top_story = 1 AND a.zip_code = ?
-            ''', (zip_code,))
+                WHERE am.is_top_story = 1 AND a.zip_code = ? AND am.zip_code = ?
+            ''', (zip_code, zip_code))
         else:
-            cursor.execute('SELECT COUNT(*) FROM article_management WHERE is_top_story = 1')
+            cursor.execute('SELECT COUNT(DISTINCT am.article_id) FROM article_management WHERE is_top_story = 1')
         stats['top_stories'] = cursor.fetchone()[0]
+        print(f"[DEBUG] top_stories={stats['top_stories']}")
 
-        # Disabled articles (is_featured = 0 and not top story)
+        # Featured articles (is_featured = 1)
         if zip_code:
             cursor.execute('''
-                SELECT COUNT(*) FROM article_management am
+                SELECT COUNT(DISTINCT am.article_id) FROM article_management am
                 JOIN articles a ON am.article_id = a.id
-                WHERE am.is_featured = 0 AND am.is_top_story = 0 AND a.zip_code = ?
-            ''', (zip_code,))
+                WHERE am.is_featured = 1 AND a.zip_code = ? AND am.zip_code = ?
+            ''', (zip_code, zip_code))
         else:
-            cursor.execute('SELECT COUNT(*) FROM article_management WHERE is_featured = 0 AND is_top_story = 0')
-        stats['disabled_articles'] = cursor.fetchone()[0]
+            cursor.execute('SELECT COUNT(DISTINCT am.article_id) FROM article_management WHERE is_featured = 1')
+        stats['featured_articles'] = cursor.fetchone()[0]
+        print(f"[DEBUG] featured_articles={stats['featured_articles']}")
 
         # Articles last 7 days
         if zip_code:
@@ -364,6 +372,7 @@ def get_stats(zip_code=None):
         else:
             cursor.execute('SELECT COUNT(*) FROM articles WHERE published >= date(\'now\', \'-7 days\')')
         stats['articles_last_7_days'] = cursor.fetchone()[0]
+        print(f"[DEBUG] articles_last_7_days={stats['articles_last_7_days']}")
 
         # Articles by source
         if zip_code:
