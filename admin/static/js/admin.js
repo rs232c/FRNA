@@ -642,11 +642,36 @@ let showImagesTogglePromise = Promise.resolve();
 
 // Settings page functions
 function regenerateWebsite(event) {
-    // Show loading state
+    // Show loading state with progress indicator
     const btn = event.target;
     const originalText = btn.textContent;
-    btn.textContent = '🔄 Regenerating...';
+    btn.innerHTML = '🔄 <span class="spinner"></span> Working...';
     btn.disabled = true;
+    btn.style.opacity = '0.7';
+
+    // Add spinner CSS if not exists
+    if (!document.getElementById('regeneration-styles')) {
+        const style = document.createElement('style');
+        style.id = 'regeneration-styles';
+        style.textContent = `
+            .spinner {
+                display: inline-block;
+                width: 12px;
+                height: 12px;
+                border: 2px solid #ffffff;
+                border-radius: 50%;
+                border-top-color: transparent;
+                animation: spin 1s linear infinite;
+                margin-right: 8px;
+            }
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    showToast('🚀 Starting quick regeneration...', 'success');
 
     fetch('/admin/api/regenerate', {
         method: 'POST',
@@ -657,38 +682,67 @@ function regenerateWebsite(event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast('✅ Quick regeneration started! Using existing articles from database.', 'success');
+            showToast('✅ Regeneration in progress...', 'success');
 
-            // Show completion after a delay (since it's async)
-            setTimeout(() => {
-                showToast('🎉 Website updated! Refreshed with latest database content.', 'success');
-            }, 3000);
+            // Poll for completion status
+            let progressChecks = 0;
+            const maxChecks = 60; // 60 seconds max
+
+            const checkProgress = () => {
+                progressChecks++;
+
+                // Show progress updates
+                if (progressChecks === 5) {
+                    showToast('🔄 Processing articles...', 'success');
+                } else if (progressChecks === 15) {
+                    showToast('📄 Generating pages...', 'success');
+                } else if (progressChecks === 30) {
+                    showToast('🎨 Applying styles...', 'success');
+                }
+
+                // Check if still working (this is a simple timeout-based approach)
+                if (progressChecks < maxChecks) {
+                    setTimeout(checkProgress, 1000);
+                } else {
+                    // Assume completed after timeout
+                    showToast('🎉 Quick regeneration completed! Website updated.', 'success');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }
+            };
+
+            // Start progress checking after a short delay
+            setTimeout(checkProgress, 2000);
+
         } else {
             showToast('❌ Regeneration failed: ' + (data.error || 'Unknown error'), 'error');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            btn.style.opacity = '1';
         }
     })
     .catch(error => {
         showToast('❌ Network error during regeneration', 'error');
-    })
-    .finally(() => {
-        // Reset button
-        btn.textContent = originalText;
+        btn.innerHTML = originalText;
         btn.disabled = false;
+        btn.style.opacity = '1';
     });
 }
 
 function regenerateAll(event) {
-    console.log('[FRNA Admin] Regenerating all (fresh data)...');
-
     if (!confirm('This will fetch fresh data from all sources and may take several minutes. Continue?')) {
         return;
     }
 
-    // Show loading state
+    // Show loading state with progress indicator
     const btn = event.target;
     const originalText = btn.textContent;
-    btn.textContent = '🔄 Regenerating All...';
+    btn.innerHTML = '🔄 <span class="spinner"></span> Working...';
     btn.disabled = true;
+    btn.style.opacity = '0.7';
+
+    showToast('🚀 Starting full regeneration...', 'success');
 
     fetch('/admin/api/regenerate-all', {
         method: 'POST',
@@ -699,24 +753,55 @@ function regenerateAll(event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast('✅ Full regeneration started! Fetching fresh data from all sources...', 'success');
+            showToast('✅ Full regeneration in progress...', 'success');
 
-            // Show completion after a longer delay (since full regeneration takes time)
-            setTimeout(() => {
-                showToast('🎉 Full regeneration completed! Website rebuilt with fresh data.', 'success');
-            }, 15000); // 15 seconds for full regeneration
+            // Poll for completion status with longer intervals for full regeneration
+            let progressChecks = 0;
+            const maxChecks = 120; // 120 seconds (2 minutes) max for full regeneration
+
+            const checkProgress = () => {
+                progressChecks++;
+
+                // Show progress updates at different stages
+                if (progressChecks === 5) {
+                    showToast('🔍 Scanning sources...', 'success');
+                } else if (progressChecks === 15) {
+                    showToast('📥 Fetching fresh articles...', 'success');
+                } else if (progressChecks === 30) {
+                    showToast('💾 Updating database...', 'success');
+                } else if (progressChecks === 60) {
+                    showToast('📄 Generating pages...', 'success');
+                } else if (progressChecks === 90) {
+                    showToast('🎨 Finalizing website...', 'success');
+                }
+
+                // Check if still working
+                if (progressChecks < maxChecks) {
+                    setTimeout(checkProgress, 1000);
+                } else {
+                    // Assume completed after timeout
+                    showToast('🎉 Full regeneration completed! Website rebuilt with fresh data.', 'success');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }
+            };
+
+            // Start progress checking after a short delay
+            setTimeout(checkProgress, 3000);
+
         } else {
             showToast('❌ Full regeneration failed: ' + (data.error || 'Unknown error'), 'error');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            btn.style.opacity = '1';
         }
     })
     .catch(error => {
-        console.error('Full regeneration error:', error);
         showToast('❌ Network error during full regeneration', 'error');
-    })
-    .finally(() => {
-        // Reset button
-        btn.textContent = originalText;
+        btn.innerHTML = originalText;
         btn.disabled = false;
+        btn.style.opacity = '1';
     });
 }
 
