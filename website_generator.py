@@ -176,7 +176,7 @@ class WebsiteGenerator:
 
         logger.info("Step 5/6: Generating category pages...")
         # Generate category pages for all categories
-        categories_to_generate = ['business', 'crime', 'events', 'food', 'local-news', 'meetings', 'obituaries', 'schools', 'sports', 'weather']
+        categories_to_generate = ['business', 'crime', 'events', 'food', 'local-news', 'meetings', 'obituaries', 'scanner', 'schools', 'sports', 'weather']
         for category_slug in categories_to_generate:
             try:
                 self._generate_category_page(category_slug, enabled_articles, weather, admin_settings, zip_code)
@@ -536,22 +536,22 @@ class WebsiteGenerator:
 
         # Enrich articles with source initials, gradients, and glow colors
         for article in all_articles:
-            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
             article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         for article in top_stories:
-            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
             article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         for article in trending_articles:
-            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
             article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         for article in latest_stories:
-            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
             article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         for article in newest_articles:
-            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
             article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         for article in entertainment_articles:
-            article['source_initials'] = article.get('source', '')[:2].upper()
+            article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
             article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
         
         # Optimize images for articles (only when hotlinking is disabled)
@@ -712,6 +712,12 @@ class WebsiteGenerator:
             -parse_timestamp(x.get('published', x.get('created_at', '1970-01-01')))  # Then by publication date
         ), reverse=True)
 
+        # Enrich formatted_articles with source initials and gradients
+
+        for article in formatted_articles:
+            article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
+            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
+
         # Get hero articles for index page
         hero_articles = formatted_articles[:3] if formatted_articles else []  # Top 3 articles as heroes
 
@@ -813,7 +819,6 @@ class WebsiteGenerator:
 
         # Second row: Secondary navigation (slightly smaller, lighter)
         second_row_tabs = [
-            ("Media", f"{category_prefix}entertainment.html", "entertainment", "category-entertainment"),
             ("Scanner", f"{category_prefix}scanner.html", "scanner", "category-scanner"),
             ("Meetings", f"{category_prefix}meetings.html", "meetings", "category-meetings"),
             ("Submit Tip", f"{home_href}#submit", "submit-tip", "home"),
@@ -1111,6 +1116,12 @@ class WebsiteGenerator:
             x.get('_display_order', 999),  # Then by display order
             -parse_timestamp(x.get('published', x.get('created_at', '1970-01-01')))  # Then by publication date
         ), reverse=True)
+
+        # Enrich formatted_articles with source initials and gradients
+
+        for article in formatted_articles:
+            article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
+            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
 
         # Get hero articles for index page
         hero_articles = formatted_articles[:3] if formatted_articles else []  # Top 3 articles as heroes
@@ -1558,6 +1569,67 @@ class WebsiteGenerator:
         ]
 
         return colorful_gradients[hash_value % len(colorful_gradients)]
+
+    def _generate_smart_initials(self, source: str) -> str:
+        """Generate smart initials based on source name - like 'herald news' -> 'hn', 'fall river reporter' -> 'frr'"""
+        if not source or not source.strip():
+            return 'XX'
+
+        # Normalize the source name
+        normalized = source.lower().strip()
+
+        # Common mappings for specific sources
+        smart_mappings = {
+            'herald news': 'hn',
+            'fall river herald news': 'hn',
+            'fall river reporter': 'frr',
+            'taunton gazette': 'tg',
+            'taunton daily gazette': 'tg',
+            'new bedford light': 'nbl',
+            'southcoasttoday': 'sct',
+            'providence journal': 'pj',
+            'boston globe': 'bg',
+            'boston herald': 'bh',
+            'wicked local': 'wl',
+            'universal hub': 'uh',
+            'cnn': 'cnn',
+            'fox news': 'fn',
+            'bbc news': 'bbc',
+            'nbc news': 'nbc',
+            'abc news': 'abc',
+            'cbs news': 'cbs',
+            'reuters': 'rtr',
+            'associated press': 'ap',
+            'usa today': 'ut',
+            'wall street journal': 'wsj',
+            'new york times': 'nyt',
+            'washington post': 'wp'
+        }
+
+        # Check for exact matches first
+        if normalized in smart_mappings:
+            return smart_mappings[normalized].upper()
+
+        # Check for partial matches (contains)
+        for key, initials in smart_mappings.items():
+            if key in normalized:
+                return initials.upper()
+
+        # Fallback: extract meaningful initials
+        # Remove common words and get first letters of remaining words
+        words_to_ignore = {'the', 'news', 'newspaper', 'times', 'post', 'tribune', 'journal', 'herald', 'reporter', 'gazette', 'daily', 'weekly', 'local', 'online', 'media', 'press', 'today', 'now', 'live'}
+
+        words = [word for word in normalized.split() if word not in words_to_ignore and len(word) > 2]
+
+        if len(words) >= 2:
+            # Take first letter of first two meaningful words
+            return (words[0][0] + words[1][0]).upper()
+        elif len(words) == 1:
+            # Take first two letters of the word
+            return words[0][:2].upper()
+        else:
+            # Last resort: first two letters of original source
+            return source[:2].upper()
 
     def _get_source_glow_color(self, source: str) -> str:
         """Get glow color for a source"""

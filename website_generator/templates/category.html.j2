@@ -24,6 +24,15 @@
     <style>
         .lazy-image { opacity: 0; transition: opacity 0.3s; }
         .lazy-image.loaded { opacity: 1; }
+
+        /* Enhanced mobile menu animations */
+        #mobileMenu {
+            transition: opacity 0.3s ease;
+        }
+
+        #mobileMenuPanel {
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
     </style>
 </head>
 <body class="bg-[#0a0a0a] text-gray-100 min-h-screen">
@@ -83,6 +92,124 @@
             </div>
         </div>
     </nav>
+
+    <!-- Premium Mobile Menu Drawer -->
+    <div id="mobileMenu" class="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
+        <!-- Enhanced backdrop with animation -->
+        <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" onclick="closeMobileMenu()"></div>
+
+        <!-- Premium drawer panel with enhanced animations -->
+        <div class="absolute top-0 right-0 h-full w-80 bg-[#0a0a0a]/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl transform translate-x-full transition-all duration-500 ease-out" id="mobileMenuPanel">
+            <!-- Premium header -->
+            <div class="flex items-center justify-between p-6 border-b border-white/10 bg-gradient-to-r from-purple-500/10 to-blue-500/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">F</span>
+                    </div>
+                    <h2 class="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Fall River</h2>
+                </div>
+                <button id="closeMobileMenu" class="text-gray-400 hover:text-white transition-all duration-300 p-3 rounded-xl hover:bg-white/10 hover:scale-110">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Enhanced categories section -->
+            <div class="px-6 py-6 overflow-y-auto h-full pb-24">
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                        <span class="w-1 h-4 bg-gradient-to-b from-blue-400 to-purple-400 rounded-full"></span>
+                        Category Controls
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4">Toggle categories on/off to customize your feed</p>
+                </div>
+                <div class="space-y-2 animate-slide-in-right">
+                    <!-- Local - Filtered Mode (Category Page) -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="{{ home_path }}index.html" class="flex-1 px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-red-500/30 hover:bg-red-500/10 text-left" id="link-local">
+                            Local News
+                        </a>
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-local" {% if category_slug == 'local-news' %}checked{% endif %}>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-400/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500 peer-checked:after:bg-white shadow-inner"></div>
+                        </label>
+                    </div>
+                    <!-- Police & Fire -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="{{ home_path }}category/crime.html" class="flex-1 px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-red-500/30 hover:bg-red-500/10 text-left" id="link-crime">
+                            Police & Fire
+                        </a>
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-crime" {% if category_slug == 'crime' %}checked{% endif %}>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-400/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500 peer-checked:after:bg-white shadow-inner"></div>
+                        </label>
+                    </div>
+                    <!-- Sports -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="{{ home_path }}category/sports.html" class="flex-1 px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-green-500/30 hover:bg-green-500/10 text-left" id="link-sports">
+                            Sports
+                        </a>
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-sports" {% if category_slug == 'sports' %}checked{% endif %}>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-400/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500 peer-checked:after:bg-white shadow-inner"></div>
+                        </label>
+                    </div>
+                    <!-- Obituaries -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="{{ home_path }}category/obituaries.html" class="flex-1 px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-purple-500/30 hover:bg-purple-500/10 text-left" id="link-obituaries">
+                            Obituaries
+                        </a>
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-obituaries" {% if category_slug == 'obituaries' %}checked{% endif %}>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-400/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500 peer-checked:after:bg-white shadow-inner"></div>
+                        </label>
+                    </div>
+                    <!-- Food & Drink -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="{{ home_path }}category/food.html" class="flex-1 px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-orange-500/30 hover:bg-orange-500/10 text-left" id="link-food">
+                            Food & Drink
+                        </a>
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-food" {% if category_slug == 'food' %}checked{% endif %}>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-400/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 peer-checked:after:bg-white shadow-inner"></div>
+                        </label>
+                    </div>
+
+                    <!-- Scanner -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="{{ home_path }}category/scanner.html" class="flex-1 px-4 py-2 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-left" id="link-scanner">
+                            Scanner
+                        </a>
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-scanner" {% if category_slug == 'scanner' %}checked{% endif %}>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-400 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-700 peer-checked:after:bg-gray-600 shadow-inner"></div>
+                        </label>
+                    </div>
+                    <!-- Meetings -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="{{ home_path }}category/meetings.html" class="flex-1 px-4 py-2 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-left" id="link-meetings">
+                            Meetings
+                        </a>
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-meetings" {% if category_slug == 'meetings' %}checked{% endif %}>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-400 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-700 peer-checked:after:bg-gray-600 shadow-inner"></div>
+                        </label>
+                    </div>
+                    <!-- Events -->
+                    <div class="group flex items-center justify-between p-1 rounded-xl hover:bg-gray-800/20 transition-all duration-300">
+                        <a href="{{ home_path }}category/events.html" class="flex-1 px-4 py-2 rounded-lg transition-all duration-200 text-gray-300 hover:text-white font-semibold border border-transparent hover:border-gray-700 hover:bg-gray-900/30 text-left" id="link-events">
+                            Events
+                        </a>
+                        <label class="ml-4 relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-events" {% if category_slug == 'events' %}checked{% endif %}>
+                            <div class="w-12 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-400 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-700 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-700 peer-checked:after:bg-gray-600 shadow-inner"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
@@ -348,6 +475,171 @@
     <script src="{{ home_path }}js/main.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
     <script src="{{ home_path }}js/zip-router.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}"></script>
     <script>console.log('[FRNA] ✅ Category page loaded with cache-busting - build:', '{{ current_time }}');</script>
+
+    <script>
+        // Hamburger Menu Category Filtering for Category Pages
+        function initializeCategoryFilters() {
+            // Map toggle IDs to category values
+            const categoryMap = {
+                'toggle-local': 'local-news',
+                'toggle-crime': 'crime',
+                'toggle-sports': 'sports',
+                'toggle-obituaries': 'obituaries',
+                'toggle-food': 'food',
+                'toggle-entertainment': 'entertainment',
+                'toggle-scanner': 'scanner',
+                'toggle-meetings': 'meetings',
+                'toggle-events': 'events'
+            };
+
+            // Get all toggle checkboxes
+            Object.keys(categoryMap).forEach(toggleId => {
+                const checkbox = document.getElementById(toggleId);
+                if (checkbox) {
+                    // Set initial state and add change listener
+                    checkbox.addEventListener('change', function() {
+                        filterArticles();
+                        // Add visual feedback
+                        const label = checkbox.closest('label') || checkbox.parentElement;
+                        if (label) {
+                            label.style.transform = 'scale(0.95)';
+                            setTimeout(() => {
+                                label.style.transform = '';
+                            }, 150);
+                        }
+                    });
+                }
+            });
+
+            // Initial filter on page load
+            setTimeout(filterArticles, 100);
+        }
+
+        function filterArticles() {
+            const articlesGrid = document.getElementById('articlesGrid');
+            if (!articlesGrid) return;
+
+            const articles = articlesGrid.querySelectorAll('article[data-category]');
+            const categoryMap = {
+                'toggle-crime': 'crime',
+                'toggle-sports': 'sports',
+                'toggle-obituaries': 'obituaries',
+                'toggle-food': 'food',
+                'toggle-entertainment': 'entertainment',
+                'toggle-scanner': 'scanner',
+                'toggle-meetings': 'meetings',
+                'toggle-events': 'events'
+            };
+
+            // Get enabled categories
+            const enabledCategories = [];
+            Object.entries(categoryMap).forEach(([toggleId, category]) => {
+                const checkbox = document.getElementById(toggleId);
+                if (checkbox && checkbox.checked) {
+                    enabledCategories.push(category);
+                }
+            });
+
+            // Debug: Log enabled categories
+            console.log('Enabled categories:', enabledCategories);
+
+            // If no categories are enabled, show all articles
+            if (enabledCategories.length === 0) {
+                articles.forEach(article => {
+                    article.style.display = 'block';
+                    article.style.opacity = '1';
+                    article.style.transform = 'scale(1)';
+                });
+                return;
+            }
+
+            // Filter articles
+            let visibleCount = 0;
+            articles.forEach(article => {
+                const articleCategory = article.getAttribute('data-category');
+                const shouldShow = enabledCategories.includes(articleCategory);
+
+                if (shouldShow) {
+                    article.style.display = 'block';
+                    article.style.opacity = '1';
+                    article.style.transform = 'scale(1)';
+                    visibleCount++;
+                } else {
+                    article.style.display = 'none';
+                    article.style.opacity = '0.3';
+                    article.style.transform = 'scale(0.95)';
+                }
+            });
+
+            // Show message if no articles match the filter
+            let noResultsMsg = document.getElementById('noFilteredResults');
+            if (visibleCount === 0 && enabledCategories.length > 0) {
+                if (!noResultsMsg) {
+                    noResultsMsg = document.createElement('div');
+                    noResultsMsg.id = 'noFilteredResults';
+                    noResultsMsg.className = 'col-span-full text-center py-12';
+                    noResultsMsg.innerHTML = `
+                        <div class="text-4xl mb-4">🔍</div>
+                        <h3 class="text-xl font-bold text-gray-300 mb-2">No articles found</h3>
+                        <p class="text-gray-500">Try enabling more categories in the menu.</p>
+                    `;
+                    articlesGrid.appendChild(noResultsMsg);
+                }
+                noResultsMsg.style.display = 'block';
+            } else if (noResultsMsg) {
+                noResultsMsg.style.display = 'none';
+            }
+        }
+
+        // Mobile menu functions for category pages
+        function openMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const panel = document.getElementById('mobileMenuPanel');
+
+            menu.classList.remove('hidden');
+            menu.classList.remove('opacity-0');
+            setTimeout(() => {
+                panel.classList.remove('translate-x-full');
+                panel.classList.add('translate-x-0');
+            }, 10);
+        }
+
+        function closeMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const panel = document.getElementById('mobileMenuPanel');
+
+            panel.classList.remove('translate-x-0');
+            panel.classList.add('translate-x-full');
+            setTimeout(() => {
+                menu.classList.add('hidden');
+                menu.classList.add('opacity-0');
+            }, 500);
+        }
+
+        // Initialize mobile menu toggle and category filters
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize category filtering
+            initializeCategoryFilters();
+
+            const hamburgerBtn = document.getElementById('mobileNavToggle');
+            if (hamburgerBtn) {
+                hamburgerBtn.addEventListener('click', function() {
+                    const menu = document.getElementById('mobileMenu');
+                    if (menu.classList.contains('hidden')) {
+                        openMobileMenu();
+                    } else {
+                        closeMobileMenu();
+                    }
+                });
+            }
+
+            // Close menu when clicking close button
+            const closeBtn = document.getElementById('closeMobileMenu');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeMobileMenu);
+            }
+        });
+    </script>
     <script>
         // Lazy load images with data-src
         document.addEventListener('DOMContentLoaded', function() {

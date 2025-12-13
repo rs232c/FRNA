@@ -579,17 +579,50 @@ body { background: #f5f5f5 !important; color: #333 !important; }
             <h3 style="margin-top: 0; margin-bottom: 1rem; color: #333;">Category Statistics</h3>
             <div id="categoryStats" style="padding: 1rem; background: #f5f5f5; border-radius: 4px;">
                 {% if category_stats %}
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
                     {% for cat in category_stats %}
                     <div style="background: white; padding: 1rem; border-radius: 6px; border: 1px solid #ddd;">
                         <h4 style="margin: 0 0 0.5rem 0; color: #333;">{{ cat.name }}</h4>
                         <div style="font-size: 0.9rem; color: #666;">
-                            <div>Total: <strong>{{ cat.article_count }}</strong></div>
+                            <div>Articles: <strong>{{ cat.article_count }}</strong></div>
                             <div>Last 7 days: <strong>{{ cat.recent_count }}</strong></div>
+                            <div>Keywords: <strong>{{ cat.keyword_count }}</strong></div>
                         </div>
+                        {% if cat.keyword_count > 0 %}
+                        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #888;">
+                            <div style="font-weight: 600; color: #555; margin-bottom: 0.25rem;">Sample Keywords:</div>
+                            <div id="keywords-{{ cat.name|lower|replace(' ', '-') }}" style="font-style: italic;">
+                                Loading...
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
+
+                <!-- Load keyword samples -->
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    {% for cat in category_stats %}
+                    {% if cat.keyword_count > 0 %}
+                    fetch('/admin/api/category-keywords/{{ cat.name|lower|replace(' ', '-') }}?zip_code={{ zip_code }}')
+                        .then(response => response.json())
+                        .then(data => {
+                            const container = document.getElementById('keywords-{{ cat.name|lower|replace(' ', '-') }}');
+                            if (data.keywords && data.keywords.length > 0) {
+                                container.textContent = data.keywords.slice(0, 5).join(', ') + (data.keywords.length > 5 ? '...' : '');
+                            } else {
+                                container.textContent = 'No keywords loaded';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading keywords for {{ cat.name }}:', error);
+                            document.getElementById('keywords-{{ cat.name|lower|replace(' ', '-') }}').textContent = 'Error loading';
+                        });
+                    {% endif %}
+                    {% endfor %}
+                });
+                </script>
                 {% else %}
                 <p style="color: #666; text-align: center;">No categories found.</p>
                 {% endif %}
