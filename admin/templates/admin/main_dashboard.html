@@ -129,31 +129,31 @@ body { background: #f5f5f5 !important; color: #333 !important; }
                             title="Score breakdown">&#128200;</button>
 
                     <button onclick="adminAction({{ article.id }}, 'thumbs_up')"
-                            style="background: {% if article.get('is_good_fit', 0) %}#10b981{% else %}transparent{% endif %}; color: {% if article.get('is_good_fit', 0) %}white{% else %}#6b7280{% endif %}; border: {% if article.get('is_good_fit', 0) %}2px solid #10b981{% else %}none{% endif %}; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
+                            style="background: transparent; color: #6b7280; border: none; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
                             title="Thumbs up (good fit)">&#128077;</button>
 
                     <button onclick="adminAction({{ article.id }}, 'thumbs_down')"
-                            style="background: {% if article.get('is_good_fit', 0) == False %}#ef4444{% else %}transparent{% endif %}; color: {% if article.get('is_good_fit', 0) == False %}white{% else %}#6b7280{% endif %}; border: {% if article.get('is_good_fit', 0) == False %}2px solid #ef4444{% else %}none{% endif %}; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
+                            style="background: transparent; color: #6b7280; border: none; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
                             title="Thumbs down (bad fit)">&#128078;</button>
 
                     <button onclick="adminAction({{ article.id }}, 'top_story')"
-                            style="background: {% if article.get('is_top_story', 0) %}#f59e0b{% else %}transparent{% endif %}; color: {% if article.get('is_top_story', 0) %}white{% else %}#6b7280{% endif %}; border: {% if article.get('is_top_story', 0) %}2px solid #f59e0b{% else %}none{% endif %}; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
+                            style="background: transparent; color: #6b7280; border: none; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
                             title="Top story">&#127913;</button>
 
                     <button onclick="adminAction({{ article.id }}, 'top_article')"
-                            style="background: {% if article.get('is_top', 0) %}#fbbf24{% else %}transparent{% endif %}; color: {% if article.get('is_top', 0) %}white{% else %}#6b7280{% endif %}; border: {% if article.get('is_top', 0) %}2px solid #fbbf24{% else %}none{% endif %}; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
+                            style="background: transparent; color: #6b7280; border: none; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
                             title="Featured">&#11088;</button>
 
                     <button onclick="adminAction({{ article.id }}, 'alert')"
-                            style="background: {% if article.get('is_alert', 0) %}#ef4444{% else %}transparent{% endif %}; color: {% if article.get('is_alert', 0) %}white{% else %}#6b7280{% endif %}; border: {% if article.get('is_alert', 0) %}2px solid #ef4444{% else %}none{% endif %}; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
+                            style="background: transparent; color: #6b7280; border: none; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
                             title="Alert">&#128680;</button>
 
                     <button onclick="adminAction({{ article.id }}, 'on_target')"
-                            style="background: {% if article.get('is_on_target') == 1 %}#10b981{% else %}transparent{% endif %}; color: {% if article.get('is_on_target') == 1 %}white{% else %}#6b7280{% endif %}; border: {% if article.get('is_on_target') == 1 %}2px solid #10b981{% else %}none{% endif %}; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
+                            style="background: transparent; color: #6b7280; border: none; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
                             title="On target">&#127919;</button>
 
                     <button onclick="adminAction({{ article.id }}, 'off_target')"
-                            style="background: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}#ef4444{% else %}transparent{% endif %}; color: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}white{% else %}#6b7280{% endif %}; border: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}2px solid #ef4444{% else %}none{% endif %}; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
+                            style="background: transparent; color: #6b7280; border: none; border-radius: 50%; width: 3rem; height: 3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.2s;"
                             title="Off target">&#10060;</button>
 
                     {% if article.get('is_rejected', 0) %}
