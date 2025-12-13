@@ -580,6 +580,18 @@ let showImagesTogglePromise = Promise.resolve();
 
         // Handle relevance breakdown button
         if (btn.classList.contains('relevance-breakdown-btn')) {
+            showRelevanceBreakdown(articleId);
+            return;
+        }
+
+        // Handle edit article button
+        if (btn.classList.contains('edit-article-btn')) {
+            showEditArticleModal(articleId);
+            return;
+        }
+
+        // Handle relevance breakdown button
+        if (btn.classList.contains('relevance-breakdown-btn')) {
             const modal = document.getElementById('relevanceBreakdownModal');
             const body = document.getElementById('relevanceBreakdownBody');
             if (!articleId || !modal || !body) return;
@@ -1236,5 +1248,89 @@ function pollRegenerationStatus(btn, originalText, type) {
 
     // Start polling after initial delay
     setTimeout(pollStatus, 2000);
+}
+
+// Missing article functions
+function showRelevanceBreakdown(articleId) {
+    console.log('[DEBUG] Showing relevance breakdown for article:', articleId);
+
+    // Fetch relevance breakdown data
+    fetch(`/admin/api/get-relevance-breakdown?id=${articleId}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Create and show modal with breakdown data
+            showRelevanceBreakdownModal(articleId, data.breakdown || data);
+        } else {
+            showToast('Failed to load relevance breakdown', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching relevance breakdown:', error);
+        showToast('Error loading relevance breakdown', 'error');
+    });
+}
+
+function showRelevanceBreakdownModal(articleId, breakdown) {
+    // Create modal HTML
+    const modalHtml = `
+        <div id="relevanceBreakdownModal" class="modal" style="display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000;">
+            <div class="modal-content" style="background: #1a1a1a; margin: 5% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 600px; color: white;">
+                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0; color: #ffffff;">Relevance Breakdown</h3>
+                    <button onclick="closeRelevanceBreakdownModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+                </div>
+                <div id="relevanceBreakdownBody">
+                    <p>Loading breakdown...</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Populate with data
+    const body = document.getElementById('relevanceBreakdownBody');
+    if (body && breakdown) {
+        const relevanceScore = breakdown.relevance_score || breakdown.score || 'N/A';
+        const category = breakdown.category || breakdown.primary_category || 'N/A';
+        const localScore = breakdown.local_score || 'N/A';
+        const reasons = breakdown.reasons || breakdown.rejection_reasons || [];
+
+        body.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #ffffff; margin-bottom: 10px;">Relevance Score: ${relevanceScore}/100</h4>
+                <h4 style="color: #ffffff; margin-bottom: 10px;">Category: ${category}</h4>
+                <h4 style="color: #ffffff; margin-bottom: 10px;">Local Score: ${localScore}/100</h4>
+            </div>
+            <div>
+                <h4 style="color: #ffffff; margin-bottom: 10px;">Details:</h4>
+                <ul style="color: #cccccc;">
+                    ${Array.isArray(reasons) && reasons.length > 0
+                        ? reasons.map(reason => `<li>${reason}</li>`).join('')
+                        : '<li>No additional details available</li>'}
+                </ul>
+            </div>
+        `;
+    }
+}
+
+function closeRelevanceBreakdownModal() {
+    const modal = document.getElementById('relevanceBreakdownModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function showEditArticleModal(articleId) {
+    console.log('[DEBUG] Showing edit article modal for article:', articleId);
+    // For now, just show a placeholder
+    showToast('Edit article functionality coming soon', 'info');
 }
 

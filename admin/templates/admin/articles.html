@@ -43,42 +43,42 @@
                 </div>
             </div>
             <div class="article-actions" style="display: flex; gap: 0.5rem; align-items: center;">
-                <button class="relevance-breakdown-btn" data-id="{{ article.id }}" data-action="show-breakdown"
+                <button class="relevance-breakdown-btn" data-id="{{ article.id }}"
                         style="padding: 0.5rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;" 
                         title="Why rejected? / Score breakdown">
                     📊
                 </button>
-                <button class="thumbs-up-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_good_fit', 0) else 'off' }}" data-action="thumbs-up"
+                <button class="thumbs-up-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_good_fit', 0) else 'off' }}" data-action="thumbs_up"
                         style="padding: 0.5rem; background: {% if article.get('is_good_fit', 0) %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_good_fit', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;" 
                         title="Thumbs up (train relevance + category)">
                     👍
                 </button>
-                <button class="thumbs-down-btn" data-id="{{ article.id }}" data-action="thumbs-down"
+                <button class="thumbs-down-btn" data-id="{{ article.id }}" data-action="thumbs_down"
                         style="padding: 0.5rem; background: transparent; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: 0.5; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;" 
                         title="Thumbs down (train relevance + category)">
                     👎
                 </button>
-                <button class="top-story-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top_story', 0) else 'off' }}" data-action="toggle-top-story"
+                <button class="top-story-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top_story', 0) else 'off' }}" data-action="top_story"
                         style="padding: 0.5rem; background: {% if article.get('is_top_story', 0) %}#ff9800{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_top_story', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
                         title="Mark as top story (perfect example)">
                     🎩
                 </button>
-                <button class="top-article-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top', 0) else 'off' }}" data-action="toggle-top-article"
+                <button class="top-article-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_top', 0) else 'off' }}" data-action="top_article"
                         style="padding: 0.5rem; background: {% if article.get('is_top', 0) %}#ffd700{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_top', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
                         title="Mark as top article (featured)">
                     ⭐
                 </button>
-                <button class="alert-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_alert', 0) else 'off' }}" data-action="toggle-alert"
+                <button class="alert-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_alert', 0) else 'off' }}" data-action="alert"
                         style="padding: 0.5rem; background: {% if article.get('is_alert', 0) %}#ff4444{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_alert', 0) %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"
                         title="Mark as alert (urgent notification)">
                     🚨
                 </button>
-                <button class="on-target-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') == 1 else 'off' }}" data-action="on-target"
+                <button class="on-target-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') == 1 else 'off' }}" data-action="on_target"
                         style="padding: 0.5rem; background: {% if article.get('is_on_target') == 1 %}#4caf50{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; opacity: {% if article.get('is_on_target') == 1 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                         title="Mark as on target (relevant for targeting)">
                     🎯
                 </button>
-                <button class="off-target-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') is not none and article.get('is_on_target') == 0 else 'off' }}" data-action="off-target"
+                <button class="off-target-btn" data-id="{{ article.id }}" data-state="{{ 'on' if article.get('is_on_target') is not none and article.get('is_on_target') == 0 else 'off' }}" data-action="off_target"
                         style="padding: 0.5rem; background: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}#f44336{% else %}transparent{% endif %}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 1rem; opacity: {% if article.get('is_on_target') is not none and article.get('is_on_target') == 0 %}1{% else %}0.5{% endif %}; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                         title="Mark as off target (not relevant for targeting)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -86,16 +86,16 @@
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
-                <button class="edit-article-btn" data-id="{{ article.id }}" data-action="edit-article"
+                <button class="edit-article-btn" data-id="{{ article.id }}"
                         style="padding: 0.5rem; background: #252525; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;"
                         title="Edit article">
                     ✏️
                 </button>
                 {% if not article.get('is_rejected', 0) %}
-                <button class="trash-btn" data-id="{{ article.id }}" data-action="trash-article"
+                <button class="trash-btn" data-id="{{ article.id }}" data-action="trash"
                         title="Move to trash" style="padding: 0.5rem; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">🗑️</button>
                 {% else %}
-                <button class="restore-trash-btn" data-id="{{ article.id }}" data-action="restore-article"
+                <button class="restore-trash-btn" data-id="{{ article.id }}" data-action="restore"
                         title="Restore from trash" style="padding: 0.5rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">↩️</button>
                 {% endif %}
             </div>
