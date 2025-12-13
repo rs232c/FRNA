@@ -15,6 +15,27 @@
                 document.body.classList.add('no-images');
             }
 
+            // Debug: Check for any images after 1 second
+            setTimeout(() => {
+                const allImages = document.querySelectorAll('img');
+                const visibleImages = Array.from(allImages).filter(img => {
+                    const rect = img.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0 && img.offsetParent !== null;
+                });
+
+                console.log('[IMAGE DEBUG] Total img tags found:', allImages.length);
+                console.log('[IMAGE DEBUG] Visible images found:', visibleImages.length);
+                console.log('[IMAGE DEBUG] body has no-images class:', document.body.classList.contains('no-images'));
+                console.log('[IMAGE DEBUG] localStorage showImages:', localStorage.getItem('showImages'));
+
+                if (visibleImages.length > 0) {
+                    console.log('[IMAGE DEBUG] Visible image sources:');
+                    visibleImages.forEach((img, i) => {
+                        console.log(`  ${i+1}: ${img.src} (${img.offsetWidth}x${img.offsetHeight})`);
+                    });
+                }
+            }, 1000);
+
             imgTags.forEach((img, index) => {
                 console.log(`[IMAGE DEBUG] Image ${index + 1}: ${img.src}`);
                 img.addEventListener('load', () => console.log(`[IMAGE DEBUG] Image ${index + 1} loaded successfully`));
