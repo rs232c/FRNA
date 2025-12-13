@@ -34,22 +34,41 @@ function showToast(message, type = 'success') {
         existingToast.remove();
     }
 
-    // Create new toast
+    // Create new toast with inline styles (not Tailwind classes)
     const toast = document.createElement('div');
     toast.id = 'adminToast';
-    toast.className = `fixed top-4 right-4 z-[9999] px-4 py-2 rounded-lg shadow-lg text-white font-medium transition-all duration-300 ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'}`;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        color: white;
+        font-weight: 600;
+        font-size: 14px;
+        background-color: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
+        border: 1px solid ${type === 'success' ? '#45a049' : type === 'error' ? '#d32f2f' : '#1976d2'};
+        transition: all 0.3s ease;
+        max-width: 400px;
+        word-wrap: break-word;
+    `;
     toast.textContent = message;
 
-    console.log('[FRNA Admin] Created toast element, appending to body');
+    console.log('[FRNA Admin] Created toast element with inline styles, appending to body');
     document.body.appendChild(toast);
 
-    // Auto remove after 3 seconds
+    // Add visible border to make sure it's showing
+    toast.style.border = '2px solid yellow';
+
+    // Auto remove after 5 seconds (longer for debugging)
     setTimeout(() => {
         console.log('[FRNA Admin] Auto-removing toast');
         if (toast.parentNode) {
             toast.remove();
         }
-    }, 3000);
+    }, 5000);
 }
 
 // Unified admin action function
