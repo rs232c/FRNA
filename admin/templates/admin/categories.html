@@ -152,8 +152,8 @@ function displayAllCategories(categoriesData) {
 
     categoriesData.forEach(category => {
         const categoryDiv = document.createElement('div');
-        categoryDiv.style.cssText = 'margin-bottom: 2rem; padding: 1.5rem; background: #252525; border-radius: 8px; border: 3px solid #ff0000 !important; max-width: 850px !important; margin-left: auto; margin-right: auto;';
-        console.log(`Creating category div for ${category.name} with max-width: 850px and RED border`);
+        categoryDiv.style.cssText = 'margin-bottom: 2rem; padding: 1.5rem; background: #252525; border-radius: 8px; border: 3px solid #00ff00 !important; max-width: 600px !important; margin-left: auto; margin-right: auto;';
+        console.log(`Creating category div for ${category.name} with max-width: 600px and GREEN border`);
 
         // Category header with add keyword input
         const headerDiv = document.createElement('div');
