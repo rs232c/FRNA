@@ -827,7 +827,7 @@ function saveImageSetting() {
         console.log('[DEBUG] API response data:', data);
         if (data.success) {
             console.log('[DEBUG] Save successful, showing success toast');
-            showToast(`✅ Images ${showImages ? 'enabled' : 'disabled'} - Regenerate website to apply changes`, 'success');
+            showToast(`✅ Images ${showImages ? 'enabled' : 'disabled'} - This will affect article image display. Regenerate website to apply changes.`, 'success');
         } else {
             console.log('[DEBUG] Save failed:', data.error);
             showToast('❌ Failed to save image setting: ' + (data.error || 'Unknown error'), 'error');

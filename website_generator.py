@@ -159,6 +159,7 @@ class WebsiteGenerator:
         logger.info("Step 1/6: Loading admin settings...")
         admin_settings = self._get_admin_settings()
         logger.info("✓ Admin settings loaded")
+        logger.info(f"[SETTINGS] show_images setting: {admin_settings.get('show_images', 'NOT_SET')} (type: {type(admin_settings.get('show_images'))})")
         
         logger.info("Step 2/6: Filtering enabled articles...")
         enabled_articles = self._get_enabled_articles(articles, admin_settings, zip_code=zip_code, city_state=city_state)
@@ -436,13 +437,16 @@ class WebsiteGenerator:
         logger.info(f"_generate_index called with {len(articles)} articles")
         logger.error(f"settings is: {type(settings)}")
         show_images_val = settings.get('show_images', '1')
-        logger.error("show_images_val processed")
+        logger.info(f"[TEMPLATE] show_images_val from settings: {show_images_val} (type: {type(show_images_val)})")
+
         if isinstance(show_images_val, bool):
             show_images = show_images_val
         elif isinstance(show_images_val, str):
             show_images = show_images_val.strip().lower() in ('1', 'true', 'yes', 'on')
         else:
             show_images = bool(show_images_val)
+
+        logger.info(f"[TEMPLATE] Processed show_images: {show_images} (boolean)")
 
         # Process articles normally with proper timestamps
 
