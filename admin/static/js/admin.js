@@ -750,6 +750,7 @@ function saveRegenerateSettings(event) {
 
     const regenerateInterval = document.getElementById('regenerateInterval').value;
     const sourceFetchInterval = document.getElementById('sourceFetchInterval').value;
+    const showImages = document.getElementById('showImagesSettings').checked;
 
     // Validate inputs
     if (!regenerateInterval || regenerateInterval < 1 || regenerateInterval > 1440) {
@@ -770,7 +771,8 @@ function saveRegenerateSettings(event) {
 
     const settingsData = {
         regenerate_interval: parseInt(regenerateInterval),
-        source_fetch_interval: parseInt(sourceFetchInterval)
+        source_fetch_interval: parseInt(sourceFetchInterval),
+        show_images: showImages ? 1 : 0
     };
 
     fetch('/admin/api/settings', {
@@ -796,6 +798,36 @@ function saveRegenerateSettings(event) {
         // Reset button
         btn.textContent = originalText;
         btn.disabled = false;
+    });
+}
+
+// Save image setting immediately when toggled
+function saveImageSetting() {
+    const showImages = document.getElementById('showImagesSettings').checked;
+
+    fetch('/admin/api/settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            show_images: showImages ? 1 : 0
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`✅ Images ${showImages ? 'enabled' : 'disabled'} - Regenerate website to apply changes`, 'success');
+        } else {
+            showToast('❌ Failed to save image setting', 'error');
+            // Revert checkbox on failure
+            document.getElementById('showImagesSettings').checked = !showImages;
+        }
+    })
+    .catch(error => {
+        showToast('❌ Network error saving image setting', 'error');
+        // Revert checkbox on failure
+        document.getElementById('showImagesSettings').checked = !showImages;
     });
 }
 

@@ -54,7 +54,7 @@
             <div class="toggle-switch">
                 <label title="Allow Hotlinked Images – turns on/off external photos (obituaries, news sites)">Allow Hotlinked Images:</label>
                 <label class="switch">
-                    <input type="checkbox" id="showImagesSettings" {{ 'checked' if settings.get('show_images') == '1' else '' }}>
+                    <input type="checkbox" id="showImagesSettings" {{ 'checked' if settings.get('show_images') == '1' else '' }} onchange="saveImageSetting()">
                     <span class="slider"></span>
                 </label>
             </div>
@@ -88,26 +88,6 @@
                 </p>
             </div>
         </div>
-        
-        <div class="settings-section" style="margin-top: 2rem;">
-            <h3>Hard Filter Keywords</h3>
-            <p style="color: #666; margin-bottom: 1rem; font-size: 0.9rem;">
-                Articles must contain at least ONE of these keywords in the title or summary to be accepted. 
-                If no keywords match, the article is instantly rejected (score = 0).
-            </p>
-            <div id="hardFilterKeywords" style="background: #252525; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; min-height: 100px;">
-                <p style="color: #888; font-style: italic;">Loading keywords...</p>
-            </div>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <input type="text" id="newHardFilterKeyword" placeholder="Enter keyword (e.g., Fall River)" 
-                       style="flex: 1; padding: 0.5rem; border: 1px solid #404040; border-radius: 4px; background: #1a1a1a; color: white; max-width: 300px;">
-                <button onclick="addHardFilterKeyword()" 
-                        style="padding: 0.5rem 1.5rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
-                    ➕ Add Keyword
-                </button>
-            </div>
-        </div>
-        
         <div class="settings-section" style="margin-top: 2rem;">
             <h3>AI Filtering</h3>
             <div style="background: #e3f2fd; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #2196f3;">
