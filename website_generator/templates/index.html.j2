@@ -11,6 +11,11 @@
 
         // Count actual img tags in DOM
         document.addEventListener('DOMContentLoaded', function() {
+            // Kill all images if disabled in localStorage
+            if (localStorage.getItem('showImages') === 'false') {
+                document.body.classList.add('no-images');
+            }
+
             const imgTags = document.querySelectorAll('img');
             console.log(`[IMAGE DEBUG] Found ${imgTags.length} img tags in DOM`);
 
@@ -39,6 +44,12 @@
         /* Custom styles for things Tailwind can't handle */
         .lazy-image { opacity: 0; transition: opacity 0.3s; }
         .lazy-image.loaded { opacity: 1; }
+
+        /* Kill all images when disabled */
+        body.no-images img,
+        body.no-images [style*="background-image"] {
+          display: none !important;
+        }
 
         /* Prevent FOUC - hide content until JS loads */
         .fouc-hidden { opacity: 0; transition: opacity 0.3s; }
@@ -1075,6 +1086,13 @@
             {% if show_images %}
             localStorage.setItem('showImages', showImages);
             {% endif %}
+
+            // Update body class for CSS image blocking
+            if (showImages) {
+                document.body.classList.remove('no-images');
+            } else {
+                document.body.classList.add('no-images');
+            }
 
             // #region agent log
             fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1040',message:'toggleImages completed',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
