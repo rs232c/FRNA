@@ -1355,6 +1355,18 @@ def admin_zip_dashboard(zip_code):
             search=search_filter
         )
 
+        # Deduplicate articles by title, keeping the most recent one
+        seen_titles = set()
+        deduplicated_articles = []
+        for article in articles:
+            title = article.get('title', '').strip().lower()
+            if title and title not in seen_titles:
+                seen_titles.add(title)
+                deduplicated_articles.append(article)
+
+        articles = deduplicated_articles
+        total_count = len(articles)  # Update count after deduplication
+
         rejected_articles = get_rejected_articles(zip_code=zip_code)
         sources_config = get_sources()
         stats = get_stats(zip_code=zip_code)  # Get stats for this zip only
