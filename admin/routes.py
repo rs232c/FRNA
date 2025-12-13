@@ -1711,22 +1711,30 @@ def regenerate_website():
 
         def run_regeneration():
             try:
-                # Run quick_regenerate.py script
-                cmd = [sys.executable, 'scripts/deployment/quick_regenerate.py']
+                # Run quick_regenerate.py script from project root
+                import os
+                script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'scripts', 'deployment', 'quick_regenerate.py')
+                cmd = [sys.executable, script_path]
                 if zip_code:
                     cmd.extend(['--zip', zip_code])
 
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)  # 5 minute timeout
+                logger.info(f"Running regeneration command: {' '.join(cmd)}")
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
                 if result.returncode == 0:
                     logger.info("Website regeneration completed successfully")
+                    logger.info(f"Output: {result.stdout}")
                 else:
-                    logger.error(f"Regeneration failed: {result.stderr}")
+                    logger.error(f"Regeneration failed with return code {result.returncode}")
+                    logger.error(f"Stdout: {result.stdout}")
+                    logger.error(f"Stderr: {result.stderr}")
 
             except subprocess.TimeoutExpired:
                 logger.error("Regeneration timed out after 5 minutes")
             except Exception as e:
                 logger.error(f"Regeneration error: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
 
         # Run regeneration in background thread
         thread = threading.Thread(target=run_regeneration, daemon=True)
@@ -1762,23 +1770,32 @@ def regenerate_all():
                     aggregator.run_for_zip(zip_code)
                 else:
                     aggregator.run_full_cycle()
+                logger.info("Aggregation completed, starting website regeneration")
 
                 # Then run website regeneration
-                cmd = [sys.executable, 'scripts/deployment/quick_regenerate.py']
+                import os
+                script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'scripts', 'deployment', 'quick_regenerate.py')
+                cmd = [sys.executable, script_path]
                 if zip_code:
                     cmd.extend(['--zip', zip_code])
 
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)  # 10 minute timeout
+                logger.info(f"Running full regeneration command: {' '.join(cmd)}")
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=600, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
                 if result.returncode == 0:
                     logger.info("Full regeneration completed successfully")
+                    logger.info(f"Output: {result.stdout}")
                 else:
-                    logger.error(f"Full regeneration failed: {result.stderr}")
+                    logger.error(f"Full regeneration failed with return code {result.returncode}")
+                    logger.error(f"Stdout: {result.stdout}")
+                    logger.error(f"Stderr: {result.stderr}")
 
             except subprocess.TimeoutExpired:
                 logger.error("Full regeneration timed out after 10 minutes")
             except Exception as e:
                 logger.error(f"Full regeneration error: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
 
         # Run full regeneration in background thread
         thread = threading.Thread(target=run_full_regeneration, daemon=True)
