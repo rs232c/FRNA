@@ -638,26 +638,45 @@ let showImagesTogglePromise = Promise.resolve();
     });
     console.log('[FRNA Admin] ✅ Unified button event handler attached inside DOMContentLoaded');
 
+    attachRelevanceListeners();
+
+})();
+
+// Relevance event listeners function
+function attachRelevanceListeners() {
+    console.log('[DEBUG] Attaching relevance listeners...');
+
     // Relevance page event listeners
     document.querySelectorAll('[data-toggle]').forEach(el => {
-        el.addEventListener('click', function() {
-            const targetId = this.getAttribute('data-toggle');
-            toggleExplanation(targetId);
-        });
+        if (!el.hasAttribute('data-relevance-listener')) {
+            el.setAttribute('data-relevance-listener', 'true');
+            el.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-toggle');
+                console.log('[DEBUG] data-toggle clicked:', targetId);
+                toggleExplanation(targetId);
+            });
+        }
     });
 
     document.querySelectorAll('.remove-relevance-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const category = this.getAttribute('data-category');
-            const item = this.getAttribute('data-item');
-            removeRelevanceItem(category, decodeURIComponent(item));
-        });
+        if (!btn.hasAttribute('data-relevance-listener')) {
+            btn.setAttribute('data-relevance-listener', 'true');
+            btn.addEventListener('click', function() {
+                const category = this.getAttribute('data-category');
+                const item = this.getAttribute('data-item');
+                removeRelevanceItem(category, decodeURIComponent(item));
+            });
+        }
     });
 
     // Save threshold button
     const saveThresholdBtn = document.querySelector('.save-threshold-btn');
-    if (saveThresholdBtn) {
-        saveThresholdBtn.addEventListener('click', saveRelevanceThreshold);
+    if (saveThresholdBtn && !saveThresholdBtn.hasAttribute('data-relevance-listener')) {
+        saveThresholdBtn.setAttribute('data-relevance-listener', 'true');
+        saveThresholdBtn.addEventListener('click', function() {
+            console.log('[DEBUG] save-threshold-btn clicked');
+            saveRelevanceThreshold();
+        });
     }
 
     // Load Bayesian stats on page load
@@ -667,44 +686,74 @@ let showImagesTogglePromise = Promise.resolve();
 
     // Relevance page button handlers
     document.querySelectorAll('.add-relevance-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const category = this.getAttribute('data-category');
-            const inputId = this.getAttribute('data-input');
-            const input = document.getElementById(inputId);
-            if (input) {
-                addRelevanceItem(category, input.value);
-                input.value = ''; // Clear input after adding
-            }
-        });
+        if (!btn.hasAttribute('data-relevance-listener')) {
+            btn.setAttribute('data-relevance-listener', 'true');
+            btn.addEventListener('click', function() {
+                console.log('[DEBUG] add-relevance-btn clicked');
+                const category = this.getAttribute('data-category');
+                const inputId = this.getAttribute('data-input');
+                const input = document.getElementById(inputId);
+                if (input) {
+                    addRelevanceItem(category, input.value);
+                    input.value = ''; // Clear input after adding
+                }
+            });
+        }
     });
 
     document.querySelectorAll('.add-topic-keyword-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            addTopicKeyword();
-        });
+        if (!btn.hasAttribute('data-relevance-listener')) {
+            btn.setAttribute('data-relevance-listener', 'true');
+            btn.addEventListener('click', function() {
+                addTopicKeyword();
+            });
+        }
     });
 
     document.querySelectorAll('.add-source-credibility-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            addSourceCredibility();
-        });
+        if (!btn.hasAttribute('data-relevance-listener')) {
+            btn.setAttribute('data-relevance-listener', 'true');
+            btn.addEventListener('click', function() {
+                addSourceCredibility();
+            });
+        }
     });
 
     document.querySelectorAll('.close-explanation-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const targetId = this.getAttribute('data-target');
-            closeExplanation(targetId);
-        });
+        if (!btn.hasAttribute('data-relevance-listener')) {
+            btn.setAttribute('data-relevance-listener', 'true');
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const targetId = this.getAttribute('data-target');
+                closeExplanation(targetId);
+            });
+        }
     });
 
     // Rerun relevance button
     const rerunBtn = document.getElementById('rerunRelevanceBtn');
-    if (rerunBtn) {
-        rerunBtn.addEventListener('click', rerunRelevanceScoring);
+    if (rerunBtn && !rerunBtn.hasAttribute('data-relevance-listener')) {
+        rerunBtn.setAttribute('data-relevance-listener', 'true');
+        rerunBtn.addEventListener('click', function() {
+            console.log('[DEBUG] rerunRelevanceBtn clicked');
+            rerunRelevanceScoring();
+        });
     }
 
-})();
+    console.log('[DEBUG] Relevance listeners attached');
+}
+
+// Debug relevance tab
+console.log('[DEBUG] Relevance tab debug:');
+console.log('[DEBUG] relevanceTab element:', !!document.getElementById('relevanceTab'));
+console.log('[DEBUG] relevanceTab classes:', document.getElementById('relevanceTab')?.className);
+console.log('[DEBUG] URL contains relevance:', window.location.href.includes('relevance'));
+
+// Force attach relevance event listeners regardless of DOMContentLoaded timing
+setTimeout(function() {
+    console.log('[DEBUG] Force attaching relevance listeners...');
+    attachRelevanceListeners();
+}, 100);
 
 
 // Relevance page functions
@@ -728,9 +777,11 @@ function closeExplanation(explanationId) {
 }
 
 function rerunRelevanceScoring() {
+    console.log('[DEBUG] rerunRelevanceScoring called');
     const btn = document.getElementById('rerunRelevanceBtn');
     const statusDiv = document.getElementById('rerunRelevanceStatus');
     const statusP = statusDiv.querySelector('p');
+    console.log('[DEBUG] btn found:', !!btn, 'statusDiv found:', !!statusDiv);
 
     btn.disabled = true;
     btn.innerHTML = '🔄 <span class="spinner"></span> Processing...';
@@ -765,7 +816,9 @@ function rerunRelevanceScoring() {
 }
 
 function addRelevanceItem(category, value) {
+    console.log('[DEBUG] addRelevanceItem called with category:', category, 'value:', value);
     if (!value || !value.trim()) {
+        console.log('[DEBUG] Empty value, showing toast');
         showToast('Please enter a value', 'error');
         return;
     }
@@ -838,8 +891,11 @@ function addSourceCredibility() {
 }
 
 function saveRelevanceThreshold() {
+    console.log('[DEBUG] saveRelevanceThreshold called');
     const thresholdInput = document.getElementById('relevanceThreshold');
+    console.log('[DEBUG] thresholdInput found:', !!thresholdInput);
     const threshold = parseInt(thresholdInput.value);
+    console.log('[DEBUG] threshold value:', threshold);
 
     if (isNaN(threshold) || threshold < 0 || threshold > 100) {
         showToast('Please enter a valid threshold between 0 and 100', 'error');
