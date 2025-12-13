@@ -313,7 +313,7 @@ class WebsiteGenerator:
     def _get_enabled_articles(self, articles: List[Dict], settings: Dict, zip_code: Optional[str] = None, city_state: Optional[str] = None) -> List[Dict]:
         """Filter and order articles based on admin settings and zip-specific threshold
         Phase 2: Now supports city_state for city-based filtering
-
+        
         Args:
         """
         try:
@@ -781,6 +781,7 @@ class WebsiteGenerator:
         template = self._get_index_template(zip_code, city_state, formatted_articles, {'show_images': show_images})
 
         logger.error("TEMPLATE CONTEXT CREATION STARTING")
+        logger.error(f"show_images value being passed to template: {show_images} (type: {type(show_images)})")
         # Create template context
         template_context = {
             'title': title,
@@ -1186,6 +1187,7 @@ class WebsiteGenerator:
         template = self._get_index_template(zip_code, city_state, formatted_articles, {'show_images': show_images})
 
         logger.error("TEMPLATE CONTEXT CREATION STARTING")
+        logger.error(f"show_images value being passed to template: {show_images} (type: {type(show_images)})")
         # Create template context
         template_context = {
             'title': title,
