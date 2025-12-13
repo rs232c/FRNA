@@ -998,6 +998,7 @@ def admin_zip_dashboard(zip_code):
         session['zip_code'] = zip_code
 
         tab = request.args.get('tab', 'articles')  # Default to articles tab for zip-specific
+        print(f"[DEBUG SERVER] tab parameter: '{tab}', request.args: {dict(request.args)}")
 
         # #region agent log
         try:
@@ -1248,6 +1249,7 @@ def admin_zip_dashboard(zip_code):
             )
 
         if tab == 'relevance':
+            print(f"[DEBUG SERVER] Rendering relevance.html for tab='{tab}'")
             return render_template('admin/relevance.html',
                 zip_code=zip_code,
                 version=VERSION,
@@ -1285,6 +1287,7 @@ def admin_zip_dashboard(zip_code):
             pass
         # #endregion
 
+        print(f"[DEBUG SERVER] Falling through to main_dashboard.html for tab='{tab}'")
         return render_template('admin/main_dashboard.html',
             zip_code=zip_code,  # Pass the actual zip code for zip-specific admin
             is_main_admin=False,  # Flag to indicate this is zip-specific admin view
