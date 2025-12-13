@@ -916,6 +916,7 @@ function saveRelevanceThreshold() {
         if (data.success) {
             showToast(`Relevance threshold saved: ${threshold}`, 'success');
         } else {
+            console.error('[DEBUG] Save threshold failed:', data.error);
             showToast('Failed to save threshold: ' + (data.error || 'Unknown error'), 'error');
         }
     })

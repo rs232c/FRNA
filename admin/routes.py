@@ -2636,8 +2636,11 @@ def rerun_relevance_scoring():
         })
 
     except Exception as e:
+        import traceback
+        error_details = f"{str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+        print(f"[DEBUG SERVER] Exception in rerun_relevance_scoring: {error_details}")
         logger.error(f"Error in rerun relevance scoring: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': error_details}), 500
 
 
 @login_required
@@ -2735,11 +2738,11 @@ def save_relevance_threshold():
         return jsonify({'success': True})
 
     except Exception as e:
-        print(f"[DEBUG SERVER] Exception in save_relevance_threshold: {e}")
         import traceback
-        print(f"[DEBUG SERVER] Traceback: {traceback.format_exc()}")
+        error_details = f"{str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+        print(f"[DEBUG SERVER] Exception in save_relevance_threshold: {error_details}")
         logger.error(f"Error saving relevance threshold: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': error_details}), 500
 
 
 @login_required
