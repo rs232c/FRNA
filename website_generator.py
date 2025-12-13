@@ -15,11 +15,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import logging
 import contextlib
-from config import WEBSITE_CONFIG, LOCALE, DATABASE_CONFIG, CATEGORY_SLUGS, CATEGORY_MAPPING, WEATHER_CONFIG, SCANNER_CONFIG
+from config import WEBSITE_CONFIG, LOCALE, DATABASE_CONFIG, CATEGORY_SLUGS, CATEGORY_MAPPING, CATEGORY_COLORS, WEATHER_CONFIG, SCANNER_CONFIG
 from ingestors.weather_ingestor import WeatherIngestor
 from website_generator.static.css.styles import get_css_content
 from website_generator.static.js.scripts import get_js_content
 from utils.image_processor import should_optimize_image, optimize_image
+from utils.image_cache import get_image_cache
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,22 +35,152 @@ class WebsiteGenerator:
         self.description = WEBSITE_CONFIG.get("description", f"Latest news from {LOCALE}")
         self.weather_ingestor = WeatherIngestor()
         self.images_dir = Path(self.output_dir) / "images"
-        
+
+        # Initialize image cache for thumbnails
+        try:
+            from utils.image_cache import get_image_cache
+            self.image_cache = get_image_cache(Path(self.output_dir))
+        except Exception as e:
+            logger.warning(f"Could not initialize image cache: {e}")
+            self.image_cache = None
+
         # Setup Jinja2 environment for file-based templates
         template_dir = Path(__file__).parent / "website_generator" / "templates"
         self.use_file_templates = template_dir.exists() and template_dir.is_dir()
         if self.use_file_templates:
             try:
                 self.jinja_env = Environment(loader=FileSystemLoader(str(template_dir)))
-                logger.info(f"Using file-based templates from {template_dir}")
             except Exception as e:
                 logger.warning(f"Could not initialize Jinja2 FileSystemLoader: {e}")
                 self.use_file_templates = False
                 self.jinja_env = None
         else:
             self.jinja_env = None
-            logger.info("Using string-based templates (fallback)")
-        
+
+        self._ensure_directories()
+        self.images_dir = Path(self.output_dir) / "images"
+
+        # Initialize image cache for thumbnails
+        try:
+            from utils.image_cache import get_image_cache
+            self.image_cache = get_image_cache(Path(self.output_dir))
+            logger.info("Image cache initialized successfully")
+        except Exception as e:
+            logger.warning(f"Could not initialize image cache: {e}")
+            self.image_cache = None
+
+            logger.info("About to setup Jinja2 environment")
+            # Setup Jinja2 environment for file-based templates
+            logger.info(f"__file__ = {__file__}")
+            logger.info(f"Path(__file__).parent = {Path(__file__).parent}")
+            template_dir = Path(__file__).parent / "website_generator" / "templates"
+            self.use_file_templates = template_dir.exists() and template_dir.is_dir()
+            logger.info(f"Template dir: {template_dir}, exists: {template_dir.exists()}, is_dir: {template_dir.is_dir()}, use_file_templates: {self.use_file_templates}")
+            if self.use_file_templates:
+                try:
+                    self.jinja_env = Environment(loader=FileSystemLoader(str(template_dir)))
+                    logger.info(f"Using file-based templates from {template_dir}")
+                except Exception as e:
+                    logger.warning(f"Could not initialize Jinja2 FileSystemLoader: {e}")
+                    self.use_file_templates = False
+                    self.jinja_env = None
+            else:
+                self.jinja_env = None
+                logger.info("Using string-based templates (fallback)")
+
+            logger.info(f"Jinja2 setup complete: jinja_env exists = {hasattr(self, 'jinja_env')}, jinja_env value = {self.jinja_env if hasattr(self, 'jinja_env') else 'NO ATTR'}")
+
+            self._ensure_directories()
+
+        except Exception as e:
+            logger.error(f"Error in WebsiteGenerator __init__: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            # Set minimal defaults to prevent crashes
+            self.jinja_env = None
+            self.use_file_templates = False
+            self.image_cache = None
+            if not hasattr(self, 'output_dir'):
+                self.output_dir = "build"
+            self._ensure_directories()
+
+    def enrich_article_with_thumbnails(self, article: Dict) -> Dict:
+        """
+        Enrich an article with thumbnail URLs for different sizes.
+        Only processes thumbnails for RSS-sourced images to maintain legal compliance.
+        Falls back gracefully to original image URL if thumbnails can't be created.
+        """
+        original_url = article.get('image_url')
+        if not original_url:
+            # No image URL provided, set fallbacks to None
+            article['thumbnail_small'] = None
+            article['thumbnail_medium'] = None
+            article['thumbnail_large'] = None
+            return article
+
+        # Validate image URL format
+        if not isinstance(original_url, str) or not original_url.strip():
+            logger.debug(f"Invalid image URL for article {article.get('id', 'unknown')}: {original_url}")
+            article['thumbnail_small'] = None
+            article['thumbnail_medium'] = None
+            article['thumbnail_large'] = None
+            return article
+
+        # Only create thumbnails for RSS-sourced images (safer legally)
+        source = article.get('source', '').lower()
+        rss_sources = {
+            'herald news', 'fall river reporter', 'fun107', 'wpri 12 fall river',
+            'taunton gazette', 'masslive fall river', 'abc6 (wlne) fall river',
+            'nbc10/wjar fall river', 'southcoast today', 'patch fall river',
+            'frcmedia (fall river community media)', 'new bedford light',
+            'anchor news (diocese)', 'herald news obituaries', 'hathaway funeral homes',
+            'south coast funeral service', 'waring-sullivan (dignity memorial)',
+            'oliveira funeral homes'
+        }
+
+        if source not in rss_sources:
+            logger.debug(f"Skipping thumbnail creation for non-RSS source: {source}")
+            # Still set fallbacks for template compatibility
+            article['thumbnail_small'] = original_url
+            article['thumbnail_medium'] = original_url
+            article['thumbnail_large'] = original_url
+            return article
+
+        try:
+            # Try to get/create thumbnails
+            thumbnails = self.image_cache.get_all_thumbnails(original_url)
+
+            # Set thumbnail URLs with fallbacks to original image
+            article['thumbnail_small'] = thumbnails.get('small') or original_url
+            article['thumbnail_medium'] = thumbnails.get('medium') or original_url
+            article['thumbnail_large'] = thumbnails.get('large') or original_url
+
+            # Log if we're falling back to original images
+            if not thumbnails.get('small'):
+                logger.debug(f"No small thumbnail available for {original_url[:50]}..., using original")
+
+        except Exception as e:
+            logger.warning(f"Could not enrich article with thumbnails for {original_url[:50]}...: {e}")
+            # Fallback: use original image for all sizes
+            article['thumbnail_small'] = original_url
+            article['thumbnail_medium'] = original_url
+            article['thumbnail_large'] = original_url
+
+        return article
+
+        # Setup Jinja2 environment for file-based templates
+        template_dir = Path(__file__).parent / "templates"
+        self.use_file_templates = template_dir.exists() and template_dir.is_dir()
+        if self.use_file_templates:
+            try:
+                self.jinja_env = Environment(loader=FileSystemLoader(str(template_dir)))
+            except Exception as e:
+                logger.warning(f"Could not initialize Jinja2 FileSystemLoader: {e}")
+                self.use_file_templates = False
+                self.jinja_env = None
+        else:
+            self.jinja_env = None
+
         self._ensure_directories()
     
     def _ensure_directories(self):
@@ -279,6 +410,18 @@ class WebsiteGenerator:
         """Get articles that are newer than last generated article ID"""
         return [a for a in articles if a.get('id', 0) > last_article_id]
     
+    def _get_weather_alert_status(self) -> str:
+        """Get current weather alert status from database"""
+        try:
+            with self.get_db_cursor() as cursor:
+                cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('weather_alert_status',))
+                row = cursor.fetchone()
+                if row:
+                    return row[0]  # Return as string for template
+        except Exception as e:
+            logger.warning(f"Error getting weather alert status: {e}")
+        return 'False'  # Default to no alerts
+
     def _get_db_connection(self):
         """Get database connection"""
         conn = sqlite3.connect(DATABASE_CONFIG["path"])
@@ -313,7 +456,7 @@ class WebsiteGenerator:
     def _get_enabled_articles(self, articles: List[Dict], settings: Dict, zip_code: Optional[str] = None, city_state: Optional[str] = None) -> List[Dict]:
         """Filter and order articles based on admin settings and zip-specific threshold
         Phase 2: Now supports city_state for city-based filtering
-        
+
         Args:
         """
         try:
@@ -329,24 +472,74 @@ class WebsiteGenerator:
             with self.get_db_cursor() as cursor:
                 management_data = self._get_article_management_for_zip(cursor, article_ids, zip_code or '02720')
 
-            # Filter to only enabled articles
+            # Filter to only enabled articles with minimum relevance score
             enabled_articles = []
             for article in articles:
                 article_id = article.get('id')
-                if article_id and management_data.get(article_id, {}).get('enabled', 1):
-                    # Article is enabled (default to enabled if no management record)
-                    enabled_articles.append(article)
+                mgmt_info = management_data.get(article_id, {})
+                is_enabled = mgmt_info.get('enabled', 1)
+                relevance_score = article.get('relevance_score', 0)
 
-            # Sort by management display order, then by creation date
+                # Check if this is a weather alert (should always be included)
+                is_weather_alert = article.get('is_alert', 0) and article.get('alert_type') == 'weather'
+                if is_weather_alert:
+                    print(f"WEATHER ALERT FOUND: {article.get('id')} - relevance: {relevance_score}")
+
+                # CRITICAL: Filter out junk articles - higher threshold for premium content only
+                # Weather alerts bypass relevance filtering
+                min_relevance_threshold = 50  # Only show high-quality, highly relevant content
+                is_relevant = relevance_score >= min_relevance_threshold or is_weather_alert
+
+                # ADDITIONAL FILTER: Must have strong Fall River connection
+                # Weather alerts bypass location filtering
+                title_lower = (article.get('title') or '').lower()
+                content_lower = (article.get('content') or '').lower()
+                has_fall_river = ('fall river' in title_lower or 'fallriver' in title_lower or
+                                'fall river' in content_lower or 'fallriver' in content_lower) or is_weather_alert
+
+                # ADDITIONAL FILTER: Reject obvious test/placeholder content
+                url_lower = (article.get('url') or '').lower()
+                is_test_content = any(test_pattern in url_lower for test_pattern in [
+                    'test', 'placeholder', 'example', 'sample', 'demo', 'fake'
+                ])
+
+                if article_id and is_enabled and is_relevant and has_fall_river and not is_test_content:
+                    # Article is enabled AND has sufficient relevance score
+                    enabled_articles.append(article)
+                elif article_id and not is_relevant:
+                    logger.debug(f"Article {article_id} filtered out - relevance {relevance_score} < {min_relevance_threshold}: {article.get('title', '')[:50]}")
+                elif article_id and not has_fall_river:
+                    logger.debug(f"Article {article_id} filtered out - no Fall River connection: {article.get('title', '')[:50]}")
+
+            # Sort by: relevance score (highest first), then management display order, then recency
             def sort_key(article):
                 article_id = article.get('id', 0)
                 mgmt = management_data.get(article_id, {})
+                relevance_score = article.get('relevance_score', 0)
+                # Handle created_at being a string or None
+                created_at = article.get('created_at', 0)
+                if isinstance(created_at, str):
+                    created_at = 0  # Default to 0 if it's a string
                 return (
-                    mgmt.get('display_order', 999),  # Display order first
-                    -article.get('created_at', 0)     # Then newest first (negative for descending)
+                    -relevance_score,                    # Highest relevance first (negative for descending)
+                    mgmt.get('display_order', 999),     # Display order (lower = higher priority)
+                    -created_at                         # Then newest first (negative for descending)
                 )
 
             enabled_articles.sort(key=sort_key)
+
+            # DEDUPLICATE: Remove duplicate articles by ID to prevent showing same story multiple times
+            seen_ids = set()
+            deduplicated_articles = []
+            for article in enabled_articles:
+                article_id = article.get('id')
+                if article_id and article_id not in seen_ids:
+                    seen_ids.add(article_id)
+                    deduplicated_articles.append(article)
+                elif article_id:
+                    logger.debug(f"Deduplicated duplicate article ID {article_id}: {article.get('title', '')[:50]}")
+
+            enabled_articles = deduplicated_articles
 
             return enabled_articles
 
@@ -395,13 +588,21 @@ class WebsiteGenerator:
         }
     
     def _filter_and_sort_articles(self, articles: List[Dict], management: Dict) -> List[Dict]:
-        """Filter enabled articles and apply sorting - only show articles that are enabled"""
+        """Filter enabled articles with minimum relevance and apply sorting"""
         enabled = []
+        min_relevance_threshold = 30  # Same threshold as auto-reject
+
         for article in articles:
             article_id = article.get('id', 0)
             article_management = management.get(article_id, {})
-            if article_management.get('enabled', 1):  # Default to enabled
+            relevance_score = article.get('relevance_score', 0)
+            is_enabled = article_management.get('enabled', 1)
+            is_relevant = relevance_score >= min_relevance_threshold
+
+            if is_enabled and is_relevant:
                 enabled.append(article)
+            elif not is_relevant:
+                logger.debug(f"Article {article_id} filtered out for website - relevance {relevance_score} < {min_relevance_threshold}: {article.get('title', '')[:50]}")
 
         # Sort by: 1) is_top_story, 2) created_at (ingestion date - newest first), 3) display_order
         # Use created_at (when article came in) to show newest articles first
@@ -440,15 +641,25 @@ class WebsiteGenerator:
             # Add funeral home sources for obituaries filtering
             funeral_home_sources.update(["Legacy.com", "Funeral Home", "Memorial"])
 
+        min_relevance_threshold = 50  # Same higher threshold as main filtering
+
         for article in articles:
-            # Basic filtering logic - add articles that match category
+            # Basic filtering logic - add articles that match category AND have minimum relevance
             article_category = article.get('category', '').lower()
             article_title = article.get('title', '').lower()
             article_source = article.get('source', '').lower()
+            relevance_score = article.get('relevance_score', 0)
 
-            # Category matching logic
-            if category_slug in article_category or any(keyword in article_title for keyword in keywords):
+            # Category matching logic + relevance filtering
+            url_lower = (article.get('url') or '').lower()
+            is_test_content = any(test_pattern in url_lower for test_pattern in [
+                'test', 'placeholder', 'example', 'sample', 'demo', 'fake'
+            ])
+
+            if (category_slug in article_category or any(keyword in article_title for keyword in keywords)) and relevance_score >= min_relevance_threshold and not is_test_content:
                 filtered.append(article)
+            elif relevance_score < min_relevance_threshold:
+                logger.debug(f"Category article {article.get('id')} filtered out - relevance {relevance_score} < {min_relevance_threshold}: {article_title[:50]}")
 
         # Deduplicate by article ID to prevent showing the same article multiple times
         seen_ids = set()
@@ -467,7 +678,6 @@ class WebsiteGenerator:
 
         Args:
         """
-        logger.info(f"_generate_index called with {len(articles)} articles")
         logger.info(f"_generate_index called with {len(articles)} articles")
         logger.error(f"settings is: {type(settings)}")
         show_images_val = settings.get('show_images', '1')
@@ -508,15 +718,23 @@ class WebsiteGenerator:
         # Sort by updated_at DESC (newest top hat clicks first), then by display_order
         # This ensures articles marked most recently by admin appear first
         def parse_timestamp(ts_str):
+            if ts_str is None:
+                return 0  # Default to oldest if None
             try:
+                if not isinstance(ts_str, str) or not ts_str.strip():
+                    return 0  # Default to oldest if not a string or empty
                 from datetime import datetime
-                return datetime.fromisoformat(ts_str.replace('Z', '+00:00').split('+')[0]).timestamp()
+                # Clean the timestamp string and parse it
+                cleaned_ts = ts_str.strip()
+                return datetime.fromisoformat(cleaned_ts.replace('Z', '+00:00').split('+')[0]).timestamp()
             except Exception as e:
-                logger.warning(f"Could not parse timestamp: {e}")
+                # Only log warnings for actual timestamp strings, not None values
+                if ts_str and isinstance(ts_str, str):
+                    logger.warning(f"Could not parse timestamp '{ts_str}': {e}")
                 return 0  # Default to oldest if parsing fails
 
         top_stories.sort(key=lambda x: (
-            -parse_timestamp(x.get('_top_story_updated_at', '1970-01-01T00:00:00')),  # Newest clicked first (negative for descending)
+            -parse_timestamp(x.get('_top_story_updated_at')),  # Newest clicked first (negative for descending)
             x.get('_top_story_display_order', 999)  # Display order
         ))
         if not top_stories:
@@ -547,15 +765,13 @@ class WebsiteGenerator:
         # Get latest stories (5 most recent by publication date, excluding top stories)
         latest_stories = [a for a in articles if not a.get('_is_top_story', 0)]
         # Sort by published date (newest first)
-        latest_stories.sort(key=lambda x: (
-        ), reverse=True)
+        latest_stories.sort(key=lambda x: parse_timestamp(x.get('published') or x.get('created_at')), reverse=True)
         latest_stories = latest_stories[:5]
-        
+
         # Get newest articles (simple chronological order, newest first, no algorithm)
         newest_articles = list(articles)  # Copy the list
         # Sort by publication date (newest first) - pure chronological order
-        newest_articles.sort(key=lambda x: (
-        ), reverse=True)
+        newest_articles.sort(key=lambda x: parse_timestamp(x.get('published') or x.get('created_at')), reverse=True)
         newest_articles = newest_articles[:10]  # Take top 10 newest articles
         
         # Add related articles to each article
@@ -568,26 +784,27 @@ class WebsiteGenerator:
         except ImportError:
             pass  # Skip if aggregator not available
 
-        # Enrich articles with source initials, gradients, and glow colors
+        # Enrich articles with source initials, combined gradients, and glow colors
         for article in all_articles:
             article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
-            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
+            article['source_gradient'] = self._get_combined_gradient(article.get('source', ''), article.get('category', 'local-news'))
         for article in top_stories:
             article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
-            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
+            article['source_gradient'] = self._get_combined_gradient(article.get('source', ''), article.get('category', 'local-news'))
         for article in trending_articles:
             article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
-            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
+            article['source_gradient'] = self._get_combined_gradient(article.get('source', ''), article.get('category', 'local-news'))
         for article in latest_stories:
             article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
-            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
+            article['source_gradient'] = self._get_combined_gradient(article.get('source', ''), article.get('category', 'local-news'))
         for article in newest_articles:
             article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
-            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
+            article['source_gradient'] = self._get_combined_gradient(article.get('source', ''), article.get('category', 'local-news'))
         for article in entertainment_articles:
             article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
-            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
+            article['source_gradient'] = self._get_combined_gradient(article.get('source', ''), article.get('category', 'local-news'))
         
+
         # Optimize images for articles (only when hotlinking is disabled)
         # When hotlinking is enabled (show_images=True), preserve external URLs
         if not show_images:
@@ -606,10 +823,59 @@ class WebsiteGenerator:
                 break
 
         # Get alert articles (urgent notifications)
-        alert_articles = [a for a in all_articles if a.get('_is_alert', 0)]
+        alert_articles = [a for a in all_articles if a.get('is_alert', 0)]
+
+        # Clean up alert content for better display
+        for alert in alert_articles:
+            if alert.get('alert_type') == 'weather':
+                # Clean up weather alert content
+                title = alert.get('title', '')
+                summary = alert.get('summary', '')
+
+                # Use generic title for weather alerts
+                if 'advisory' in title.lower():
+                    alert['title'] = 'Winter Weather Advisory'
+                elif 'warning' in title.lower():
+                    alert['title'] = 'Weather Warning'
+                elif 'watch' in title.lower():
+                    alert['title'] = 'Weather Watch'
+                else:
+                    alert['title'] = 'Weather Alert'
+
+                # Clean up the summary content
+                if summary:
+                    # Remove location names that appear to be truncated or messy
+                    summary = re.sub(r'\brton\b', '', summary, flags=re.IGNORECASE)
+                    summary = re.sub(r'\bNorton,\s*MA\b', '', summary, flags=re.IGNORECASE)
+                    summary = re.sub(r'\bFall River,\s*MA\b', '', summary, flags=re.IGNORECASE)
+
+                    # Remove generic NWS headers
+                    summary = re.sub(r'News Headlines', '', summary, flags=re.IGNORECASE)
+                    summary = re.sub(r'Map Of Recent Snow Reports', '', summary, flags=re.IGNORECASE)
+
+                    # Clean up excessive whitespace and newlines
+                    summary = re.sub(r'\n+', ' ', summary)
+                    summary = re.sub(r'\s+', ' ', summary)
+                    summary = summary.strip()
+
+                    # Create a concise one-line summary
+                    if 'Winter Weather Advisory' in summary:
+                        # Extract end date/time for a clean one-line message
+                        end_match = re.search(r'until ([A-Za-z]+ \d+), (\d+:\d+ [AP]M [A-Z]+)', summary)
+                        if end_match:
+                            end_date, end_time = end_match.groups()
+                            summary = f'Winter Weather Advisory until {end_date}, {end_time}'
+                        else:
+                            summary = 'Winter Weather Advisory in effect'
+                    else:
+                        # For other weather alerts, create a simple message
+                        summary = f'{alert["title"]} in effect'
+
+                    alert['summary'] = summary
+
         # Sort alerts by updated_at DESC (newest first)
-        alert_articles.sort(key=lambda x: (
-        ))
+        alert_articles.sort(key=lambda x: -parse_timestamp(x.get('_alert_updated_at') or x.get('published') or x.get('created_at')))
+
         
         # DEBUG: Log hero articles for troubleshooting slider
         logger.info(f"HERO ARTICLES COUNT: {len(hero_articles)}")
@@ -736,21 +1002,27 @@ class WebsiteGenerator:
         formatted_articles = []
         if articles:
             for article in articles:
-                formatted = self._format_article_for_display(article, show_images) if hasattr(self, '_format_article_for_display') else article.copy()
+                # Ensure image_url is never None - convert to empty string
+                if article.get('image_url') is None:
+                    article = article.copy()  # Don't modify original
+                    article['image_url'] = ''
+
+                # Enrich article with formatted data including dates and thumbnails
+                from website_generator.utils import enrich_single_article
+                formatted = enrich_single_article(article)
+                formatted = self.enrich_article_with_thumbnails(formatted)
                 formatted_articles.append(formatted)
 
-        # CRITICAL FIX: Sort formatted articles by publication date (newest first)
+        # PRIMARY SORTING: Sort by publication date (newest first) - most important for user experience
         formatted_articles.sort(key=lambda x: (
-            -parse_timestamp(x.get('_top_story_updated_at', '1970-01-01T00:00:00')),  # Newest clicked first (negative for descending)
-            x.get('_display_order', 999),  # Then by display order
-            -parse_timestamp(x.get('published', x.get('created_at', '1970-01-01')))  # Then by publication date
+            -parse_timestamp(x.get('published') or x.get('created_at'))  # Publication date first (newest first)
         ), reverse=True)
 
-        # Enrich formatted_articles with source initials and gradients
+        # Enrich formatted_articles with source initials and combined gradients
 
         for article in formatted_articles:
             article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
-            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
+            article['source_gradient'] = self._get_combined_gradient(article.get('source', ''), article.get('category', 'local-news'))
 
         # Get hero articles for index page
         hero_articles = formatted_articles[:3] if formatted_articles else []  # Top 3 articles as heroes
@@ -806,7 +1078,8 @@ class WebsiteGenerator:
             'weather_api_key': weather_api_key,
             'weather_icon': weather_icon,
             'zip_pin_editable': zip_pin_editable,
-            'show_images': show_images
+            'show_images': show_images,
+            'weather_alert_status': self._get_weather_alert_status()
         }
 
         # Render template
@@ -829,8 +1102,8 @@ class WebsiteGenerator:
     def _get_nav_tabs(self, active_page: str = "home", zip_code: Optional[str] = None, is_category_page: bool = False) -> str:
         """Generate two-row navigation structure for top local news site
         
-        Top row (big, bold): Home • Local • Police & Fire • Sports • Obituaries • Food & Drink
-        Second row (smaller, lighter): Media • Scanner • Weather • Submit Tip • Lost & Found • Events
+        Top row (big, bold): Home - Local - Police & Fire - Sports - Obituaries - Food & Drink
+        Second row (smaller, lighter): Media - Scanner - Weather - Submit Tip - Lost & Found - Events
         
         Args:
         """
@@ -982,22 +1255,63 @@ class WebsiteGenerator:
     
     def _get_index_template(self, zip_code: Optional[str] = None, city_state: Optional[str] = None, articles: Optional[List[Dict]] = None, settings: Optional[Dict] = None) -> Template:
         """Get index page template"""
-        # Use FileSystemLoader if available
-        if self.use_file_templates and self.jinja_env:
+        # Always try to use file template first
+        if hasattr(self, 'jinja_env') and self.jinja_env:
             try:
                 template = self.jinja_env.get_template("index.html.j2")
                 logger.info("Loaded index.html.j2 template from file system")
                 return template
             except Exception as e:
-                logger.warning(f"Failed to load index.html.j2 template: {e}")
-                # Fallback to basic template
-                from jinja2 import Template
-                return Template('<html><body><h1>{{title}}</h1><p>Template load failed: {{e}}</p><p>Generated at {{generation_timestamp}}</p></body></html>')
-        else:
-            logger.info("Using fallback template (file templates not available)")
-            # Fallback to basic template
-            from jinja2 import Template
-            return Template('<html><body><h1>{{title}}</h1><p>Generated at {{generation_timestamp}}</p></body></html>')
+                logger.error(f"Failed to load index.html.j2 template: {e}")
+                logger.error(f"Jinja2 environment available: {self.jinja_env is not None}")
+                logger.error(f"Template directory exists: {Path(__file__).parent / 'website_generator' / 'templates'}")
+
+        # Only fall back if Jinja2 environment is not available
+        logger.warning("Using fallback template - Jinja2 environment not available")
+        from jinja2 import Template
+        template_content = '''
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ description }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">{{ title }}</h1>
+
+        {% if articles %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for article in articles[:6] %}
+            <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                <h3 class="text-xl font-semibold mb-2">{{ article.title[:50] }}</h3>
+                <p class="text-gray-400 text-sm mb-4">
+                    {% if article.formatted_date and article.formatted_date != 'Recently' %}
+                        {{ article.formatted_date }}
+                    {% else %}
+                        Just published
+                    {% endif %}
+                </p>
+                <p class="text-gray-300">{{ (article.summary or article.content or '')[:100] }}...</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-center text-gray-400">No articles available</p>
+        {% endif %}
+
+        <div class="mt-8 text-center text-gray-500">
+            <p>Generated at {{ generation_timestamp }}</p>
+            <p>Settings: {{ settings }}</p>
+        </div>
+    </div>
+</body>
+</html>
+                '''
+        return Template(template_content)
         
         # Determine paths
         # Note: self.output_dir is already set to zip-specific directory if zip_code is provided
@@ -1017,11 +1331,20 @@ class WebsiteGenerator:
         formatted_articles = []
         if articles:
             for article in articles:
-                formatted = self._format_article_for_display(article, show_images) if hasattr(self, '_format_article_for_display') else article.copy()
+                # Ensure image_url is never None - convert to empty string
+                if article.get('image_url') is None:
+                    article = article.copy()  # Don't modify original
+                    article['image_url'] = ''
+
+                # Enrich article with formatted data including dates and thumbnails
+                from website_generator.utils import enrich_single_article
+                formatted = enrich_single_article(article)
+                formatted = self.enrich_article_with_thumbnails(formatted)
                 formatted_articles.append(formatted)
 
-        # CRITICAL FIX: Sort formatted articles by publication date (newest first)
+        # PRIMARY SORTING: Sort by publication date (newest first) for category pages too
         formatted_articles.sort(key=lambda x: (
+            -parse_timestamp(x.get('published') or x.get('created_at'))  # Publication date first (newest first)
         ), reverse=True)
         
         # Get hero articles for index page
@@ -1142,21 +1465,27 @@ class WebsiteGenerator:
         formatted_articles = []
         if articles:
             for article in articles:
-                formatted = self._format_article_for_display(article, show_images) if hasattr(self, '_format_article_for_display') else article.copy()
+                # Ensure image_url is never None - convert to empty string
+                if article.get('image_url') is None:
+                    article = article.copy()  # Don't modify original
+                    article['image_url'] = ''
+
+                # Enrich article with formatted data including dates and thumbnails
+                from website_generator.utils import enrich_single_article
+                formatted = enrich_single_article(article)
+                formatted = self.enrich_article_with_thumbnails(formatted)
                 formatted_articles.append(formatted)
 
-        # CRITICAL FIX: Sort formatted articles by publication date (newest first)
+        # PRIMARY SORTING: Sort by publication date (newest first) - most important for user experience
         formatted_articles.sort(key=lambda x: (
-            -parse_timestamp(x.get('_top_story_updated_at', '1970-01-01T00:00:00')),  # Newest clicked first (negative for descending)
-            x.get('_display_order', 999),  # Then by display order
-            -parse_timestamp(x.get('published', x.get('created_at', '1970-01-01')))  # Then by publication date
+            -parse_timestamp(x.get('published') or x.get('created_at'))  # Publication date first (newest first)
         ), reverse=True)
 
-        # Enrich formatted_articles with source initials and gradients
+        # Enrich formatted_articles with source initials and combined gradients
 
         for article in formatted_articles:
             article['source_initials'] = self._generate_smart_initials(article.get('source', ''))
-            article['source_gradient'] = self._get_source_gradient(article.get('source', ''))
+            article['source_gradient'] = self._get_combined_gradient(article.get('source', ''), article.get('category', 'local-news'))
 
         # Get hero articles for index page
         hero_articles = formatted_articles[:3] if formatted_articles else []  # Top 3 articles as heroes
@@ -1212,7 +1541,11 @@ class WebsiteGenerator:
             'weather_api_key': weather_api_key,
             'weather_icon': weather_icon,
             'zip_pin_editable': zip_pin_editable,
-            'show_images': show_images
+            'show_images': show_images,
+            'settings': {
+                'show_images': show_images,
+                'weather_alert_status': 'False'  # Default to disabled
+            }
         }
 
         # Render template
@@ -1524,7 +1857,7 @@ class WebsiteGenerator:
             'hill': 'from-blue-700 to-indigo-700',
 
             # Massachusetts Local
-            'herald': 'from-orange-500 to-red-600',
+            'herald': 'from-green-500 to-emerald-600',
             'fall river': 'from-blue-500 to-cyan-600',
             'taunton': 'from-green-500 to-teal-600',
             'new bedford': 'from-purple-500 to-pink-600',
@@ -1607,6 +1940,22 @@ class WebsiteGenerator:
 
         return colorful_gradients[hash_value % len(colorful_gradients)]
 
+    def _get_combined_gradient(self, source: str, category: str) -> str:
+        """Get gradient based only on source (category parameter ignored for consistency)"""
+        # Return source-only gradient regardless of category
+        return self._get_source_gradient(source)
+
+    def _extract_start_color(self, gradient: str) -> str:
+        """Extract the start color from a gradient string like 'from-blue-500 to-cyan-600'"""
+        if not gradient or 'from-' not in gradient:
+            return 'blue-500'  # Default fallback
+
+        # Extract the color part after 'from-'
+        from_part = gradient.split('from-')[1]
+        start_color = from_part.split()[0] if ' ' in from_part else from_part.split('to-')[0]
+
+        return start_color
+
     def _generate_smart_initials(self, source: str) -> str:
         """Generate smart initials based on source name - like 'herald news' -> 'hn', 'fall river reporter' -> 'frr'"""
         if not source or not source.strip():
@@ -1617,6 +1966,7 @@ class WebsiteGenerator:
 
         # Common mappings for specific sources
         smart_mappings = {
+            # Local Massachusetts sources
             'herald news': 'hn',
             'fall river herald news': 'hn',
             'fall river reporter': 'frr',
@@ -1629,6 +1979,20 @@ class WebsiteGenerator:
             'boston herald': 'bh',
             'wicked local': 'wl',
             'universal hub': 'uh',
+            'anchor news': 'an',
+            'anchor news (diocese)': 'an',
+            'frcmedia': 'frc',
+            'frcmedia (fall river community media)': 'frc',
+            'fall river community media': 'frc',
+            'fun107': 'fun',
+            'google news': 'gn',
+            'google news (fall river, ma)': 'gn',
+            'hathaway funeral homes': 'hf',
+            'herald news obituaries': 'hn',
+            'wpri 12 fall river': 'wpri',
+            'wpri': 'wpri',
+
+            # National sources
             'cnn': 'cnn',
             'fox news': 'fn',
             'bbc news': 'bbc',
@@ -1653,20 +2017,31 @@ class WebsiteGenerator:
                 return initials.upper()
 
         # Fallback: extract meaningful initials
-        # Remove common words and get first letters of remaining words
-        words_to_ignore = {'the', 'news', 'newspaper', 'times', 'post', 'tribune', 'journal', 'herald', 'reporter', 'gazette', 'daily', 'weekly', 'local', 'online', 'media', 'press', 'today', 'now', 'live'}
+        # Clean the source name by removing punctuation and extra spaces
+        import re
+        cleaned = re.sub(r'[^\w\s]', '', normalized)  # Remove punctuation
+        words = cleaned.split()
 
-        words = [word for word in normalized.split() if word not in words_to_ignore and len(word) > 2]
+        # Remove common words
+        words_to_ignore = {'the', 'news', 'newspaper', 'times', 'post', 'tribune', 'journal', 'herald', 'reporter', 'gazette', 'daily', 'weekly', 'local', 'online', 'media', 'press', 'today', 'now', 'live', 'fall', 'river', 'ma', 'massachusetts'}
 
-        if len(words) >= 2:
+        meaningful_words = [word for word in words if word not in words_to_ignore and len(word) > 2]
+
+        if len(meaningful_words) >= 2:
             # Take first letter of first two meaningful words
+            return (meaningful_words[0][0] + meaningful_words[1][0]).upper()
+        elif len(meaningful_words) == 1:
+            # Take first two letters of the word
+            return meaningful_words[0][:2].upper()
+        elif len(words) >= 2:
+            # Fallback to any words if no meaningful ones found
             return (words[0][0] + words[1][0]).upper()
         elif len(words) == 1:
-            # Take first two letters of the word
+            # Take first two letters of any remaining word
             return words[0][:2].upper()
         else:
-            # Last resort: first two letters of original source
-            return source[:2].upper()
+            # Last resort: first two letters of original source (cleaned)
+            return cleaned[:2].upper() or 'XX'
 
     def _get_source_glow_color(self, source: str) -> str:
         """Get glow color for a source"""
@@ -1745,16 +2120,70 @@ class WebsiteGenerator:
                 logger.info(f"Copied static JS file: {filename}")
 
     def _get_trending_articles(self, articles: List[Dict], limit: int = 10) -> List[Dict]:
-        """Get trending articles (for now, just return recent articles)"""
-        # Sort by publication date and return top N, handling None values
+        """Get trending articles with same quality filtering as main content"""
+        # Apply the same filtering as main articles: enabled + relevance >=50 + Fall River connection
+        min_relevance_threshold = 50  # Same as main filtering
+
+        filtered_trending = []
+        for article in articles:
+            relevance_score = article.get('relevance_score', 0)
+
+            # BOOST: Add priority boosts for time-sensitive content
+            title_lower = (article.get('title') or '').lower()
+            content_lower = (article.get('content') or '').lower()
+            combined_text = title_lower + ' ' + content_lower
+
+            # Weather alerts get +20 boost (critical community impact)
+            if any(word in combined_text for word in ['snow', 'storm', 'alert', 'warning', 'emergency', 'weather']):
+                relevance_score += 20
+
+            # Breaking news keywords get +10 boost
+            if any(word in combined_text for word in ['fire', 'police', 'arrest', 'shooting', 'accident', 'emergency']):
+                relevance_score += 10
+
+            # Same filtering as main articles
+            if relevance_score >= min_relevance_threshold:
+                # Check Fall River connection
+                has_fall_river = ('fall river' in title_lower or 'fallriver' in title_lower or
+                                'fall river' in content_lower or 'fallriver' in content_lower)
+
+                # Reject obvious test/placeholder content
+                url_lower = (article.get('url') or '').lower()
+                is_test_content = any(test_pattern in url_lower for test_pattern in [
+                    'test', 'placeholder', 'example', 'sample', 'demo', 'fake'
+                ])
+
+                if has_fall_river and not is_test_content:
+                    # Store the boosted score for sorting
+                    article_copy = article.copy()
+                    article_copy['_boosted_score'] = relevance_score
+                    filtered_trending.append(article_copy)
+
+        # Sort by boosted relevance score (highest first), then by publication date (newest first)
         def sort_key(article):
+            # Use boosted score if available, otherwise regular relevance score
+            relevance_score = article.get('_boosted_score', article.get('relevance_score', 0))
             published = article.get('published')
             if published:
-                return published
-            # Fallback to other date fields or default
-            return article.get('created_at', article.get('date_sort', '1970-01-01'))
+                # Convert to sortable format (newer dates sort first)
+                try:
+                    from datetime import datetime
+                    pub_dt = datetime.fromisoformat(published.replace('Z', '+00:00'))
+                    pub_timestamp = -pub_dt.timestamp()  # Negative for descending (newest first)
+                except:
+                    pub_timestamp = 0
+                return (-relevance_score, pub_timestamp)
+            # Fallback to other date fields
+            created_at = article.get('created_at', article.get('date_sort', '1970-01-01'))
+            try:
+                from datetime import datetime
+                created_dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                created_timestamp = -created_dt.timestamp()
+            except:
+                created_timestamp = 0
+            return (-relevance_score, created_timestamp)
 
-        sorted_articles = sorted(articles, key=sort_key, reverse=True)
+        sorted_articles = sorted(filtered_trending, key=sort_key)
         return sorted_articles[:limit]
 
     def _get_weather_icon(self, condition: str) -> str:
@@ -1786,8 +2215,4 @@ class WebsiteGenerator:
             # For now, just copy the article
             optimized_articles.append(article)
         return optimized_articles
-
-
-
-
 

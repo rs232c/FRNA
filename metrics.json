@@ -1,49 +1,73 @@
 {
+  "duplicates_removed": [
+    {
+      "metric": "duplicates_removed",
+      "count": 2,
+      "timestamp": "2025-12-13T10:32:43.940924",
+      "metadata": {}
+    }
+  ],
   "remove_duplicates": [
     {
       "operation": "remove_duplicates",
-      "duration": 0.006776094436645508,
-      "timestamp": "2025-12-13T00:02:41.671425",
+      "duration": 0.022286415100097656,
+      "timestamp": "2025-12-13T10:32:43.940946",
       "metadata": {}
     }
   ],
   "articles_aggregated": [
     {
       "metric": "articles_aggregated",
-      "count": 0,
-      "timestamp": "2025-12-13T00:02:41.710447",
+      "count": 27,
+      "timestamp": "2025-12-13T10:33:18.451573",
       "metadata": {}
     }
   ],
   "aggregate_articles": [
     {
       "operation": "aggregate_articles",
-      "duration": 0.03900146484375,
-      "timestamp": "2025-12-13T00:02:41.710465",
+      "duration": 34.51061201095581,
+      "timestamp": "2025-12-13T10:33:18.451600",
+      "metadata": {}
+    }
+  ],
+  "filter_rejected": [
+    {
+      "operation": "filter_rejected",
+      "duration": 0.004700899124145508,
+      "timestamp": "2025-12-13T10:33:18.456393",
+      "metadata": {}
+    }
+  ],
+  "save_articles": [
+    {
+      "operation": "save_articles",
+      "duration": 0.21491718292236328,
+      "timestamp": "2025-12-13T10:33:18.671335",
       "metadata": {}
     }
   ],
   "get_articles_from_db": [
     {
       "operation": "get_articles_from_db",
-      "duration": 0.02933669090270996,
-      "timestamp": "2025-12-13T00:02:41.739857",
+      "duration": 0.048775672912597656,
+      "timestamp": "2025-12-13T10:33:18.720160",
       "metadata": {}
     }
   ],
   "enrich_articles": [
     {
       "operation": "enrich_articles",
-      "duration": 0.04431343078613281,
-      "timestamp": "2025-12-13T00:02:41.784208",
+      "duration": 0.06694436073303223,
+      "timestamp": "2025-12-13T10:33:18.787146",
       "metadata": {}
     }
   ],
   "generate_website": [
     {
       "operation": "generate_website",
-      "duration": 0.2622559070587158,
-      "timestamp": "2025-12-13T00:02:42.046482",
+      "duration": 0.4411296844482422,
+      "timestamp": "2025-12-13T10:33:19.228306",
       "metadata": {}
     }
   ]

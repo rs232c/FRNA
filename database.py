@@ -103,6 +103,20 @@ class ArticleDatabase:
             cursor.execute('ALTER TABLE articles ADD COLUMN category_override INTEGER DEFAULT 0')
         except:
             pass
+
+        # Add alert columns for weather/parking/trash alerts
+        try:
+            cursor.execute('ALTER TABLE articles ADD COLUMN is_alert INTEGER DEFAULT 0')
+        except:
+            pass
+        try:
+            cursor.execute('ALTER TABLE articles ADD COLUMN alert_type TEXT')
+        except:
+            pass
+        try:
+            cursor.execute('ALTER TABLE articles ADD COLUMN alert_priority TEXT DEFAULT "info"')
+        except:
+            pass
         
         # Create index on zip_code for performance
         try:
@@ -303,8 +317,16 @@ class ArticleDatabase:
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_category ON articles(category)
         ''')
+        # Add composite index for category + relevance_score queries (critical for sorted category views)
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_articles_category_relevance ON articles(category, relevance_score DESC)
+        ''')
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_created_at ON articles(created_at DESC)
+        ''')
+        # Add index on relevance_score for global sorting queries
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_articles_relevance ON articles(relevance_score DESC)
         ''')
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_posted_platform ON posted_articles(platform, posted_at)
@@ -672,7 +694,7 @@ class ArticleDatabase:
                             logger.info(f"Skipping rejected article: {title[:50]} (ID: {existing_id})")
                             # Don't add to new_ids - we want to skip it completely
                             continue
-                        # Article already exists but not rejected - update image_url if provided and missing
+                        # Article already exists but not rejected - update image_url and category if missing
                         new_image_url = article.get("image_url")
                         if new_image_url:
                             # Check if existing article has image_url
@@ -691,6 +713,24 @@ class ArticleDatabase:
                                         f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"I","location":"database.py:633","message":"Updated existing article with image_url","data":{"article_id":existing_id,"title":(title or '')[:50],"new_image_url":(new_image_url or '')[:80]},"timestamp":int(time.time()*1000)})+'\n')
                                 except: pass
                                 # #endregion
+
+                        # Update category if missing (for existing articles that weren't categorized)
+                        if not article.get("category") and category:
+                            cursor.execute('''
+                                UPDATE articles
+                                SET category = ?, primary_category = ?, secondary_category = ?, category_confidence = ?, category_override = ?
+                                WHERE id = ? AND (category IS NULL OR category = '')
+                            ''', (category, primary_category, secondary_category, category_confidence, category_override, existing_id))
+                            logger.info(f"Updated existing article (ID: {existing_id}) with category: {category} - {title[:50]}")
+                            # #region agent log
+                            try:
+                                import json
+                                import time
+                                with open(r'c:\FRNA\.cursor\debug.log', 'a', encoding='utf-8') as f:
+                                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"database.py:706","message":"Updated existing article with category","data":{"article_id":existing_id,"title":(title or '')[:50],"category":category,"primary_category":primary_category},"timestamp":int(time.time()*1000)})+'\n')
+                            except: pass
+                            # #endregion
+
                         logger.debug(f"Article already exists (ID: {existing_id}): {title[:50]}")
                         new_ids.append(existing_id)
                         continue
@@ -719,10 +759,10 @@ class ArticleDatabase:
                             logger.info(f"Skipping rejected article by normalized URL: {title[:50]}")
                             continue
                     
-                    # Calculate relevance score if not already present (using zip-specific config)
+                    # Calculate relevance score if not already present (using optimized calculator)
                     relevance_score = article.get('relevance_score') or article.get('_relevance_score')
                     if relevance_score is None:
-                        from utils.relevance_calculator import calculate_relevance_score
+                        from utils.relevance_calculator_v2 import calculate_relevance_score
                         # Use zip_code from article or parameter
                         article_zip = article.get("zip_code") or zip_code
                         relevance_score = calculate_relevance_score(article, zip_code=article_zip)
@@ -773,15 +813,15 @@ class ArticleDatabase:
                         logger.warning(f"Error calculating local focus score: {e}")
                         local_focus_score = 0.0
                     
-                    # Auto-reject threshold: score < 40 (hard-coded production threshold)
+                    # Auto-reject threshold: score < 30 (self-healing production threshold)
                     # Auto-candidate hero: score > 85
-                    is_auto_rejected = (relevance_score < 40)
+                    is_auto_rejected = (relevance_score < 30)
                     is_hero_candidate = (relevance_score > 85)
                     auto_reject_reason = None
-                    
+
                     if is_auto_rejected:
-                        auto_reject_reason = "Relevance score below threshold (<40)"
-                        logger.info(f"Auto-rejected article (score {relevance_score:.1f} < 40): {title[:50]}")
+                        auto_reject_reason = "Relevance score below threshold (<30)"
+                        logger.info(f"🚫 AUTO-REJECT: Article '{title[:50]}...' has critically low relevance: {relevance_score:.1f} < 30")
                     elif is_hero_candidate:
                         logger.debug(f"Hero candidate article (score {relevance_score:.1f} > 85): {title[:50]}")
                     
@@ -858,6 +898,10 @@ class ArticleDatabase:
 
                             logger.debug(f"Smart categorized article: {primary_category} ({category_confidence:.1%}), secondary: {secondary_category}")
 
+                            # SELF-HEALING: Log low-confidence categorizations for monitoring
+                            if category_confidence < 0.6:
+                                logger.info(f"⚠️  LOW CONFIDENCE: Article '{title[:50]}...' categorized as '{primary_category}' with only {category_confidence:.1%} confidence")
+
                         except ImportError:
                             # Fall back to original classifier
                             try:
@@ -920,12 +964,13 @@ class ArticleDatabase:
                     except: pass
                     # #endregion
                     cursor.execute('''
-                        INSERT INTO articles 
-                        (title, url, published, summary, content, source, source_type, 
+                        INSERT INTO articles
+                        (title, url, published, summary, content, source, source_type,
                          image_url, post_id, ingested_at, relevance_score, local_score, zip_code,
                          city_name, state_abbrev, city_state,
-                         category, primary_category, secondary_category, category_confidence, category_override)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         category, primary_category, secondary_category, category_confidence, category_override,
+                         is_alert, alert_type, alert_priority)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         title,
                         url,
@@ -947,7 +992,10 @@ class ArticleDatabase:
                         primary_category or "News",
                         secondary_category or "News",
                         category_confidence or 0.5,
-                        category_override
+                        category_override,
+                        article.get("is_alert", 0),
+                        article.get("alert_type"),
+                        article.get("alert_priority", "info")
                     ))
                     
                     article_id = cursor.lastrowid

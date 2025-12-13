@@ -42,7 +42,7 @@ class SmartCategorizer:
             return set()
 
     def analyze_text(self, text: str) -> Dict[str, float]:
-        """Analyze text and return category scores"""
+        """Analyze text and return category scores with improved matching"""
         if not text:
             return {cat: 0.0 for cat in self.categories}
 
@@ -52,44 +52,141 @@ class SmartCategorizer:
         category_scores = {}
 
         for category in self.categories:
-            keywords = self.get_category_keywords(category)
-            if not keywords:
-                category_scores[category] = 0.0
-                continue
+            score = 0.0
 
-            # Count keyword matches
-            matches = keywords.intersection(words)
-            match_count = len(matches)
+            # RULE-BASED PATTERNS FIRST (highest priority)
+            if category == 'obituaries':
+                obituary_patterns = [
+                    r'\bobituary\b', r'\bdied\b', r'\bpassed away\b', r'\bdeceased\b',
+                    r'\bin loving memory\b', r'\bfuneral\b', r'\bburial\b', r'\bmemorial\b',
+                    r'\bsurvived by\b', r'\bpredeceased\b', r'\bvisitation\b', r'\bwake\b',
+                    r'\bcalling hours\b', r'\bfuneral home\b', r'\bdignity memorial\b'
+                ]
+                for pattern in obituary_patterns:
+                    if re.search(pattern, text_lower):
+                        score += 30  # Strong obituary signal
+                        break
 
-            # Calculate score based on:
-            # 1. Number of keyword matches
-            # 2. Density of keywords in text
-            # 3. Length of matching keywords (longer = more specific)
+            elif category == 'crime':
+                crime_patterns = [
+                    r'\barrested\b', r'\bcharged\b', r'\bpolice\b', r'\bcrime\b',
+                    r'\binvestigation\b', r'\bsuspect\b', r'\bcharges\b', r'\bcourt\b',
+                    r'\bmurder\b', r'\bassault\b', r'\brobbery\b', r'\btheft\b',
+                    r'\bstolen\b', r'\barson\b', r'\bdrug\b', r'\btrafficking\b'
+                ]
+                for pattern in crime_patterns:
+                    if re.search(pattern, text_lower):
+                        score += 25
+                        break
 
-            if match_count > 0:
-                # Base score from match count
-                base_score = min(match_count * 10, 50)  # Cap at 50
+            elif category == 'sports':
+                sports_patterns = [
+                    r'\bfootball\b', r'\bbasketball\b', r'\bbaseball\b', r'\bhockey\b',
+                    r'\bsoccer\b', r'\bgame\b', r'\bteam\b', r'\bplayer\b', r'\bcoach\b',
+                    r'\bchampionship\b', r'\bscore\b', r'\bseason\b', r'\btournament\b'
+                ]
+                for pattern in sports_patterns:
+                    if re.search(pattern, text_lower):
+                        score += 20
+                        break
 
-                # Density bonus (keywords per 100 words)
-                total_words = len(words)
-                density = (match_count / total_words) * 100 if total_words > 0 else 0
-                density_bonus = min(density * 2, 20)  # Cap at 20
+            elif category == 'weather':
+                weather_patterns = [
+                    r'\bweather\b', r'\bforecast\b', r'\btemperature\b', r'\brain\b',
+                    r'\bsnow\b', r'\bstorm\b', r'\bwind\b', r'\bhurricane\b', r'\bclimate\b'
+                ]
+                for pattern in weather_patterns:
+                    if re.search(pattern, text_lower):
+                        score += 25
+                        break
 
-                # Specificity bonus (longer keywords are more specific)
-                avg_keyword_length = sum(len(kw) for kw in matches) / match_count
-                specificity_bonus = min((avg_keyword_length - 3) * 2, 15)  # Cap at 15
+            elif category == 'schools':
+                school_patterns = [
+                    r'\bschool\b', r'\bstudent\b', r'\bteacher\b', r'\beducation\b',
+                    r'\bprincipal\b', r'\bclassroom\b', r'\bgraduation\b', r'\bcollege\b',
+                    r'\buniversity\b', r'\bacademic\b', r'\bdurfee\b', r'\bbmc durfee\b'
+                ]
+                for pattern in school_patterns:
+                    if re.search(pattern, text_lower):
+                        score += 20
+                        break
 
-                total_score = base_score + density_bonus + specificity_bonus
+            elif category == 'business':
+                business_patterns = [
+                    r'\bbusiness\b', r'\bcompany\b', r'\bopening\b', r'\bclosing\b',
+                    r'\brestaurant\b', r'\beconomic\b', r'\bcommerce\b', r'\bretail\b',
+                    r'\bshop\b', r'\bstore\b', r'\bjob\b', r'\bemployment\b'
+                ]
+                for pattern in business_patterns:
+                    if re.search(pattern, text_lower):
+                        score += 18
+                        break
 
-                # Boost obituaries (they have very specific patterns)
-                if category == 'obituaries':
-                    obituary_indicators = ['died', 'passed away', 'in loving memory', 'funeral', 'burial']
-                    if any(indicator in text_lower for indicator in obituary_indicators):
-                        total_score *= 1.5
+            elif category == 'food':
+                food_patterns = [
+                    r'\brestaurant\b', r'\bfood\b', r'\bdining\b', r'\bcuisine\b',
+                    r'\bchef\b', r'\bmenu\b', r'\brecipe\b', r'\bkitchen\b', r'\bcafe\b'
+                ]
+                for pattern in food_patterns:
+                    if re.search(pattern, text_lower):
+                        score += 15
+                        break
 
-                category_scores[category] = min(total_score, 100)
-            else:
-                category_scores[category] = 0.0
+            elif category == 'events':
+                event_patterns = [
+                    r'\bevent\b', r'\bfestival\b', r'\bconcert\b', r'\bcommunity\b',
+                    r'\bfundraiser\b', r'\bcharity\b', r'\bcelebration\b', r'\bgathering\b'
+                ]
+                for pattern in event_patterns:
+                    if re.search(pattern, text_lower):
+                        score += 15
+                        break
+
+            elif category == 'entertainment':
+                entertainment_patterns = [
+                    r'\bmusic\b', r'\bshow\b', r'\bconcert\b', r'\btheater\b',
+                    r'\bentertainment\b', r'\bfun\b', r'\bperformance\b', r'\bart\b'
+                ]
+                for pattern in entertainment_patterns:
+                    if re.search(pattern, text_lower):
+                        score += 12
+                        break
+
+            # KEYWORD-BASED SCORING (secondary, if no rule-based match)
+            if score == 0:
+                keywords = self.get_category_keywords(category)
+                if keywords:
+                    # Count keyword matches (both exact and partial)
+                    exact_matches = keywords.intersection(words)
+                    partial_matches = 0
+
+                    # Check for partial matches (keywords within longer phrases)
+                    for keyword in keywords:
+                        if len(keyword.split()) > 1:  # Multi-word keywords
+                            if keyword in text_lower:
+                                partial_matches += 1
+
+                    match_count = len(exact_matches) + partial_matches
+
+                    if match_count > 0:
+                        # Base score from match count
+                        base_score = min(match_count * 8, 40)  # Cap at 40
+
+                        # Density bonus (keywords per 100 words)
+                        total_words = len(words)
+                        density = (match_count / total_words) * 100 if total_words > 0 else 0
+                        density_bonus = min(density * 1.5, 15)  # Cap at 15
+
+                        score = base_score + density_bonus
+
+            # Boost for local Fall River content
+            if 'fall river' in text_lower or 'fallriver' in text_lower:
+                if score > 0:
+                    score += 10  # Boost existing category matches
+                elif category == 'local-news':
+                    score = 25  # Default boost for local news
+
+            category_scores[category] = min(score, 100)
 
         return category_scores
 
@@ -114,14 +211,31 @@ class SmartCategorizer:
             primary_category = max(all_scores.keys(), key=lambda k: all_scores[k])
             confidence = all_scores[primary_category]
 
-            # If no category scores above threshold, default to 'local-news'
-            if confidence < 10:
-                primary_category = 'local-news'
-                confidence = 50  # Default confidence for fallback
-                all_scores[primary_category] = confidence
+            # If confidence is very low, try fallback logic
+            if confidence < 15:
+                # Check for Fall River specific content
+                if 'fall river' in combined_text.lower() or 'fallriver' in combined_text.lower():
+                    primary_category = 'local-news'
+                    confidence = 60
+                    all_scores[primary_category] = confidence
+                # Check for obvious obituary patterns
+                elif any(word in combined_text.lower() for word in ['obituary', 'died', 'passed away', 'funeral']):
+                    primary_category = 'obituaries'
+                    confidence = 80
+                    all_scores[primary_category] = confidence
+                # Check for obvious crime patterns
+                elif any(word in combined_text.lower() for word in ['police', 'arrest', 'charged', 'crime']):
+                    primary_category = 'crime'
+                    confidence = 70
+                    all_scores[primary_category] = confidence
+                # Default to local-news with low confidence
+                else:
+                    primary_category = 'local-news'
+                    confidence = 30
+                    all_scores[primary_category] = confidence
         else:
             primary_category = 'local-news'
-            confidence = 50
+            confidence = 30
             all_scores = {cat: 0.0 for cat in self.categories}
             all_scores[primary_category] = confidence
 

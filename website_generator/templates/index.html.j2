@@ -56,7 +56,7 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="css/style.css?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}">
+    <link rel="stylesheet" href="/zips/zip_{{ zip_code }}/css/style.css?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}">
     <style>
         /* Custom styles for things Tailwind can't handle */
         .lazy-image { opacity: 0; transition: opacity 0.3s; }
@@ -482,7 +482,47 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
-        
+
+        <!-- Alert Banner -->
+        {% set alert_articles = articles | selectattr('is_alert') | list %}
+        {% if weather_alert_status == 'True' or alert_articles %}
+        <a href="https://forecast.weather.gov/MapClick.php?lat=41.7199586&lon=-71.139299" target="_blank" rel="noopener" class="block mb-6 bg-red-600 text-white rounded-lg shadow-lg overflow-hidden animate-fade-in-up hover:bg-red-700 transition-colors duration-300 group">
+            <div id="alertBanner" class="p-4 relative">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3 flex-1">
+                        <div class="flex-shrink-0">
+                            <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-lg font-semibold group-hover:text-red-100 transition-colors">Weather Alert Active</h3>
+                            <p class="text-red-100 text-sm">
+                                {% for alert in alert_articles[:2] %}
+                                <span class="inline-block bg-red-700 group-hover:bg-red-800 px-2 py-1 rounded text-xs mr-2 mb-1 transition-colors">
+                                    <div class="font-medium">{{ alert.summary | truncate(100) }}</div>
+                                </span>
+                                {% endfor %}
+                                {% if alert_articles|length > 2 %}
+                                <span class="text-red-200 text-xs group-hover:text-red-100 transition-colors">+ {{ alert_articles|length - 2 }} more alerts</span>
+                                {% endif %}
+                                {# Remove hardcoded date/time display - now included in cleaned summary #}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 ml-4">
+                        <span class="text-red-200 text-xs group-hover:text-red-100 transition-colors">View on NWS →</span>
+                        <button onclick="dismissAlert(event)" class="text-red-300 hover:text-white p-1 transition-colors" title="Dismiss alert">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+
         <!-- Hero + Trending Row (65/35 split) -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10 items-start">
             <!-- Massive Hero Carousel (65% - 8 columns) -->
@@ -496,7 +536,7 @@
                             <a href="{{ hero_article.url }}" target="_blank" rel="noopener" class="group block relative w-full h-full">
                                 <!-- Image container - always present, controlled by CSS/JS -->
                                 <div class="relative h-full overflow-hidden image-container">
-                                    <img src="{{ hero_article.image_url }}" alt="{{ hero_article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                    <img src="{% if hero_article.thumbnail_large %}{{ hero_article.thumbnail_large }}{% elif hero_article.image_url %}/cached-images/{{ hero_article.image_url | urlencode }}{% endif %}" alt="{{ hero_article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
                                     <!-- Light gradient overlay bottom 40% to show source gradients -->
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" style="background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 40%, transparent 100%);"></div>
                                     <!-- Video play icon if video -->
@@ -604,7 +644,7 @@
                                 <div class="flex items-start gap-3 pb-3 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors hover:bg-gray-800/20">
                                     <!-- Image container - always present, controlled by CSS/JS -->
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f] image-container">
-                                        <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                                        <img src="{% if article.thumbnail_medium %}{{ article.thumbnail_medium }}{% elif article.image_url %}/cached-images/{{ article.image_url | urlencode }}{% endif %}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
                                     </div>
                                     <!-- Placeholder container - always present, controlled by CSS/JS -->
                                     <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden placeholder-container">
@@ -654,7 +694,7 @@
                             {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
                             <div class="aspect-[4/3] rounded-t-xl overflow-hidden bg-gray-900 image-container">
                                 {% if show_images %}
-                                <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" style="aspect-ratio: 4/3;">
+                                <img src="{% if article.thumbnail_small %}{{ article.thumbnail_small }}{% elif article.image_url %}/cached-images/{{ article.image_url | urlencode }}{% endif %}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" style="aspect-ratio: 4/3;">
                                 {% else %}
                                 <div class="bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg w-full h-full flex items-center justify-center" style="aspect-ratio: 4/3;">
                                     <span class="text-gray-500 text-sm">Images off</span>
@@ -692,11 +732,11 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="articlesGrid">
             {% if articles and articles|length > 0 %}
                 {% for article in articles[:30] %}
-            <article class="group relative bg-[#161616]/60 backdrop-blur-sm rounded-2xl overflow-hidden ring-1 ring-white/5 hover:ring-white/20 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-2 animate-fade-in-up" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}" style="animation-delay: {{ loop.index * 0.1 }}s;">
+            <article class="group relative bg-[#161616]/60 backdrop-blur-sm rounded-2xl overflow-hidden ring-1 {{ 'ring-2 ring-red-500 ring-opacity-75' if article.is_alert else 'ring-white/5 hover:ring-white/20' }} hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-2 animate-fade-in-up {{ 'animate-pulse' if article.alert_priority == 'critical' else '' }}" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}" style="animation-delay: {{ loop.index * 0.1 }}s;">
                 <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
                             <!-- Image container - always present, controlled by CSS/JS -->
                             <div class="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-gradient-to-br {{ article.source_gradient or 'from-gray-600 to-gray-700' }} image-container">
-                        <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy"
+                        <img src="{% if article.thumbnail_medium %}{{ article.thumbnail_medium }}{% elif article.image_url %}/cached-images/{{ article.image_url | urlencode }}{% endif %}" alt="{{ article.title }}" loading="lazy"
                              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                              style="aspect-ratio: 4/3;">
                         <!-- Premium gradient overlay - lighter to show source gradients -->
@@ -876,15 +916,15 @@
         // #endregion premium FOUC prevention
     </script>
     <!-- Load scripts in dependency order -->
-    <script src="js/storage.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load storage.js'); document.body.classList.add('loaded');"></script>
-    <script src="js/categorizer.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load categorizer.js');"></script>
-    <script src="js/news-fetcher.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load news-fetcher.js');"></script>
-    <script src="js/article-renderer.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load article-renderer.js');"></script>
-    <script src="js/weather.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load weather.js');"></script>
-    <script src="js/tabs.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load tabs.js');"></script>
-    <script src="js/stats.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load stats.js');"></script>
-    <script src="js/main.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load main.js'); document.body.classList.add('loaded');"></script>
-    <script src="js/zip-router.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load zip-router.js');"></script>
+    <script src="/zips/zip_{{ zip_code }}/js/storage.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load storage.js'); document.body.classList.add('loaded');"></script>
+    <script src="/zips/zip_{{ zip_code }}/js/categorizer.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load categorizer.js');"></script>
+    <script src="/zips/zip_{{ zip_code }}/js/news-fetcher.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load news-fetcher.js');"></script>
+    <script src="/zips/zip_{{ zip_code }}/js/article-renderer.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load article-renderer.js');"></script>
+    <script src="/zips/zip_{{ zip_code }}/js/weather.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load weather.js');"></script>
+    <script src="/zips/zip_{{ zip_code }}/js/tabs.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load tabs.js');"></script>
+    <script src="/zips/zip_{{ zip_code }}/js/stats.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load stats.js');"></script>
+    <script src="/zips/zip_{{ zip_code }}/js/main.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load main.js'); document.body.classList.add('loaded');"></script>
+    <script src="/zips/zip_{{ zip_code }}/js/zip-router.js?v={{ current_time|replace(' ', '')|replace(':', '')|replace('-', '') }}" onerror="console.error('Failed to load zip-router.js');"></script>
     <script>console.log('[FRNA] ✅ Page loaded with cache-busting - build:', '{{ current_time }}');</script>
     <script>
         // Header scroll behavior - becomes fixed after scroll

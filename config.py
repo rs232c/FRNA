@@ -203,6 +203,13 @@ NEWS_SOURCES = {
         "category": "obituaries",
         "enabled": True,
         "require_fall_river": False
+    },
+    "nws_weather_alerts": {
+        "name": "National Weather Service Alerts",
+        "url": "https://forecast.weather.gov",
+        "category": "weather",
+        "enabled": True,
+        "location": "Fall River, MA"
     }
 }
 
@@ -272,6 +279,21 @@ CATEGORY_MAPPING = {
     "education": "schools",  # Add variant
     "food": "food",  # Add direct mapping
     "weather": "weather"  # Add direct mapping
+}
+
+# Category Colors for Combined Gradients (source start + category end)
+CATEGORY_COLORS = {
+    "local-news": "slate-600",     # Neutral gray for general local news
+    "crime": "red-600",           # Red for Police & Fire
+    "sports": "emerald-600",      # Green for Sports
+    "events": "violet-600",       # Purple for Entertainment & Events
+    "business": "sky-600",        # Blue for Business & Development
+    "schools": "indigo-600",      # Indigo for Schools & Education
+    "food": "orange-600",         # Orange for Food & Drink
+    "obituaries": "stone-600",    # Gray for Obituaries
+    "weather": "cyan-600",        # Cyan for Weather
+    "scanner": "amber-600",       # Yellow for Scanner
+    "meetings": "teal-600",       # Teal for Meetings
 }
 
 # Facebook Configuration

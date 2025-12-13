@@ -11,6 +11,7 @@ from ingestors.news_ingestor import (
 from ingestors.fun107_ingestor import Fun107Ingestor
 from ingestors.facebook_ingestor import FacebookIngestor
 from ingestors.weather_ingestor import WeatherIngestor
+from ingestors.nws_weather_alerts_ingestor import NWSWeatherAlertsIngestor
 from config import (
     NEWS_SOURCES, AGGREGATION_CONFIG, LOCALE_HASHTAG, HASHTAGS, ARTICLE_CATEGORIES
 )
@@ -33,6 +34,7 @@ class NewsAggregator:
     def __init__(self):
         self.news_ingestors = {}
         self.facebook_ingestor = FacebookIngestor()
+        self.nws_weather_alerts_ingestor = NWSWeatherAlertsIngestor({"name": "NWS Weather Alerts", "url": "https://forecast.weather.gov"})
         self.database = ArticleDatabase()
         self.cache = get_cache()
         self._source_fetch_interval = self._load_source_fetch_interval()  # Load from admin settings
@@ -125,6 +127,8 @@ class NewsAggregator:
             elif source_key == "google_news":
                 # Google News ingestor is created dynamically, skip here
                 continue
+            elif source_key == "nws_weather_alerts":
+                ingestor = NWSWeatherAlertsIngestor(source_config)
             else:
                 ingestor = NewsIngestor(source_config)
             
@@ -362,6 +366,15 @@ class NewsAggregator:
             logger.info(f"Fetched {len(facebook_posts)} Facebook posts")
         except Exception as e:
             logger.error(f"Error fetching Facebook posts: {e}")
+
+        # Collect weather alerts from NWS
+        try:
+            logger.info("Fetching NWS weather alerts...")
+            weather_alerts = await self.nws_weather_alerts_ingestor.fetch_articles_async()
+            all_articles.extend(weather_alerts)
+            logger.info(f"Fetched {len(weather_alerts)} weather alerts from NWS")
+        except Exception as e:
+            logger.error(f"Error fetching NWS weather alerts: {e}")
         
         # Close all aiohttp sessions
         for source_key, ingestor in self.news_ingestors.items():
@@ -373,147 +386,213 @@ class NewsAggregator:
         return all_articles
     
     def calculate_relevance_score(self, article: Dict) -> float:
-        """Calculate Fall River relevance score (0-100) with enhanced local knowledge"""
+        """Calculate Fall River relevance score (0-100) with enhanced local knowledge and proper normalization"""
         from datetime import datetime, timedelta
-        
+
         content = article.get("content", article.get("summary", "")).lower()
         title = article.get("title", "").lower()
         byline = article.get("byline", article.get("author", "")).lower() if article.get("byline") or article.get("author") else ""
         combined = f"{title} {content} {byline}"
-        
+
         score = 0.0
-        
-        # BONUS: Extra points if "Fall River" appears in body/content (not just title)
-        # This ensures articles actually about Fall River get boosted
-        fall_river_in_body = any(kw in content for kw in ["fall river", "fallriver"])
-        fall_river_in_byline = any(kw in byline for kw in ["fall river", "fallriver"]) if byline else False
-        
-        if fall_river_in_body:
-            # "Fall River" in body gets significant bonus (15 points)
-            score += 15.0
-        if fall_river_in_byline:
-            # "Fall River" in byline gets bonus (10 points)
-            score += 10.0
-        
-        # High relevance keywords (10 points each)
-        high_relevance = ["fall river", "fallriver", "fall river ma", "fall river, ma", 
-                         "fall river massachusetts", "fall river, massachusetts"]
-        for keyword in high_relevance:
-            if keyword in combined:
-                score += 10.0
-        
-        # Medium relevance keywords (5 points each) - surrounding towns
-        medium_relevance = ["somerset", "swansea", "westport", "freetown", "taunton", "new bedford", 
-                           "bristol county", "massachusetts state police", "bristol county sheriff",
-                           "dighton", "rehoboth", "seekonk", "warren ri", "tiverton ri"]
-        for keyword in medium_relevance:
-            if keyword in combined:
-                score += 5.0
-        
-        # Expanded local landmarks/places (3 points each)
-        local_places = [
-            # Bodies of Water
-            "watuppa", "wattupa", "quequechan", "taunton river", "mount hope bay",
-            # Landmarks & Attractions
+
+        # === LOCAL CONTENT BOOSTING (0-40 points) ===
+        # Fall River mentions get massive boost (25-40 points total)
+        fall_river_keywords = [
+            "fall river", "fallriver", "fall river ma", "fall river, ma",
+            "fall river mass", "fall river mass.", "fall river massachusetts",
+            "fall river, massachusetts", "fr ma", "fall river, mass"
+        ]
+
+        fall_river_in_title = any(kw in title for kw in fall_river_keywords)
+        fall_river_in_body = any(kw in content for kw in fall_river_keywords)
+        fall_river_in_byline = any(kw in byline for kw in fall_river_keywords) if byline else False
+
+        if fall_river_in_title:
+            score += 25.0  # Title mention = very relevant
+        elif fall_river_in_body:
+            score += 20.0  # Body mention = relevant
+        elif fall_river_in_byline:
+            score += 15.0  # Byline mention = somewhat relevant
+
+        # Additional Fall River variations (5 points each, no double-counting)
+        if not (fall_river_in_title or fall_river_in_body or fall_river_in_byline):
+            additional_fr_variations = ["fr mass", "fall river mass", "fall river, mass"]
+            for variation in additional_fr_variations:
+                if variation in combined:
+                    score += 5.0
+                    break
+
+        # Local landmarks and institutions (up to 15 points total)
+        local_landmarks = [
+            # High-value landmarks (8 points each)
             "battleship cove", "lizzie borden", "lizzie borden house", "fall river heritage state park",
-            "marine museum", "narrows center", "gates of the city",
-            # Schools
-            "durfee", "bmc durfee", "b.m.c. durfee", "durfee high", "durfee high school",
-            "saint anne's", "saint anne", "st. anne's", "st. anne", "bishop connolly",
-            "diman", "diman regional", "diman vocational", "bristol community college", "bcc",
-            "fall river public schools", "f.r.p.s.",
-            # Hospitals & Healthcare
+            "marine museum", "narrows center", "gates of the city", "durfee", "bmc durfee",
+            "durfee high", "durfee high school", "saint anne's", "st. anne's", "bishop connolly",
+            "diman", "diman regional", "city hall", "fall river city hall", "government center",
+
+            # Medium-value landmarks (5 points each)
+            "watuppa", "wattupa", "quequechan", "taunton river", "mount hope bay",
             "saint anne's hospital", "st. anne's hospital", "charlton memorial", "southcoast health",
-            # Neighborhoods
             "north end", "south end", "highlands", "flint village", "maplewood",
             "lower highlands", "upper highlands", "downtown fall river", "the hill",
-            # Streets & Areas
             "pleasant street", "south main street", "north main street", "eastern avenue",
-            "highland avenue", "bedford street", "davol street", "government center",
-            # Government & Civic
-            "city hall", "fall river city hall", "government center", "city council",
-            "mayor paul coogan", "mayor coogan", "school committee", "school board",
-            # Businesses & Organizations
-            "fall river chamber", "fall river economic development", "fall river housing authority",
-            "fall river water department", "fall river gas company",
-            # Parks & Recreation
             "kennedy park", "lafayette park", "riker park", "bicentennial park",
-            "fall river little league", "fall river youth soccer"
+
+            # Low-value landmarks (3 points each)
+            "fall river chamber", "fall river economic development", "fall river housing authority",
+            "fall river water department", "fall river gas company", "fall river public schools",
+            "f.r.p.s.", "fall river little league", "fall river youth soccer"
         ]
-        for place in local_places:
-            if place in combined:
-                score += 3.0
-        
-        # Topic-specific scoring (higher weight for important local topics)
+
+        landmark_score = 0.0
+        for landmark in local_landmarks[:10]:  # Limit to prevent score inflation
+            if landmark in combined:
+                if landmark_score < 15.0:  # Cap at 15 points total
+                    if landmark in ["battleship cove", "lizzie borden", "durfee", "city hall"]:
+                        landmark_score += 8.0
+                    elif landmark in ["watuppa", "saint anne's hospital", "north end", "highlands"]:
+                        landmark_score += 5.0
+                    else:
+                        landmark_score += 3.0
+
+        score += min(15.0, landmark_score)
+
+        # Nearby towns and regional context (up to 10 points)
+        nearby_towns = [
+            "somerset", "swansea", "westport", "freetown", "taunton", "new bedford",
+            "bristol county", "massachusetts state police", "bristol county sheriff",
+            "dighton", "rehoboth", "seekonk", "seekonk ri", "warren ri", "tiverton ri",
+            "tiverton", "warren", "bristol", "rhode island", "ri", "mass", "massachusetts"
+        ]
+
+        nearby_score = 0.0
+        for town in nearby_towns[:5]:  # Limit matches
+            if town in combined and nearby_score < 10.0:
+                nearby_score += 3.0
+
+        score += min(10.0, nearby_score)
+
+        # === TOPIC RELEVANCE (0-20 points) ===
+        # Important local topics get higher weight
         topic_keywords = {
-            # Government & Politics (8 points)
-            "city council": 8.0, "mayor": 8.0, "school committee": 8.0, "school board": 8.0,
-            "city budget": 8.0, "tax rate": 8.0, "zoning": 8.0, "planning board": 8.0,
-            # Crime & Safety (7 points)
-            "police": 7.0, "arrest": 7.0, "fire department": 7.0, "emergency": 7.0,
-            "crime": 7.0, "investigation": 7.0, "suspected": 7.0,
-            # Schools & Education (6 points)
-            "school": 6.0, "student": 6.0, "teacher": 6.0, "education": 6.0,
-            "graduation": 6.0, "principal": 6.0,
-            # Local Business (5 points)
-            "business": 5.0, "restaurant": 5.0, "opening": 5.0, "closing": 5.0,
-            "new business": 5.0, "local business": 5.0,
-            # Events & Community (4 points)
-            "event": 4.0, "festival": 4.0, "concert": 4.0, "community": 4.0,
-            "fundraiser": 4.0, "charity": 4.0
+            # Government & Politics (6 points each)
+            "city council": 6.0, "mayor": 6.0, "mayor paul coogan": 8.0, "school committee": 6.0, "school board": 6.0,
+            "city budget": 6.0, "tax rate": 6.0, "zoning": 6.0, "planning board": 6.0,
+
+            # Crime & Safety (5 points each)
+            "police": 5.0, "arrest": 5.0, "fire department": 5.0, "emergency": 5.0,
+            "crime": 5.0, "investigation": 5.0, "suspected": 5.0, "murder": 5.0, "robbery": 5.0,
+
+            # Schools & Education (4 points each)
+            "school": 4.0, "student": 4.0, "teacher": 4.0, "education": 4.0,
+            "graduation": 4.0, "principal": 4.0, "college": 4.0, "university": 4.0,
+
+            # Local Business & Economy (3 points each)
+            "business": 3.0, "restaurant": 3.0, "opening": 3.0, "closing": 3.0,
+            "new business": 3.0, "local business": 3.0, "job": 3.0, "employment": 3.0,
+
+            # Events & Community (2 points each)
+            "event": 2.0, "festival": 2.0, "concert": 2.0, "community": 2.0,
+            "fundraiser": 2.0, "charity": 2.0
         }
+
+        topic_score = 0.0
         for keyword, points in topic_keywords.items():
-            if keyword in combined:
-                score += points
-        
-        # Source credibility scoring
+            if keyword in combined and topic_score < 20.0:
+                topic_score += points
+
+        score += min(20.0, topic_score)
+
+        # === SOURCE CREDIBILITY (0-15 points) ===
+        # Local sources get higher base credibility, but not overwhelming
         source = article.get("source", "").lower()
         source_credibility = {
-            "herald news": 25.0,  # Primary local source
-            "fall river reporter": 25.0,  # Primary local source
-            "wpri": 8.0,  # Regional TV news
-            "abc6": 8.0,  # Regional TV news
-            "nbc10": 8.0,  # Regional TV news
-            "fun107": 5.0,  # Regional radio
-            "masslive": 5.0,  # Regional online
-            "taunton gazette": 4.0,  # Nearby town paper
-            "southcoast today": 4.0  # Regional paper
+            "herald news": 12.0,  # Primary local source - reduced from 25
+            "fall river reporter": 12.0,  # Primary local source - reduced from 25
+            "wpri": 6.0,  # Regional TV news
+            "abc6": 6.0,  # Regional TV news
+            "nbc10": 6.0,  # Regional TV news
+            "fun107": 4.0,  # Regional radio
+            "masslive": 4.0,  # Regional online
+            "taunton gazette": 3.0,  # Nearby town paper
+            "southcoast today": 3.0  # Regional paper
         }
+
         for source_name, points in source_credibility.items():
             if source_name in source:
                 score += points
                 break
-        
-        # Recency weighting (newer articles get bonus)
+
+        # === RECENCY BONUS (0-5 points) ===
+        # Recent articles get small bonus, but not for old news
         published = article.get("published")
         if published:
             try:
                 pub_date = datetime.fromisoformat(published.replace('Z', '+00:00').split('+')[0])
-                days_old = (datetime.now() - pub_date.replace(tzinfo=None)).days
-                if days_old == 0:
-                    score += 5.0  # Today's news
-                elif days_old <= 1:
-                    score += 3.0  # Yesterday
-                elif days_old <= 7:
-                    score += 1.0  # This week
-                # Articles older than a week get no recency bonus
+                hours_old = (datetime.now() - pub_date.replace(tzinfo=None)).total_seconds() / 3600
+
+                if hours_old <= 6:
+                    score += 5.0  # <6h: +5 points
+                elif hours_old <= 24:
+                    score += 3.0  # <24h: +3 points
+                elif hours_old <= 72:
+                    score += 1.0  # <72h: +1 point
+                # Older than 3 days: no recency bonus
             except:
                 pass
-        
-        # Penalize clickbait/low-quality content
+
+        # === JUNK CONTENT PENALTIES (-50 to 0 points) ===
+        # Strong penalties for truly irrelevant or low-quality content
+        junk_penalties = 0.0
+
+        # Casino/gambling content - massive penalty
+        casino_keywords = ["casino", "gambling", "slots", "poker", "blackjack", "twin river", "twin river casino"]
+        for keyword in casino_keywords:
+            if keyword in combined:
+                junk_penalties -= 50.0  # Massive penalty for casino content
+                break
+
+        # Sponsored/advertorial content
+        sponsored_keywords = ["sponsored", "advertisement", "ad", "promo", "promotion", "brought to you by"]
+        for keyword in sponsored_keywords:
+            if keyword in combined:
+                junk_penalties -= 40.0
+                break
+
+        # Generic national/international news (no local connection)
+        national_news_keywords = ["trump", "biden", "president", "congress", "senate", "washington dc", "white house"]
+        if any(kw in combined for kw in national_news_keywords) and score < 30:
+            # Only penalize if article has little local relevance
+            junk_penalties -= 30.0
+
+        # Clickbait and low-quality patterns
         clickbait_patterns = [
             "you won't believe", "this one trick", "number 7 will shock you",
-            "doctors hate", "one weird trick", "click here", "find out more"
+            "doctors hate", "one weird trick", "click here", "find out more",
+            "what happened next", "shocking details", "amazing story"
         ]
         for pattern in clickbait_patterns:
             if pattern in combined:
-                score -= 5.0
-        
-        # Penalize if no local connection
-        if score == 0:
-            score = -10.0  # Negative score for completely unrelated
-        
-        return min(100.0, max(0.0, score))
+                junk_penalties -= 15.0
+                break
+
+        # Content quality checks
+        content_length = len(content.split())
+        if content_length < 50:
+            junk_penalties -= 10.0  # Too short
+        elif content_length > 2000:
+            junk_penalties -= 5.0  # Might be bloated/scraped content
+
+        # Apply penalties
+        score += junk_penalties
+
+        # === FINAL NORMALIZATION ===
+        # Ensure score is between 0-100
+        # Articles with negative scores become 0 (no negative relevance)
+        final_score = min(100.0, max(0.0, score))
+
+        return final_score
     
     def _generate_better_summary(self, article: Dict) -> str:
         """Generate a better summary that captures key facts (who, what, when, where)"""
@@ -643,11 +722,65 @@ class NewsAggregator:
             content_lower = content.lower()
             title_lower = article.get("title", "").lower()
             combined_text = f"{title_lower} {content_lower}"
-            
+
+            # === ALERT DETECTION (moved before relevance calculation) ===
+            # ONLY flag TRUE emergency situations with official terminology
+            alert_keywords = {
+                'weather': [
+                    # Only official National Weather Service warnings/advisories
+                    'winter weather advisory', 'winter storm warning', 'winter storm watch',
+                    'blizzard warning', 'blizzard watch', 'ice storm warning', 'ice storm watch',
+                    'freezing rain warning', 'freezing rain advisory', 'heavy snow warning',
+                    'heavy snow advisory', 'wind warning', 'wind advisory', 'high wind warning',
+                    'severe thunderstorm warning', 'severe thunderstorm watch', 'tornado warning',
+                    'tornado watch', 'flood warning', 'flood watch', 'flash flood warning',
+                    'flash flood watch', 'coastal flood warning', 'coastal flood watch',
+                    'hazardous weather outlook', 'special weather statement', 'severe weather statement',
+                    # Emergency conditions (must include "emergency" or official terminology)
+                    'snow emergency declared', 'state of emergency due to weather',
+                    'emergency travel ban', 'weather emergency road closure',
+                    'dangerous driving conditions due to weather', 'whiteout emergency conditions',
+                    'life-threatening weather conditions', 'extreme cold warning', 'extreme heat warning'
+                ],
+                'parking': [
+                    # Only emergency parking situations with "emergency" or "snow emergency"
+                    'emergency parking ban', 'parking ban due to snow emergency',
+                    'parking ban due to weather emergency', 'emergency alternate side parking',
+                    'emergency street cleaning due to weather', 'emergency parking restriction due to snow'
+                ],
+                'trash': [
+                    # Only emergency trash collection situations
+                    'emergency trash collection delay', 'trash collection delayed due to snow emergency',
+                    'trash collection delayed due to weather emergency', 'emergency waste collection delay',
+                    'storm emergency trash collection', 'weather emergency collection delay due to storm'
+                ]
+            }
+
+            article['is_alert'] = False
+            article['alert_type'] = None
+            article['alert_priority'] = 'info'  # info, warning, critical
+
+            alert_content_lower = f"{article.get('title', '')} {article.get('content', '')} {article.get('summary', '')}".lower()
+
+            for alert_type, keywords in alert_keywords.items():
+                if any(keyword in alert_content_lower for keyword in keywords):
+                    article['is_alert'] = True
+                    article['alert_type'] = alert_type
+
+                    # Determine alert priority
+                    if any(word in alert_content_lower for word in ['emergency', 'evacuation', 'critical', 'severe']):
+                        article['alert_priority'] = 'critical'
+                    elif any(word in alert_content_lower for word in ['warning', 'advisory', 'caution', 'alert']):
+                        article['alert_priority'] = 'warning'
+                    else:
+                        article['alert_priority'] = 'info'
+                    break  # Only set one alert type
+
             # Calculate relevance score with tag tracking (Phase 5: city_state support)
             try:
-                from utils.relevance_calculator import calculate_relevance_score_with_tags
-                relevance_score, tag_info = calculate_relevance_score_with_tags(article, zip_code=zip_code, city_state=city_state)
+                from utils.relevance_calculator_v2 import calculate_relevance_score
+                relevance_score = calculate_relevance_score(article, zip_code=zip_code)
+                tag_info = {'matched': [], 'missing': []}  # Simplified for now
             except:
                 # Fallback to regular calculation if tag tracking fails
                 relevance_score = self.calculate_relevance_score(article)
@@ -655,25 +788,25 @@ class NewsAggregator:
             
             article['_relevance_score'] = relevance_score
             
-            # Auto-filter articles below relevance threshold (exclude obituaries)
-            # Check both category and primary_category fields
+            # Enhanced auto-filtering with multiple thresholds (self-healing)
             article_category = (article.get('category', '') or article.get('primary_category', '') or '').lower()
             is_obituary = article_category in ['obituaries', 'obituary', 'obits']
-            
-            if relevance_score < relevance_threshold and not is_obituary:
-                logger.info(f"🔴 AUTO-FILTER: Filtering out article '{title_lower[:50]}...' - relevance score below threshold: {relevance_score:.1f} < {relevance_threshold}")
-                
-                # Save auto-filtered article to database for review
+
+            # STRONG AUTO-REJECT: Score < 30 (completely irrelevant)
+            if relevance_score < 30 and not is_obituary:
+                logger.info(f"🚫 AUTO-REJECT: Article '{title_lower[:50]}...' has critically low relevance: {relevance_score:.1f} < 30")
+
+                # Save auto-rejected article to database for review
                 try:
                     import sqlite3
                     import json
                     from config import DATABASE_CONFIG
                     conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
                     cursor = conn.cursor()
-                    
+
                     # Save article first
                     cursor.execute('''
-                        INSERT OR IGNORE INTO articles 
+                        INSERT OR IGNORE INTO articles
                         (title, url, published, summary, content, source, source_type, ingested_at, relevance_score)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
@@ -687,7 +820,7 @@ class NewsAggregator:
                         article.get("ingested_at", ""),
                         relevance_score
                     ))
-                    
+
                     # Get article ID (either new or existing)
                     if article.get("url"):
                         cursor.execute('SELECT id FROM articles WHERE url = ?', (article.get("url"),))
@@ -695,20 +828,20 @@ class NewsAggregator:
                         article_id = row[0] if row else cursor.lastrowid
                     else:
                         article_id = cursor.lastrowid
-                    
+
                     if article_id:
-                        # Mark as auto-rejected due to low relevance score
-                        reason = f"Relevance score {relevance_score:.1f} below threshold {relevance_threshold}"
+                        # Mark as auto-rejected due to critically low relevance score
+                        reason = f"CRITICAL: Relevance score {relevance_score:.1f} < 30 threshold"
                         # Add tag information to reason if available
                         if tag_info.get('matched') or tag_info.get('missing'):
                             tag_details = []
                             if tag_info.get('matched'):
-                                tag_details.append(f"Matched: {', '.join(tag_info['matched'][:5])}")  # Limit to first 5
+                                tag_details.append(f"Matched: {', '.join(tag_info['matched'][:3])}")
                             if tag_info.get('missing'):
                                 tag_details.append(f"Missing: {', '.join(tag_info['missing'])}")
                             if tag_details:
                                 reason += f" | {' | '.join(tag_details)}"
-                        
+
                         # Use zip_code from article or parameter, default to "02720" if both are None
                         article_zip = article.get("zip_code") or zip_code or "02720"
                         cursor.execute('''
@@ -716,12 +849,75 @@ class NewsAggregator:
                             (article_id, enabled, is_auto_filtered, auto_reject_reason, zip_code)
                             VALUES (?, 0, 1, ?, ?)
                         ''', (article_id, reason, article_zip))
-                    
+
                     conn.commit()
                     conn.close()
                 except Exception as e:
-                    logger.warning(f"Could not save auto-filtered article: {e}")
-                
+                    logger.warning(f"Could not save auto-rejected article: {e}")
+
+                continue
+
+            # SOFT AUTO-FILTER: Score below admin threshold (but > 30)
+            elif relevance_score < relevance_threshold and not is_obituary:
+                logger.info(f"⚠️  SOFT FILTER: Article '{title_lower[:50]}...' below relevance threshold: {relevance_score:.1f} < {relevance_threshold}")
+
+                # Save soft-filtered article to database for potential review
+                try:
+                    import sqlite3
+                    import json
+                    from config import DATABASE_CONFIG
+                    conn = sqlite3.connect(DATABASE_CONFIG.get("path", "fallriver_news.db"))
+                    cursor = conn.cursor()
+
+                    # Save article first
+                    cursor.execute('''
+                        INSERT OR IGNORE INTO articles
+                        (title, url, published, summary, content, source, source_type, ingested_at, relevance_score)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        article.get("title", ""),
+                        article.get("url", ""),
+                        article.get("published", ""),
+                        article.get("summary", ""),
+                        article.get("content", ""),
+                        article.get("source", ""),
+                        article.get("source_type", ""),
+                        article.get("ingested_at", ""),
+                        relevance_score
+                    ))
+
+                    # Get article ID (either new or existing)
+                    if article.get("url"):
+                        cursor.execute('SELECT id FROM articles WHERE url = ?', (article.get("url"),))
+                        row = cursor.fetchone()
+                        article_id = row[0] if row else cursor.lastrowid
+                    else:
+                        article_id = cursor.lastrowid
+
+                    if article_id:
+                        # Mark as soft-filtered (can be reviewed and potentially enabled)
+                        reason = f"SOFT FILTER: Relevance score {relevance_score:.1f} < admin threshold {relevance_threshold}"
+                        if tag_info.get('matched') or tag_info.get('missing'):
+                            tag_details = []
+                            if tag_info.get('matched'):
+                                tag_details.append(f"Matched: {', '.join(tag_info['matched'][:3])}")
+                            if tag_info.get('missing'):
+                                tag_details.append(f"Missing: {', '.join(tag_info['missing'])}")
+                            if tag_details:
+                                reason += f" | {' | '.join(tag_details)}"
+
+                        article_zip = article.get("zip_code") or zip_code or "02720"
+                        cursor.execute('''
+                            INSERT OR REPLACE INTO article_management
+                            (article_id, enabled, is_auto_filtered, auto_reject_reason, zip_code)
+                            VALUES (?, 0, 1, ?, ?)
+                        ''', (article_id, reason, article_zip))
+
+                    conn.commit()
+                    conn.close()
+                except Exception as e:
+                    logger.warning(f"Could not save soft-filtered article: {e}")
+
                 continue
             
             # Smart require_fall_river filtering: Use relevance score to determine true local relevance
@@ -904,9 +1100,14 @@ class NewsAggregator:
             # Detect/assign category if not set or if override is not set
             if not article.get("category") or (not category_override and article.get("category_override") is None):
                 # Recalculate category using learned patterns (will use training data)
-                detected_category = self._detect_category(article)
+                detected_category, confidence = self._detect_category(article)
                 article["category"] = detected_category
-                
+                article["category_confidence"] = confidence
+
+                # Log low-confidence categorizations for monitoring
+                if confidence < 0.6:
+                    logger.info(f"⚠️  LOW CONFIDENCE: Article '{article.get('title', '')[:50]}...' categorized as '{detected_category}' with only {confidence:.1%} confidence")
+
                 # Update database if article has an ID
                 if article.get("id"):
                     try:
@@ -916,10 +1117,10 @@ class NewsAggregator:
                         conn = sqlite3.connect(db_path)
                         cursor = conn.cursor()
                         cursor.execute('''
-                            UPDATE articles 
-                            SET category = ?
+                            UPDATE articles
+                            SET category = ?, category_confidence = ?
                             WHERE id = ? AND (category_override = 0 OR category_override IS NULL)
-                        ''', (detected_category, article["id"]))
+                        ''', (detected_category, confidence, article["id"]))
                         conn.commit()
                         conn.close()
                     except Exception as e:
@@ -936,7 +1137,40 @@ class NewsAggregator:
             
             # Add hashtags
             article["hashtags"] = self._generate_hashtags(article)
-            
+
+            # === ALERT DETECTION ===
+            # ONLY flag TRUE emergency situations with official terminology
+            alert_keywords = {
+                'weather': [
+                    # Only official National Weather Service warnings/advisories
+                    'winter weather advisory', 'winter storm warning', 'winter storm watch',
+                    'blizzard warning', 'blizzard watch', 'ice storm warning', 'ice storm watch',
+                    'freezing rain warning', 'freezing rain advisory', 'heavy snow warning',
+                    'heavy snow advisory', 'wind warning', 'wind advisory', 'high wind warning',
+                    'severe thunderstorm warning', 'severe thunderstorm watch', 'tornado warning',
+                    'tornado watch', 'flood warning', 'flood watch', 'flash flood warning',
+                    'flash flood watch', 'coastal flood warning', 'coastal flood watch',
+                    'hazardous weather outlook', 'special weather statement', 'severe weather statement',
+                    # Emergency conditions (must include "emergency" or official terminology)
+                    'snow emergency declared', 'state of emergency due to weather',
+                    'emergency travel ban', 'weather emergency road closure',
+                    'dangerous driving conditions due to weather', 'whiteout emergency conditions',
+                    'life-threatening weather conditions', 'extreme cold warning', 'extreme heat warning'
+                ],
+                'parking': [
+                    # Only emergency parking situations with "emergency" or "snow emergency"
+                    'emergency parking ban', 'parking ban due to snow emergency',
+                    'parking ban due to weather emergency', 'emergency alternate side parking',
+                    'emergency street cleaning due to weather', 'emergency parking restriction due to snow'
+                ],
+                'trash': [
+                    # Only emergency trash collection situations
+                    'emergency trash collection delay', 'trash collection delayed due to snow emergency',
+                    'trash collection delayed due to weather emergency', 'emergency waste collection delay',
+                    'storm emergency trash collection', 'weather emergency collection delay due to storm'
+                ]
+            }
+
             # Add formatted date - use actual publication date, NOT today's date
             pub_date = None
             published_str = article.get("published")
@@ -1106,7 +1340,7 @@ class NewsAggregator:
         
         return neighborhoods
     
-    def _detect_category(self, article: Dict) -> str:
+    def _detect_category(self, article: Dict) -> tuple[str, float]:
         """Detect article category based on content and source, with source override
         Also learns from manual recategorizations stored in category_training table"""
         from config import NEWS_SOURCES, DATABASE_CONFIG
@@ -1161,48 +1395,88 @@ class NewsAggregator:
                 cat, count = row
                 training_categories[cat] = count
             
-            # Extract keywords from training examples for each category
+            # Extract keywords from training examples for each category using TF-IDF
             learned_keywords = {}
             for category in training_categories.keys():
                 cursor.execute('''
                     SELECT title, content, summary, source
                     FROM category_training
                     WHERE corrected_category = ? AND (zip_code = ? OR zip_code IS NULL)
-                    LIMIT 50
+                    LIMIT 100  -- Increased for better TF-IDF
                 ''', (category, zip_code))
-                
+
                 category_texts = []
                 for row in cursor.fetchall():
                     title_text, content_text, summary_text, source_text = row
                     combined_text = f"{title_text or ''} {content_text or ''} {summary_text or ''} {source_text or ''}".lower()
                     category_texts.append(combined_text)
-                
-                # Extract common keywords (2-4 word phrases) from training examples
-                if category_texts:
-                    # Simple keyword extraction: find words that appear frequently
-                    word_counts = {}
-                    for text in category_texts:
-                        words = text.split()
-                        # Look for 2-3 word phrases
-                        for i in range(len(words) - 1):
-                            phrase = f"{words[i]} {words[i+1]}"
-                            word_counts[phrase] = word_counts.get(phrase, 0) + 1
-                        for i in range(len(words) - 2):
-                            phrase = f"{words[i]} {words[i+1]} {words[i+2]}"
-                            word_counts[phrase] = word_counts.get(phrase, 0) + 1
-                    
-                    # Get top keywords for this category (appear in at least 2 examples)
-                    top_keywords = [kw for kw, count in word_counts.items() if count >= 2 and len(kw) > 3]
-                    learned_keywords[category] = top_keywords[:20]  # Top 20 keywords per category
-            
+
+                # Use TF-IDF vectorization for better keyword extraction
+                if category_texts and len(category_texts) >= 3:  # Need minimum examples
+                    try:
+                        from sklearn.feature_extraction.text import TfidfVectorizer
+                        import numpy as np
+
+                        # TF-IDF vectorization with proper preprocessing
+                        vectorizer = TfidfVectorizer(
+                            max_features=50,  # Top 50 terms per category
+                            stop_words='english',
+                            ngram_range=(1, 3),  # Unigrams, bigrams, trigrams
+                            min_df=2,  # Term must appear in at least 2 documents
+                            max_df=0.9  # Term can appear in at most 90% of documents
+                        )
+
+                        # Fit and transform
+                        tfidf_matrix = vectorizer.fit_transform(category_texts)
+                        feature_names = vectorizer.get_feature_names_out()
+
+                        # Get average TF-IDF scores across all documents
+                        avg_scores = np.mean(tfidf_matrix.toarray(), axis=0)
+
+                        # Get top keywords by TF-IDF score
+                        top_indices = np.argsort(avg_scores)[-20:][::-1]  # Top 20
+                        top_keywords = [feature_names[i] for i in top_indices if avg_scores[i] > 0.1]
+
+                        learned_keywords[category] = top_keywords[:15]  # Limit to 15 best
+
+                    except ImportError:
+                        # Fallback to simple frequency-based extraction if sklearn not available
+                        logger.warning("sklearn not available, using fallback keyword extraction")
+                        word_counts = {}
+                        for text in category_texts:
+                            words = [w for w in text.split() if len(w) > 3]  # Filter short words
+                            for word in words:
+                                word_counts[word] = word_counts.get(word, 0) + 1
+
+                        # Get words that appear in at least 40% of examples
+                        min_occurrences = max(2, len(category_texts) * 0.4)
+                        top_keywords = [word for word, count in word_counts.items()
+                                      if count >= min_occurrences][:20]
+                        learned_keywords[category] = top_keywords
+
             conn.close()
-            
-            # Check if current article matches learned patterns
+
+            # Check if current article matches learned patterns with confidence scoring
+            best_match = None
+            best_confidence = 0.0
+            best_matches = 0
+
             for category, keywords in learned_keywords.items():
+                if not keywords:
+                    continue
+
                 matches = sum(1 for kw in keywords if kw in combined)
-                if matches >= 2:  # If 2+ learned keywords match, use this category
-                    logger.debug(f"Detected category '{category}' from learned patterns ({matches} keyword matches)")
-                    return category
+                if matches > 0:
+                    confidence = matches / len(keywords)  # Confidence = match ratio
+                    if confidence > best_confidence:
+                        best_confidence = confidence
+                        best_match = category
+                        best_matches = matches
+
+            # Use learned category if confidence > 60%
+            if best_match and best_confidence > 0.6:
+                logger.debug(f"Detected category '{best_match}' from learned patterns ({best_matches}/{len(learned_keywords[best_match])} matches, {best_confidence:.1%} confidence)")
+                return best_match, best_confidence
                     
         except Exception as e:
             logger.warning(f"Error loading category training data: {e}")
@@ -1224,7 +1498,7 @@ class NewsAggregator:
             if any(pattern in url_lower for pattern in obituary_url_patterns):
                 # URL contains obituary path - definitely an obituary
                 logger.debug(f"Detected obituary from URL pattern: {url}")
-                return "obituaries"
+                return "obituaries", 1.0
         
         # Check if source has a default category in config
         # For funeral homes, ALWAYS use "obituaries" category regardless of content
@@ -1234,7 +1508,7 @@ class NewsAggregator:
                 source_category = source_config.get("category", "news")
                 # If source is configured as obituaries, always return obituaries
                 if source_category == "obituaries":
-                    return "obituaries"
+                    return "obituaries", 1.0
                 break
         
         # Content-based detection (takes priority for news/crime)
@@ -1250,55 +1524,55 @@ class NewsAggregator:
             pass
         elif any(word in combined for word in ["obituary", "passed away", "memorial service", "funeral service", "survived by", "predeceased", "visitation", "wake", "calling hours"]):
             # Strong obituary keywords - definitely an obituary
-            return "obituaries"
+            return "obituaries", 0.9
         elif "died" in combined or "passed" in combined:
             # "died" or "passed" alone - only if it has other obituary context
             if any(word in combined for word in ["survived by", "memorial", "funeral", "obituary", "visitation", "wake", "calling hours"]):
-                return "obituaries"
+                return "obituaries", 0.8
         
         # Check for crime/police SECOND (before general news)
-        if any(word in combined for word in ["police", "arrest", "crime", "court", "charges", "suspect", "investigation", 
+        if any(word in combined for word in ["police", "arrest", "crime", "court", "charges", "suspect", "investigation",
                                             "fire department", "emergency", "accident", "crash", "fatal", "victim",
                                             "murder", "robbery", "theft", "assault", "officer", "detective"]):
-            return "crime"
+            return "crime", 0.8
         
         # Check content-based category
         if any(word in combined for word in ["sport", "football", "basketball", "baseball", "hockey", "athlete", "game", "team", "player of the week", "coach", "championship", "score"]):
-            return "sports"
+            return "sports", 0.7
         
         # Entertainment keywords (but exclude if it's clearly news/crime)
         if any(word in combined for word in ["music", "concert", "show", "entertainment", "fun", "event", "festival", "theater"]) and not any(word in combined for word in ["police", "arrest", "crime"]):
-            return "entertainment"
+            return "entertainment", 0.6
         
         # Check for business keywords
         if any(word in combined for word in ["business", "company", "development", "economic", "commerce", "retail", "store", "shop", "opening", "closing"]):
-            return "business"
+            return "business", 0.6
         
         # Check for schools/education keywords
         if any(word in combined for word in ["school", "student", "teacher", "education", "academic", "college", "university", "graduation", "principal", "classroom"]):
-            return "schools"
+            return "schools", 0.6
         
         # Check for food keywords
         if any(word in combined for word in ["food", "restaurant", "dining", "cafe", "menu", "chef", "cuisine", "meal", "recipe", "kitchen"]):
-            return "food"
+            return "food", 0.6
         
         # Check for weather keywords
         if any(word in combined for word in ["weather", "forecast", "temperature", "rain", "snow", "storm", "climate"]):
-            return "weather"
+            return "weather", 0.8
         
         # General news keywords (government, city council, etc.)
         if any(word in combined for word in ["government", "city council", "mayor", "election", "vote", "proposal"]):
-            return "news"
+            return "news", 0.5
         
         # Use source category if set, otherwise default to news
         if source_category:
-            return source_category
-        
+            return source_category, 0.7
+
         if article.get("source_type") == "custom":
-            return "custom"
-        
+            return "custom", 0.5
+
         # Default to news
-        return "news"
+        return "news", 0.3
     
     def _generate_hashtags(self, article: Dict) -> List[str]:
         """Generate relevant hashtags for an article"""

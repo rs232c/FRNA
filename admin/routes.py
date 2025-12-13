@@ -1,7 +1,7 @@
 """
 Admin routes - Flask route handlers for admin interface
 """
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory, send_file, Response, abort
 from werkzeug.datastructures import ImmutableMultiDict
 from functools import wraps
 import os
@@ -14,6 +14,8 @@ import secrets
 from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
+from urllib.parse import urlparse, unquote
+import requests
 
 from .services import (
     validate_zip_code, validate_article_id, safe_path, get_db, get_db_legacy,
@@ -24,7 +26,7 @@ from .services import (
 from database import ArticleDatabase
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
-from config import DATABASE_CONFIG, NEWS_SOURCES, WEBSITE_CONFIG, VERSION
+from config import DATABASE_CONFIG, NEWS_SOURCES, WEBSITE_CONFIG, VERSION, CATEGORY_COLORS
 
 # Load environment variables
 load_dotenv()
@@ -42,19 +44,32 @@ def render_dynamic_index(articles, active_category='local', zip_code='02720'):
         # Generate navigation tabs with correct active state
         nav_tabs = generate_nav_tabs(active_category)
 
-        # Format articles (add source initials and gradients like the website generator does)
+        # Format articles (enrich with dates, source initials, gradients, etc.)
         formatted_articles = []
         for article in articles:
-            formatted_article = dict(article)
-            # Add source formatting
-            source = article.get('source', '')
-            formatted_article['source_initials'] = _generate_smart_initials(source)
-            formatted_article['source_gradient'] = _get_source_gradient(source)
-            formatted_articles.append(formatted_article)
+            # Ensure image_url is never None - convert to empty string
+            if article.get('image_url') is None:
+                article = article.copy()  # Don't modify original
+                article['image_url'] = ''
+
+            # Enrich article with formatted data including dates
+            from website_generator.utils import enrich_single_article
+            formatted = enrich_single_article(article)
+
+            formatted_articles.append(formatted)
 
         # Prepare different article collections like the website generator
         hero_articles = formatted_articles[:3] if formatted_articles else []  # Top 3 articles as heroes
-        trending_articles = formatted_articles[:5]  # Use first 5 as trending
+
+        # Use proper trending algorithm instead of just first 5 articles
+        try:
+            from website_generator import WebsiteGenerator
+            wg = WebsiteGenerator()
+            trending_articles = wg._get_trending_articles(formatted_articles, limit=5)
+        except Exception as e:
+            logger.warning(f"Could not use trending algorithm, falling back to recent articles: {e}")
+            trending_articles = formatted_articles[:5]  # Fallback to first 5
+
         latest_stories = formatted_articles[:5]
         newest_articles = formatted_articles[:10]
         entertainment_articles = [a for a in formatted_articles if 'entertainment' in (a.get('category') or '')][:5]
@@ -62,6 +77,31 @@ def render_dynamic_index(articles, active_category='local', zip_code='02720'):
 
         # Get unique sources
         unique_sources = list(set(a.get('source', '') for a in formatted_articles if a.get('source')))
+
+        # Prepare location badge data (same logic as website_generator.py)
+        location_badge_text = "Fall River · 02720"
+        if zip_code:
+            try:
+                from zip_resolver import resolve_zip
+                zip_data = resolve_zip(zip_code)
+                if zip_data:
+                    city = zip_data.get("city", "Fall River")
+                    location_badge_text = f"{city} · {zip_code}"
+                else:
+                    location_badge_text = f"Fall River · {zip_code}"
+            except Exception as e:
+                location_badge_text = f"Fall River · {zip_code}"
+
+        # Get show_images setting from database (same as static generation)
+        show_images = True  # default
+        try:
+            with get_db() as db_conn:
+                cursor = db_conn.cursor()
+                cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('show_images',))
+                result = cursor.fetchone()
+                show_images = result[0] == '1' if result else True
+        except Exception as e:
+            logger.warning(f"Could not get show_images setting: {e}")
 
         # Prepare template context (similar to website_generator.py)
         current_time = datetime.now().strftime("%I:%M %p")
@@ -83,13 +123,13 @@ def render_dynamic_index(articles, active_category='local', zip_code='02720'):
             'last_db_update': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'nav_tabs': nav_tabs,
             'unique_sources': unique_sources,
-            'location_badge_text': f"{zip_code} Area",
+            'location_badge_text': location_badge_text,
             'zip_code': zip_code,
             'weather_station_url': f"https://weather.com/weather/today/l/{zip_code}",
             'weather_api_key': '',
             'weather_icon': '🌤️',
             'zip_pin_editable': False,
-            'show_images': True,
+            'show_images': show_images,
             'current_year': datetime.now().year
         }
 
@@ -104,33 +144,113 @@ def render_dynamic_index(articles, active_category='local', zip_code='02720'):
         return f"Error rendering page: {e}", 500
 
 def _generate_smart_initials(source):
-    """Generate smart initials for source (copied from website_generator.py)"""
-    if not source:
-        return "NN"
+    """Generate smart initials based on source name - like 'herald news' -> 'hn', 'fall river reporter' -> 'frr'"""
+    if not source or not source.strip():
+        return 'XX'
 
-    # Handle common sources with better initials
-    source_lower = source.lower()
-    if 'herald news' in source_lower:
-        return "HN"
-    elif 'taunton' in source_lower:
-        return "TD"
-    elif 'fall river' in source_lower or 'frna' in source_lower:
-        return "FR"
-    elif 'new bedford' in source_lower:
-        return "NB"
-    elif 'providence' in source_lower:
-        return "PR"
-    elif 'boston' in source_lower:
-        return "BO"
+    # Normalize the source name
+    normalized = source.lower().strip()
 
-    # Default: take first letter of each word
-    words = source.split()
-    if len(words) >= 2:
+    # Common mappings for specific sources
+    smart_mappings = {
+        # Local Massachusetts sources
+        'herald news': 'hn',
+        'fall river herald news': 'hn',
+        'fall river reporter': 'frr',
+        'taunton gazette': 'tg',
+        'taunton daily gazette': 'tg',
+        'new bedford light': 'nbl',
+        'southcoasttoday': 'sct',
+        'providence journal': 'pj',
+        'boston globe': 'bg',
+        'boston herald': 'bh',
+        'wicked local': 'wl',
+        'universal hub': 'uh',
+        'anchor news': 'an',
+        'anchor news (diocese)': 'an',
+        'frcmedia': 'frc',
+        'frcmedia (fall river community media)': 'frc',
+        'fall river community media': 'frc',
+        'fun107': 'fun',
+        'google news': 'gn',
+        'google news (fall river, ma)': 'gn',
+        'hathaway funeral homes': 'hf',
+        'herald news obituaries': 'hn',
+        'wpri 12 fall river': 'wpri',
+        'wpri': 'wpri',
+
+        # National sources
+        'cnn': 'cnn',
+        'fox news': 'fn',
+        'bbc news': 'bbc',
+        'nbc news': 'nbc',
+        'abc news': 'abc',
+        'cbs news': 'cbs',
+        'reuters': 'rtr',
+        'associated press': 'ap',
+        'usa today': 'ut',
+        'wall street journal': 'wsj',
+        'new york times': 'nyt',
+        'washington post': 'wp'
+    }
+
+    # Check for exact matches first
+    if normalized in smart_mappings:
+        return smart_mappings[normalized].upper()
+
+    # Check for partial matches (contains)
+    for key, initials in smart_mappings.items():
+        if key in normalized:
+            return initials.upper()
+
+    # Fallback: extract meaningful initials
+    # Clean the source name by removing punctuation and extra spaces
+    import re
+    cleaned = re.sub(r'[^\w\s]', '', normalized)  # Remove punctuation
+    words = cleaned.split()
+
+    # Remove common words
+    words_to_ignore = {'the', 'news', 'newspaper', 'times', 'post', 'tribune', 'journal', 'herald', 'reporter', 'gazette', 'daily', 'weekly', 'local', 'online', 'media', 'press', 'today', 'now', 'live', 'fall', 'river', 'ma', 'massachusetts'}
+
+    meaningful_words = [word for word in words if word not in words_to_ignore and len(word) > 2]
+
+    if len(meaningful_words) >= 2:
+        # Take first letter of first two meaningful words
+        return (meaningful_words[0][0] + meaningful_words[1][0]).upper()
+    elif len(meaningful_words) == 1:
+        # Take first two letters of the word
+        return meaningful_words[0][:2].upper()
+    elif len(words) >= 2:
+        # Fallback to any words if no meaningful ones found
         return (words[0][0] + words[1][0]).upper()
-    elif len(words) == 1 and len(words[0]) > 0:
+    elif len(words) == 1:
+        # Take first two letters of any remaining word
         return words[0][:2].upper()
     else:
-        return "NN"
+        # Last resort: first two letters of original source (cleaned)
+        return cleaned[:2].upper() or 'XX'
+
+def _get_combined_gradient(source, category):
+    """Get gradient that combines source start color with category end color"""
+    # Get source gradient and extract start color
+    source_gradient = _get_source_gradient(source)
+    start_color = _extract_start_color(source_gradient)
+
+    # Get category end color
+    end_color = CATEGORY_COLORS.get(category, 'slate-600')
+
+    return f"from-{start_color} to-{end_color}"
+
+def _extract_start_color(gradient):
+    """Extract the start color from a gradient string like 'from-blue-500 to-cyan-600'"""
+    if not gradient or 'from-' not in gradient:
+        return 'blue-500'  # Default fallback
+
+    # Extract the color part after 'from-'
+    from_part = gradient.split('from-')[1]
+    start_color = from_part.split()[0] if ' ' in from_part else from_part.split('to-')[0]
+
+    return start_color
 
 def _get_source_gradient(source):
     """Get gradient class for source (simplified version)"""
@@ -278,6 +398,10 @@ logger = logging.getLogger(__name__)
 _regenerating = False
 _regeneration_lock = threading.Lock()
 _last_regeneration_start = None
+
+# Static regeneration tracking
+_static_regenerating = {}  # zip_code -> bool
+_static_regeneration_lock = threading.Lock()
 
 # Security constants
 ZIP_CODE_LENGTH = 5
@@ -441,8 +565,13 @@ def after_request(response):
         response.headers.add('Access-Control-Allow-Origin', origin)
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    # Force UTF-8 encoding for all admin pages
-    response.headers['Content-Type'] = 'text/html; charset=utf-8'
+
+    # Only set content-type for admin pages and non-image responses
+    content_type = response.headers.get('Content-Type', '').lower()
+    if not content_type.startswith('image/') and not request.path.startswith('/cached-images/'):
+        # Force UTF-8 encoding for admin pages and other text content
+        response.headers['Content-Type'] = 'text/html; charset=utf-8'
+
     response.headers.add('Access-Control-Allow-Credentials', 'true')
 
     # Prevent ALL caching for admin pages
@@ -515,6 +644,41 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+def _should_regenerate_static(zip_code):
+    """Check if static file regeneration is needed for this zip code"""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Check if auto-regeneration is enabled
+            cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('auto_regenerate_static',))
+            row = cursor.fetchone()
+            if not row or row[0] != '1':
+                return False
+
+            # Check regeneration interval (default 15 minutes)
+            cursor.execute('SELECT value FROM admin_settings WHERE key = ?', ('static_regen_interval',))
+            row = cursor.fetchone()
+            interval_minutes = int(row[0]) if row and row[0].isdigit() else 15
+            interval_seconds = interval_minutes * 60
+
+            # Check last regeneration time for this zip
+            cursor.execute('SELECT value FROM admin_settings WHERE key = ?', (f'last_static_regen_{zip_code}',))
+            row = cursor.fetchone()
+            if not row:
+                return True
+
+            try:
+                last_regen = datetime.fromisoformat(row[0])
+                return (datetime.now() - last_regen).seconds > interval_seconds
+            except (ValueError, TypeError):
+                return True
+
+    except Exception as e:
+        logger.warning(f"Error checking static regeneration need for {zip_code}: {e}")
+        return False
+
 
 def _should_regenerate():
     """Check if website regeneration is needed"""
@@ -590,6 +754,166 @@ def _trigger_regeneration():
         # Start regeneration in background thread
         thread = threading.Thread(target=regenerate, daemon=True)
         thread.start()
+
+
+def _trigger_static_regeneration(zip_code):
+    """Trigger static file regeneration for a specific zip code in background"""
+    global _static_regenerating
+
+    with _static_regeneration_lock:
+        if _static_regenerating.get(zip_code, False):
+            return  # Already regenerating for this zip
+
+        _static_regenerating[zip_code] = True
+
+        def regenerate_static():
+            global _static_regenerating
+            try:
+                logger.info(f"Starting background static regeneration for zip {zip_code}")
+
+                # Run the regeneration command
+                result = subprocess.run([
+                    sys.executable, 'main.py', '--once', '--zip', zip_code
+                ], capture_output=True, text=True, timeout=300)
+
+                if result.returncode == 0:
+                    logger.info(f"Background static regeneration completed for zip {zip_code}")
+
+                    # Update last regeneration time
+                    try:
+                        with get_db() as conn:
+                            cursor = conn.cursor()
+                            cursor.execute('''
+                                INSERT OR REPLACE INTO admin_settings (key, value)
+                                VALUES (?, ?)
+                            ''', (f'last_static_regen_{zip_code}', datetime.now().isoformat()))
+                            conn.commit()
+                    except Exception as e:
+                        logger.warning(f"Could not update last regeneration time for {zip_code}: {e}")
+                else:
+                    logger.error(f"Background static regeneration failed for zip {zip_code}: {result.stderr}")
+
+            except subprocess.TimeoutExpired:
+                logger.error(f"Background static regeneration timed out for zip {zip_code}")
+            except Exception as e:
+                logger.error(f"Error during background static regeneration for {zip_code}: {e}")
+            finally:
+                _static_regenerating[zip_code] = False
+
+        # Start regeneration in background thread
+        thread = threading.Thread(target=regenerate_static, daemon=True)
+        thread.start()
+
+
+# Trusted domains for image caching
+TRUSTED_DOMAINS = {
+    'fallriverreporter.com',
+    'heraldnews.com',
+    'wpri.com',
+    'turnto10.com',  # NBC10/WJAR
+    'frcmedia.org',
+    'tauntongazette.com',
+    'masslive.com',
+    'abc6.com',
+    'southcoasttoday.com',
+    'patch.com',
+    'newbedfordlight.org',
+    'anchornews.org',
+    'hathawayfunerals.com',
+    'southcoastchapel.com',
+    'waring-sullivan.com',
+    'oliveirafuneralhomes.com',
+    'fun107.com'
+}
+
+@app.route('/cached-images/<path:url>')
+def cached_image(url):
+    """
+    Proxy route to cache external images from trusted domains.
+    Provides aggressive caching headers for performance.
+    """
+    try:
+        # URL decode the path
+        decoded_url = unquote(url)
+
+        # Construct full URL - assume HTTPS unless specified
+        if decoded_url.startswith(('http://', 'https://')):
+            full_url = decoded_url
+        else:
+            full_url = 'https://' + decoded_url
+
+        # Parse and validate domain
+        parsed = urlparse(full_url)
+        domain = parsed.netloc.lower()
+
+        # Security: only allow trusted domains
+        if domain not in TRUSTED_DOMAINS:
+            logger.warning(f"Blocked image request from untrusted domain: {domain}")
+            return Response("Forbidden: Untrusted domain", status=403, mimetype='text/plain')
+
+        # Fetch image with timeout and proper headers
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': 'https://fallriver.live/',
+            'Sec-Fetch-Dest': 'image',
+            'Sec-Fetch-Mode': 'no-cors',
+            'Sec-Fetch-Site': 'cross-site'
+        }
+
+        try:
+            response = requests.get(
+                full_url,
+                headers=headers,
+                stream=True,
+                timeout=15,
+                allow_redirects=True
+            )
+        except requests.exceptions.Timeout:
+            logger.warning(f"Timeout fetching image: {full_url}")
+            return Response("Gateway Timeout", status=504, mimetype='text/plain')
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Request error fetching image {full_url}: {e}")
+            return Response("Bad Gateway", status=502, mimetype='text/plain')
+
+        if response.status_code != 200:
+            logger.warning(f"Failed to fetch image {full_url}: HTTP {response.status_code}")
+            return Response(f"Not Found: HTTP {response.status_code}", status=404, mimetype='text/plain')
+
+        # Validate content type
+        content_type = response.headers.get('content-type', '').lower()
+        if not content_type.startswith('image/'):
+            logger.warning(f"URL does not return image content: {full_url} (content-type: {content_type})")
+            return Response(f"Not an image: {content_type}", status=404, mimetype='text/plain')
+
+        # Aggressive caching headers for performance
+        cache_headers = {
+            'Cache-Control': 'public, max-age=31536000, immutable',  # 1 year cache
+            'Content-Type': content_type,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET',
+            'X-Content-Type-Options': 'nosniff',
+            'X-Frame-Options': 'DENY',
+            'X-XSS-Protection': '1; mode=block'
+        }
+
+        # Add content length if available
+        if 'content-length' in response.headers:
+            cache_headers['Content-Length'] = response.headers['content-length']
+
+        logger.debug(f"Serving cached image: {domain}/{decoded_url[:50]}...")
+
+        # Stream the response
+        return Response(
+            response.iter_content(chunk_size=8192),
+            headers=cache_headers
+        )
+
+    except Exception as e:
+        logger.error(f"Unexpected error in cached_image: {e}")
+        return Response("Internal Server Error", status=500, mimetype='text/plain')
 
 
 # Session check endpoint
@@ -849,11 +1173,26 @@ def admin_main():
 
 @app.route('/<zip_code>')
 def zip_page(zip_code):
-    """Serve zip-specific index page with dynamic content"""
+    """Serve zip-specific index page - static file if available, otherwise dynamic"""
     if not validate_zip_code(zip_code):
         return "Invalid zip code", 404
 
-    # Get recent articles for the zip-specific homepage
+    # Check if static file exists and serve it (better performance)
+    static_file_path = Path(__file__).parent.parent / "build" / "zips" / f"zip_{zip_code}" / "index.html"
+    if static_file_path.exists():
+        try:
+            # Check if regeneration is needed based on user settings
+            if _should_regenerate_static(zip_code):
+                logger.info(f"Static file for zip {zip_code} is stale, triggering background regeneration")
+                _trigger_static_regeneration(zip_code)
+
+            logger.info(f"Serving static file for zip {zip_code}")
+            return send_file(str(static_file_path), mimetype='text/html')
+        except Exception as e:
+            logger.warning(f"Could not serve static file for zip {zip_code}: {e}")
+
+    # Fallback to dynamic content generation
+    logger.info(f"Generating dynamic content for zip {zip_code}")
     db = ArticleDatabase()
     articles = db.get_recent_articles(hours=48, limit=50, zip_code=zip_code)
 
@@ -865,6 +1204,20 @@ def zip_page(zip_code):
 
     from flask import Response
     return Response(html_content, mimetype='text/html')
+
+
+@app.route('/zips/<path:filename>')
+def serve_zip_static(filename):
+    """Serve static files from zip directories"""
+    try:
+        file_path = Path(__file__).parent.parent / "build" / "zips" / filename
+        if file_path.exists():
+            return send_file(str(file_path))
+        else:
+            abort(404)
+    except Exception as e:
+        logger.error(f"Error serving static file {filename}: {e}")
+        abort(500)
 
 
 @app.route('/<zip_code>/category/<path:category_slug>')
@@ -2398,7 +2751,7 @@ def get_settings_api():
                     cursor = conn.cursor()
 
                     for key, value in data.items():
-                        if key in ['regenerate_interval', 'source_fetch_interval']:
+                        if key in ['regenerate_interval', 'source_fetch_interval', 'auto_regenerate_static', 'static_regen_interval']:
                             # Check if setting exists
                             cursor.execute('SELECT value FROM admin_settings WHERE key = ?', (key,))
                             existing = cursor.fetchone()
@@ -3245,6 +3598,8 @@ def recalculate_categories():
 @app.route('/<path:filename>')
 def serve_website(filename):
     """Serve static website files - excludes admin and api paths"""
+
+
     # Skip admin routes - they should be handled by specific admin route handlers
     if filename.startswith('admin/') or filename == 'admin':
         # This should not happen if admin routes are working, but just in case

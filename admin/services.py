@@ -153,6 +153,18 @@ def init_admin_db():
                     VALUES (?, ?, 'admin')
                 ''', (admin_username, password_hash))
 
+        # Set default admin settings
+        default_settings = {
+            'auto_regenerate_static': '1',  # Enable auto-regeneration
+            'static_regen_interval': '15',  # 15 minutes
+        }
+
+        for key, value in default_settings.items():
+            cursor.execute('''
+                INSERT OR IGNORE INTO admin_settings (key, value)
+                VALUES (?, ?)
+            ''', (key, value))
+
         conn.commit()
 
 

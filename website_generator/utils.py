@@ -87,7 +87,7 @@ def get_source_initials(source: str) -> str:
     # Handle common sources
     source_lower = source.lower()
     if "fall river reporter" in source_lower or "fallriverreporter" in source_lower:
-        return "FR"
+        return "FRR"
     elif "herald news" in source_lower:
         return "HN"
     elif "wpri" in source_lower:
@@ -120,7 +120,7 @@ def get_source_gradient(source: str) -> str:
     if "fall river reporter" in source_lower or "fallriverreporter" in source_lower:
         return "from-blue-600 to-indigo-700"
     elif "herald news" in source_lower:
-        return "from-indigo-600 to-purple-700"
+        return "from-green-600 to-emerald-700"
     elif "wpri" in source_lower:
         return "from-cyan-600 to-blue-700"
     elif "taunton gazette" in source_lower:
@@ -175,25 +175,51 @@ def enrich_single_article(article: Dict) -> Dict:
     """Enrich a single article with formatted data"""
     from config import ARTICLE_CATEGORIES
     
-    # Format date
-    published = article.get("published")
-    if published:
+    # Format date - use the same robust parsing as aggregator.py
+    pub_date = None
+    published_str = article.get("published")
+
+    # Try to parse published date first
+    if published_str:
         try:
-            dt = datetime.fromisoformat(published.replace('Z', '+00:00').split('+')[0])
-            formatted_date = dt.strftime("%B %d, %Y at %I:%M %p")
+            # Handle various ISO formats
+            pub_str_clean = published_str.replace('Z', '+00:00').split('+')[0].split('.')[0]
+            pub_date = datetime.fromisoformat(pub_str_clean)
         except:
-            formatted_date = published[:10] if len(published) >= 10 else "Recently"
+            try:
+                # Try parsing just the date part
+                pub_date = datetime.fromisoformat(published_str.split('T')[0])
+            except:
+                pass
+
+    # If no published date, try created_at (ingestion date) as last resort
+    if not pub_date:
+        created_str = article.get("created_at")
+        if created_str:
+            try:
+                created_clean = created_str.replace('Z', '+00:00').split('+')[0].split('.')[0]
+                pub_date = datetime.fromisoformat(created_clean)
+            except:
+                try:
+                    pub_date = datetime.fromisoformat(created_str.split('T')[0])
+                except:
+                    pass
+
+    # Format the date if we found one
+    if pub_date:
+        formatted_date = pub_date.strftime("%B %d, %Y at %I:%M %p")
     else:
+        # Only use "Recently" if we truly can't find any date
         formatted_date = "Recently"
-    
+
     # Get category info
     category = article.get("category", "news")
     category_info = ARTICLE_CATEGORIES.get(category, ARTICLE_CATEGORIES["news"])
-    
+
     # Source display
     source = article.get("source", "Unknown")
     source_display = article.get("source_display", source)
-    
+
     enriched = dict(article)
     enriched["formatted_date"] = formatted_date
     enriched["category_name"] = category_info["name"]

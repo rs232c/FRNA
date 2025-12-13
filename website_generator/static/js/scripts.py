@@ -585,6 +585,55 @@ def get_js_content() -> str:
     window.nextTopStory = nextTopStory;
     window.prevTopStory = prevTopStory;
     window.goToTopStory = goToTopStory;
+
+    // Alert dismissal functionality
+    function dismissAlert(event) {
+        // Prevent the click from bubbling up to the parent link
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        const alertBanner = document.getElementById('alertBanner');
+        if (alertBanner) {
+            // Find the parent link and hide it
+            const alertLink = alertBanner.closest('a');
+            if (alertLink) {
+                alertLink.style.display = 'none';
+            } else {
+                alertBanner.style.display = 'none';
+            }
+
+            // Store dismissal in localStorage for 24 hours
+            const dismissalData = {
+                dismissedAt: Date.now(),
+                dismissedForHours: 24
+            };
+            localStorage.setItem('alertDismissed', JSON.stringify(dismissalData));
+        }
+    }
+    window.dismissAlert = dismissAlert;
+
+    // Auto-hide alerts if dismissed recently
+    const dismissedAlertData = localStorage.getItem('alertDismissed');
+    if (dismissedAlertData) {
+        try {
+            const dismissal = JSON.parse(dismissedAlertData);
+            const hoursSinceDismissal = (Date.now() - dismissal.dismissedAt) / (1000 * 60 * 60);
+            if (hoursSinceDismissal < dismissal.dismissedForHours) {
+                const alertBanner = document.getElementById('alertBanner');
+                if (alertBanner) {
+                    alertBanner.style.display = 'none';
+                }
+            } else {
+                // Clear old dismissal data
+                localStorage.removeItem('alertDismissed');
+            }
+        } catch (e) {
+            // Invalid JSON, clear it
+            localStorage.removeItem('alertDismissed');
+        }
+    }
 });
 
 // Helper functions for copy functionality - defined globally
