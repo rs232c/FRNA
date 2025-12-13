@@ -25,9 +25,14 @@ if (document.readyState === 'loading') {
 
 // Toast notification system
 function showToast(message, type = 'success') {
+    console.log('[FRNA Admin] showToast called with:', message, type);
+
     // Remove existing toast
     const existingToast = document.getElementById('adminToast');
-    if (existingToast) existingToast.remove();
+    if (existingToast) {
+        console.log('[FRNA Admin] Removing existing toast');
+        existingToast.remove();
+    }
 
     // Create new toast
     const toast = document.createElement('div');
@@ -35,10 +40,12 @@ function showToast(message, type = 'success') {
     toast.className = `fixed top-4 right-4 z-[9999] px-4 py-2 rounded-lg shadow-lg text-white font-medium transition-all duration-300 ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'}`;
     toast.textContent = message;
 
+    console.log('[FRNA Admin] Created toast element, appending to body');
     document.body.appendChild(toast);
 
     // Auto remove after 3 seconds
     setTimeout(() => {
+        console.log('[FRNA Admin] Auto-removing toast');
         if (toast.parentNode) {
             toast.remove();
         }
@@ -631,30 +638,40 @@ function regenerateWebsite(event) {
     btn.textContent = '🔄 Regenerating...';
     btn.disabled = true;
 
+    console.log('[FRNA Admin] Starting fetch to /admin/api/regenerate');
+
     fetch('/admin/api/regenerate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('[FRNA Admin] Fetch response received:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('[FRNA Admin] Response data:', data);
         if (data.success) {
+            console.log('[FRNA Admin] Showing success toast');
             showToast('✅ Quick regeneration started! Using existing articles from database.', 'success');
 
             // Show completion after a delay (since it's async)
             setTimeout(() => {
+                console.log('[FRNA Admin] Showing completion toast');
                 showToast('🎉 Website updated! Refreshed with latest database content.', 'success');
             }, 3000);
         } else {
+            console.log('[FRNA Admin] Showing error toast:', data.error);
             showToast('❌ Regeneration failed: ' + (data.error || 'Unknown error'), 'error');
         }
     })
     .catch(error => {
-        console.error('Regeneration error:', error);
+        console.error('[FRNA Admin] Fetch error:', error);
         showToast('❌ Network error during regeneration', 'error');
     })
     .finally(() => {
+        console.log('[FRNA Admin] Resetting button');
         // Reset button
         btn.textContent = originalText;
         btn.disabled = false;
