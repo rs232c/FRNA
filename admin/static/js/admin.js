@@ -25,58 +25,43 @@ if (document.readyState === 'loading') {
 
 // Toast notification system
 function showToast(message, type = 'success') {
-    console.log('[FRNA Admin] showToast called with:', message, type);
-
-    // For debugging - use alert instead of toast temporarily
-    alert('[DEBUG] Toast: ' + message);
-
     // Remove existing toast
     const existingToast = document.getElementById('adminToast');
-    if (existingToast) {
-        console.log('[FRNA Admin] Removing existing toast');
-        existingToast.remove();
-    }
+    if (existingToast) existingToast.remove();
 
-    // Create new toast with inline styles (CENTERED for maximum visibility)
+    // Create new toast with clean inline styles
     const toast = document.createElement('div');
     toast.id = 'adminToast';
     toast.style.cssText = `
         position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 100000;
-        padding: 20px 24px;
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         color: white;
-        font-weight: 700;
-        font-size: 16px;
+        font-weight: 600;
+        font-size: 14px;
         background-color: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
-        border: 4px solid ${type === 'success' ? '#ffeb3b' : type === 'error' ? '#ff9800' : '#00bcd4'};
+        border: 2px solid ${type === 'success' ? '#45a049' : type === 'error' ? '#d32f2f' : '#1976d2'};
         transition: all 0.3s ease;
-        max-width: 500px;
+        max-width: 400px;
         word-wrap: break-word;
-        text-align: center;
     `;
     toast.textContent = message;
 
-    console.log('[FRNA Admin] Created CENTERED toast element, appending to body');
     document.body.appendChild(toast);
 
-    // Make it even more visible with animation
-    toast.style.animation = 'pulse 1s infinite';
-
-    // Auto remove after 8 seconds (very long for debugging)
+    // Auto remove after 4 seconds
     setTimeout(() => {
-        console.log('[FRNA Admin] Auto-removing toast');
         if (toast.parentNode) {
             toast.style.opacity = '0';
             setTimeout(() => {
                 if (toast.parentNode) toast.remove();
             }, 300);
         }
-    }, 8000);
+    }, 4000);
 }
 
 // Unified admin action function
@@ -657,15 +642,11 @@ let showImagesTogglePromise = Promise.resolve();
 
 // Settings page functions
 function regenerateWebsite(event) {
-    console.log('[FRNA Admin] Regenerating website...');
-
     // Show loading state
     const btn = event.target;
     const originalText = btn.textContent;
     btn.textContent = '🔄 Regenerating...';
     btn.disabled = true;
-
-    console.log('[FRNA Admin] Starting fetch to /admin/api/regenerate');
 
     fetch('/admin/api/regenerate', {
         method: 'POST',
@@ -673,32 +654,23 @@ function regenerateWebsite(event) {
             'Content-Type': 'application/json',
         }
     })
-    .then(response => {
-        console.log('[FRNA Admin] Fetch response received:', response.status);
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log('[FRNA Admin] Response data:', data);
         if (data.success) {
-            console.log('[FRNA Admin] Showing success toast');
             showToast('✅ Quick regeneration started! Using existing articles from database.', 'success');
 
             // Show completion after a delay (since it's async)
             setTimeout(() => {
-                console.log('[FRNA Admin] Showing completion toast');
                 showToast('🎉 Website updated! Refreshed with latest database content.', 'success');
             }, 3000);
         } else {
-            console.log('[FRNA Admin] Showing error toast:', data.error);
             showToast('❌ Regeneration failed: ' + (data.error || 'Unknown error'), 'error');
         }
     })
     .catch(error => {
-        console.error('[FRNA Admin] Fetch error:', error);
         showToast('❌ Network error during regeneration', 'error');
     })
     .finally(() => {
-        console.log('[FRNA Admin] Resetting button');
         // Reset button
         btn.textContent = originalText;
         btn.disabled = false;

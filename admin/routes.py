@@ -1698,23 +1698,27 @@ def regenerate_website():
                 if zip_code:
                     cmd.extend(['--zip', zip_code])
 
-                logger.info(f"Running regeneration command: {' '.join(cmd)}")
+                logger.info(f"[REGENERATION] Starting command: {' '.join(cmd)}")
+                logger.info(f"[REGENERATION] Script path exists: {os.path.exists(script_path)}")
+                logger.info(f"[REGENERATION] Working directory: {os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}")
+
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+                logger.info(f"[REGENERATION] Process completed with return code: {result.returncode}")
                 if result.returncode == 0:
-                    logger.info("Website regeneration completed successfully")
-                    logger.info(f"Output: {result.stdout}")
+                    logger.info("[REGENERATION] SUCCESS: Website regeneration completed")
+                    logger.info(f"[REGENERATION] Output: {result.stdout[:500]}...")  # First 500 chars
                 else:
-                    logger.error(f"Regeneration failed with return code {result.returncode}")
-                    logger.error(f"Stdout: {result.stdout}")
-                    logger.error(f"Stderr: {result.stderr}")
+                    logger.error(f"[REGENERATION] FAILED: Return code {result.returncode}")
+                    logger.error(f"[REGENERATION] Stdout: {result.stdout}")
+                    logger.error(f"[REGENERATION] Stderr: {result.stderr}")
 
             except subprocess.TimeoutExpired:
-                logger.error("Regeneration timed out after 5 minutes")
+                logger.error("[REGENERATION] TIMEOUT: Regeneration timed out after 5 minutes")
             except Exception as e:
-                logger.error(f"Regeneration error: {e}")
+                logger.error(f"[REGENERATION] ERROR: {e}")
                 import traceback
-                logger.error(f"Traceback: {traceback.format_exc()}")
+                logger.error(f"[REGENERATION] Traceback: {traceback.format_exc()}")
 
         # Run regeneration in background thread
         logger.info("Starting background regeneration thread")
