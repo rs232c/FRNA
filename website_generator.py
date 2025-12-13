@@ -313,12 +313,43 @@ class WebsiteGenerator:
     def _get_enabled_articles(self, articles: List[Dict], settings: Dict, zip_code: Optional[str] = None, city_state: Optional[str] = None) -> List[Dict]:
         """Filter and order articles based on admin settings and zip-specific threshold
         Phase 2: Now supports city_state for city-based filtering
-        
+
         Args:
         """
         try:
-            # Method body removed during cleanup - needs restoration
-            return articles  # Placeholder return
+            if not articles:
+                return []
+
+            # Get article IDs
+            article_ids = [article.get('id') for article in articles if article.get('id')]
+            if not article_ids:
+                return []
+
+            # Get management data for these articles
+            with self.get_db_cursor() as cursor:
+                management_data = self._get_article_management_for_zip(cursor, article_ids, zip_code or '02720')
+
+            # Filter to only enabled articles
+            enabled_articles = []
+            for article in articles:
+                article_id = article.get('id')
+                if article_id and management_data.get(article_id, {}).get('enabled', 1):
+                    # Article is enabled (default to enabled if no management record)
+                    enabled_articles.append(article)
+
+            # Sort by management display order, then by creation date
+            def sort_key(article):
+                article_id = article.get('id', 0)
+                mgmt = management_data.get(article_id, {})
+                return (
+                    mgmt.get('display_order', 999),  # Display order first
+                    -article.get('created_at', 0)     # Then newest first (negative for descending)
+                )
+
+            enabled_articles.sort(key=sort_key)
+
+            return enabled_articles
+
         except Exception as e:
             logger.warning(f"Could not process articles: {e}")
             return articles
@@ -330,7 +361,11 @@ class WebsiteGenerator:
 
         placeholders = ','.join('?' * len(article_ids))
         cursor.execute(f'''
-        ''', tuple(article_ids) + (zip_code,) + tuple(article_ids) + (zip_code,))
+            SELECT article_id, enabled, display_order, is_top_article
+            FROM article_management
+            WHERE article_id IN ({placeholders}) AND zip_code = ?
+            ORDER BY article_id
+        ''', tuple(article_ids) + (zip_code,))
         
         rows = cursor.fetchall()
 
