@@ -27,6 +27,9 @@ if (document.readyState === 'loading') {
 function showToast(message, type = 'success') {
     console.log('[FRNA Admin] showToast called with:', message, type);
 
+    // For debugging - use alert instead of toast temporarily
+    alert('[DEBUG] Toast: ' + message);
+
     // Remove existing toast
     const existingToast = document.getElementById('adminToast');
     if (existingToast) {
@@ -34,41 +37,46 @@ function showToast(message, type = 'success') {
         existingToast.remove();
     }
 
-    // Create new toast with inline styles (not Tailwind classes)
+    // Create new toast with inline styles (CENTERED for maximum visibility)
     const toast = document.createElement('div');
     toast.id = 'adminToast';
     toast.style.cssText = `
         position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10000;
-        padding: 12px 16px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 100000;
+        padding: 20px 24px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         color: white;
-        font-weight: 600;
-        font-size: 14px;
+        font-weight: 700;
+        font-size: 16px;
         background-color: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
-        border: 1px solid ${type === 'success' ? '#45a049' : type === 'error' ? '#d32f2f' : '#1976d2'};
+        border: 4px solid ${type === 'success' ? '#ffeb3b' : type === 'error' ? '#ff9800' : '#00bcd4'};
         transition: all 0.3s ease;
-        max-width: 400px;
+        max-width: 500px;
         word-wrap: break-word;
+        text-align: center;
     `;
     toast.textContent = message;
 
-    console.log('[FRNA Admin] Created toast element with inline styles, appending to body');
+    console.log('[FRNA Admin] Created CENTERED toast element, appending to body');
     document.body.appendChild(toast);
 
-    // Add visible border to make sure it's showing
-    toast.style.border = '2px solid yellow';
+    // Make it even more visible with animation
+    toast.style.animation = 'pulse 1s infinite';
 
-    // Auto remove after 5 seconds (longer for debugging)
+    // Auto remove after 8 seconds (very long for debugging)
     setTimeout(() => {
         console.log('[FRNA Admin] Auto-removing toast');
         if (toast.parentNode) {
-            toast.remove();
+            toast.style.opacity = '0';
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 300);
         }
-    }, 5000);
+    }, 8000);
 }
 
 // Unified admin action function
