@@ -804,28 +804,39 @@ function saveRegenerateSettings(event) {
 // Save image setting immediately when toggled
 function saveImageSetting() {
     const showImages = document.getElementById('showImagesSettings').checked;
+    console.log('[DEBUG] saveImageSetting called, showImages =', showImages);
+
+    const requestData = {
+        key: 'show_images',
+        value: showImages ? 1 : 0
+    };
+    console.log('[DEBUG] Sending request data:', requestData);
 
     fetch('/admin/api/settings', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            key: 'show_images',
-            value: showImages ? 1 : 0
-        })
+        body: JSON.stringify(requestData)
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('[DEBUG] API response status:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('[DEBUG] API response data:', data);
         if (data.success) {
+            console.log('[DEBUG] Save successful, showing success toast');
             showToast(`✅ Images ${showImages ? 'enabled' : 'disabled'} - Regenerate website to apply changes`, 'success');
         } else {
-            showToast('❌ Failed to save image setting', 'error');
+            console.log('[DEBUG] Save failed:', data.error);
+            showToast('❌ Failed to save image setting: ' + (data.error || 'Unknown error'), 'error');
             // Revert checkbox on failure
             document.getElementById('showImagesSettings').checked = !showImages;
         }
     })
     .catch(error => {
+        console.log('[DEBUG] Network error:', error);
         showToast('❌ Network error saving image setting', 'error');
         // Revert checkbox on failure
         document.getElementById('showImagesSettings').checked = !showImages;

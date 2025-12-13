@@ -2046,27 +2046,37 @@ def get_settings_api():
         value = data.get('value')
         zip_code = data.get('zip_code')
 
+        logger.info(f"[DEBUG] Single setting update - key: {key}, value: {value}, zip_code: {zip_code}")
+
         if not key:
+            logger.error("[DEBUG] Missing key parameter")
             return jsonify({'success': False, 'error': 'Missing key parameter'}), 400
 
         try:
             with get_db() as conn:
                 cursor = conn.cursor()
 
+                logger.info(f"[DEBUG] Checking if setting {key} exists")
                 # Check if setting exists
                 cursor.execute('SELECT value FROM admin_settings WHERE key = ?', (key,))
                 existing = cursor.fetchone()
+                logger.info(f"[DEBUG] Existing value for {key}: {existing}")
 
                 if existing:
+                    logger.info(f"[DEBUG] Updating {key} from {existing[0]} to {value}")
                     cursor.execute('UPDATE admin_settings SET value = ? WHERE key = ?', (value, key))
                 else:
+                    logger.info(f"[DEBUG] Inserting new setting {key} = {value}")
                     cursor.execute('INSERT INTO admin_settings (key, value) VALUES (?, ?)', (key, value))
 
                 conn.commit()
+                logger.info(f"[DEBUG] Successfully updated setting {key} = {value}")
                 return jsonify({'success': True, 'message': f'Setting {key} updated'})
 
         except Exception as e:
-            logger.error(f"Error updating setting {key}: {e}")
+            logger.error(f"[DEBUG] Error updating setting {key}: {e}")
+            import traceback
+            logger.error(f"[DEBUG] Traceback: {traceback.format_exc()}")
             return jsonify({'success': False, 'error': 'Database error'}), 500
 
     # GET request - return all settings
