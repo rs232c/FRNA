@@ -621,7 +621,7 @@ let showImagesTogglePromise = Promise.resolve();
 })();
 
 // Settings page functions
-function regenerateWebsite() {
+function regenerateWebsite(event) {
     console.log('[FRNA Admin] Regenerating website...');
 
     // Show loading state
@@ -655,7 +655,7 @@ function regenerateWebsite() {
     });
 }
 
-function regenerateAll() {
+function regenerateAll(event) {
     console.log('[FRNA Admin] Regenerating all (fresh data)...');
 
     if (!confirm('This will fetch fresh data from all sources and may take several minutes. Continue?')) {
@@ -693,7 +693,7 @@ function regenerateAll() {
     });
 }
 
-function saveRegenerateSettings() {
+function saveRegenerateSettings(event) {
     console.log('[FRNA Admin] Saving regeneration settings...');
 
     const regenerateInterval = document.getElementById('regenerateInterval').value;
