@@ -551,6 +551,7 @@ let showImagesTogglePromise = Promise.resolve();
 
         // Determine action type from button class or data-action attribute
         let actionType = btn.getAttribute('data-action');
+        console.log('[DEBUG] Button clicked:', btn.className, 'data-action:', actionType);
 
         if (!actionType) {
             if (btn.classList.contains('trash-btn')) actionType = 'trash';
@@ -564,6 +565,8 @@ let showImagesTogglePromise = Promise.resolve();
             else if (btn.classList.contains('off-target-btn')) actionType = 'off_target';
         }
 
+        console.log('[DEBUG] Final actionType:', actionType);
+
         if (actionType) {
             adminAction(articleId, actionType);
         }
@@ -575,17 +578,20 @@ let showImagesTogglePromise = Promise.resolve();
 
         if (!btn) return;
 
+        console.log('[DEBUG] Special handler caught button:', btn.className);
         e.preventDefault();
         const articleId = btn.getAttribute('data-id');
 
         // Handle relevance breakdown button
         if (btn.classList.contains('relevance-breakdown-btn')) {
+            console.log('[DEBUG] Handling relevance-breakdown-btn');
             showRelevanceBreakdown(articleId);
             return;
         }
 
         // Handle edit article button
         if (btn.classList.contains('edit-article-btn')) {
+            console.log('[DEBUG] Handling edit-article-btn');
             showEditArticleModal(articleId);
             return;
         }
