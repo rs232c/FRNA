@@ -783,19 +783,23 @@
         {% block tabs %}{% endblock %}
             {% if is_main_admin_view and not zip_code %}
             <!-- Global Admin Tabs -->
-            <a href="/admin?tab=overview" class="tab-btn {{ 'active' if active_tab == 'overview' else '' }}">🏠 Overview</a>
-            <a href="/admin?tab=articles" class="tab-btn {{ 'active' if active_tab == 'articles' else '' }}">Articles</a>
-            <a href="/admin?tab=sources" class="tab-btn {{ 'active' if active_tab == 'sources' else '' }}">Sources</a>
-            <a href="/admin?tab=stats" class="tab-btn {{ 'active' if active_tab == 'stats' else '' }}">📊 Stats</a>
-            <a href="/admin?tab=settings" class="tab-btn {{ 'active' if active_tab == 'settings' else '' }}">⚙️ Settings</a>
+            <div class="tabs">
+                <a href="/admin?tab=overview" class="tab-btn {{ 'active' if active_tab == 'overview' else '' }}">🏠 Overview</a>
+                <a href="/admin?tab=articles" class="tab-btn {{ 'active' if active_tab == 'articles' else '' }}">Articles</a>
+                <a href="/admin?tab=sources" class="tab-btn {{ 'active' if active_tab == 'sources' else '' }}">Sources</a>
+                <a href="/admin?tab=stats" class="tab-btn {{ 'active' if active_tab == 'stats' else '' }}">📊 Stats</a>
+                <a href="/admin?tab=settings" class="tab-btn {{ 'active' if active_tab == 'settings' else '' }}">⚙️ Settings</a>
+            </div>
             {% else %}
             <!-- Zip-specific Admin Tabs -->
-            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=articles" class="tab-btn {{ 'active' if active_tab == 'articles' else '' }}">Articles</a>
-            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=sources" class="tab-btn {{ 'active' if active_tab == 'sources' else '' }}">Sources</a>
-            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=stats" class="tab-btn {{ 'active' if active_tab == 'stats' else '' }}">📊 Stats</a>
-            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=relevance" class="tab-btn {{ 'active' if active_tab == 'relevance' else '' }}">🎯 Relevance</a>
-            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=categories" class="tab-btn {{ 'active' if active_tab == 'categories' else '' }}">📂 Categories</a>
-            <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=settings" class="tab-btn {{ 'active' if active_tab == 'settings' else '' }}">⚙️ Settings</a>
+            <div class="tabs">
+                <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=articles" class="tab-btn {{ 'active' if active_tab == 'articles' else '' }}">Articles</a>
+                <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=sources" class="tab-btn {{ 'active' if active_tab == 'sources' else '' }}">Sources</a>
+                <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=stats" class="tab-btn {{ 'active' if active_tab == 'stats' else '' }}">📊 Stats</a>
+                <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=relevance" class="tab-btn {{ 'active' if active_tab == 'relevance' else '' }}">🎯 Relevance</a>
+                <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=categories" class="tab-btn {{ 'active' if active_tab == 'categories' else '' }}">📂 Categories</a>
+                <a href="/admin/{% if zip_code %}{{ zip_code }}{% else %}02720{% endif %}?tab=settings" class="tab-btn {{ 'active' if active_tab == 'settings' else '' }}">⚙️ Settings</a>
+            </div>
             {% endif %}
         </div>
         
