@@ -1700,6 +1700,59 @@ def regenerate_settings():
 
 
 @login_required
+@app.route('/admin/api/regenerate', methods=['POST', 'OPTIONS'])
+def regenerate_website():
+    """Regenerate website using existing data"""
+    try:
+        from website_generator import WebsiteGenerator
+
+        zip_code = request.args.get('zip_code')
+        generator = WebsiteGenerator()
+
+        if zip_code:
+            generator.generate_zip_site(zip_code)
+        else:
+            generator.generate_all_sites()
+
+        return jsonify({'success': True, 'message': 'Website regenerated successfully'})
+
+    except Exception as e:
+        logger.error(f"Error regenerating website: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@login_required
+@app.route('/admin/api/regenerate-all', methods=['POST', 'OPTIONS'])
+def regenerate_all():
+    """Regenerate website with fresh data"""
+    try:
+        from website_generator import WebsiteGenerator
+        from aggregator import NewsAggregator
+
+        zip_code = request.args.get('zip_code')
+
+        # Run full aggregation cycle
+        aggregator = NewsAggregator()
+        if zip_code:
+            aggregator.run_for_zip(zip_code)
+        else:
+            aggregator.run_full_cycle()
+
+        # Then regenerate website
+        generator = WebsiteGenerator()
+        if zip_code:
+            generator.generate_zip_site(zip_code)
+        else:
+            generator.generate_all_sites()
+
+        return jsonify({'success': True, 'message': 'Full regeneration completed successfully'})
+
+    except Exception as e:
+        logger.error(f"Error in full regeneration: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@login_required
 @app.route('/admin/api/get-article', methods=['GET', 'OPTIONS'])
 def get_article():
     """Get a specific article by ID"""

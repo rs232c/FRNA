@@ -620,3 +620,130 @@ let showImagesTogglePromise = Promise.resolve();
     console.log('[FRNA Admin] ✅ Unified button event handler attached inside DOMContentLoaded');
 })();
 
+// Settings page functions
+function regenerateWebsite() {
+    console.log('[FRNA Admin] Regenerating website...');
+
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = '🔄 Regenerating...';
+    btn.disabled = true;
+
+    fetch('/admin/api/regenerate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('✅ Website regenerated successfully!', 'success');
+        } else {
+            showToast('❌ Regeneration failed: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Regeneration error:', error);
+        showToast('❌ Network error during regeneration', 'error');
+    })
+    .finally(() => {
+        // Reset button
+        btn.textContent = originalText;
+        btn.disabled = false;
+    });
+}
+
+function regenerateAll() {
+    console.log('[FRNA Admin] Regenerating all (fresh data)...');
+
+    if (!confirm('This will fetch fresh data from all sources and may take several minutes. Continue?')) {
+        return;
+    }
+
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = '🔄 Regenerating All...';
+    btn.disabled = true;
+
+    fetch('/admin/api/regenerate-all', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('✅ Full regeneration completed!', 'success');
+        } else {
+            showToast('❌ Full regeneration failed: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Full regeneration error:', error);
+        showToast('❌ Network error during full regeneration', 'error');
+    })
+    .finally(() => {
+        // Reset button
+        btn.textContent = originalText;
+        btn.disabled = false;
+    });
+}
+
+function saveRegenerateSettings() {
+    console.log('[FRNA Admin] Saving regeneration settings...');
+
+    const regenerateInterval = document.getElementById('regenerateInterval').value;
+    const sourceFetchInterval = document.getElementById('sourceFetchInterval').value;
+
+    // Validate inputs
+    if (!regenerateInterval || regenerateInterval < 1 || regenerateInterval > 1440) {
+        showToast('❌ Regenerate interval must be between 1-1440 minutes', 'error');
+        return;
+    }
+
+    if (!sourceFetchInterval || sourceFetchInterval < 1 || sourceFetchInterval > 1440) {
+        showToast('❌ Source fetch interval must be between 1-1440 minutes', 'error');
+        return;
+    }
+
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = '💾 Saving...';
+    btn.disabled = true;
+
+    const settingsData = {
+        regenerate_interval: parseInt(regenerateInterval),
+        source_fetch_interval: parseInt(sourceFetchInterval)
+    };
+
+    fetch('/admin/api/settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settingsData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('✅ Settings saved successfully!', 'success');
+        } else {
+            showToast('❌ Failed to save settings: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Settings save error:', error);
+        showToast('❌ Network error saving settings', 'error');
+    })
+    .finally(() => {
+        // Reset button
+        btn.textContent = originalText;
+        btn.disabled = false;
+    });
+}
+
