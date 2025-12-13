@@ -7,15 +7,7 @@
     <meta name="description" content="{{ description }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // DEBUG: Log image display status
-        console.log('[IMAGE DEBUG] Page loaded, checking for images...');
-
-        // Check show_images setting (if available in template context)
-        {% if show_images %}
-        console.log('[IMAGE DEBUG] show_images is TRUE - images should be enabled');
-        {% else %}
-        console.log('[IMAGE DEBUG] show_images is FALSE - images should be disabled');
-        {% endif %}
+        // Image display controlled by admin setting: show_images = {{ show_images }}
 
         // Count actual img tags in DOM
         document.addEventListener('DOMContentLoaded', function() {
@@ -478,8 +470,9 @@
                         {% for hero_article in hero_articles %}
                         <div class="story-slide flex-shrink-0 h-full relative" style="flex: 0 0 calc(100% / {{ hero_articles|length }}); width: calc(100% / {{ hero_articles|length }});">
                             <a href="{{ hero_article.url }}" target="_blank" rel="noopener" class="group block relative w-full h-full">
-                                <!-- Image container - always present -->
-                                <div class="relative h-full overflow-hidden image-container {% if not (show_images and hero_article.image_url and (hero_article.image_url|default('')|trim)) %}hidden{% endif %}">
+                                <!-- Image container - only when images enabled -->
+                                {% if show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) %}
+                                <div class="relative h-full overflow-hidden image-container">
                                     <img src="{{ hero_article.image_url }}" alt="{{ hero_article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
                                     <!-- Light gradient overlay bottom 40% to show source gradients -->
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" style="background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 40%, transparent 100%);"></div>
@@ -509,9 +502,9 @@
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Placeholder container - always present -->
-                                <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient or 'from-purple-500 to-blue-600' }} placeholder-container {% if show_images and hero_article.image_url and (hero_article.image_url|default('')|trim) %}hidden{% endif %}">
+                                {% else %}
+                                <!-- Placeholder container - only when images disabled -->
+                                <div class="relative h-full overflow-hidden bg-gradient-to-br {{ hero_article.source_gradient or 'from-purple-500 to-blue-600' }} placeholder-container">
                                     <!-- Subtle pattern overlay -->
                                     <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.05) 20px, rgba(255,255,255,0.05) 40px);"></div>
                                     <!-- Video play icon if video -->
@@ -540,6 +533,8 @@
                                         </div>
                                     </div>
                                 </div>
+                                {% endif %}
+
                             </a>
                         </div>
                         {% endfor %}
@@ -586,15 +581,19 @@
                             {% for article in trending_articles[:8] %}
                             <a href="{{ article.url }}" target="_blank" rel="noopener" class="block group">
                                 <div class="flex items-start gap-3 pb-3 border-b border-gray-800/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors hover:bg-gray-800/20">
-                                    <!-- Image container - always present -->
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f] {% if not (show_images and article.image_url and (article.image_url|default('')|trim)) %}hidden{% endif %} image-container">
+                                    <!-- Image container - only when images enabled -->
+                                    {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#161616] to-[#0f0f0f] image-container">
                                         <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
                                     </div>
-                                    <!-- Placeholder container - always present -->
-                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden {% if show_images and article.image_url and (article.image_url|default('')|trim) %}hidden{% endif %} placeholder-container">
+                                    {% endif %}
+                                    <!-- Placeholder container - only when images disabled -->
+                                    {% if not (show_images and article.image_url and (article.image_url|default('')|trim)) %}
+                                    <div class="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br {{ article.source_gradient }} flex items-center justify-center relative overflow-hidden placeholder-container">
                                         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.05) 5px, rgba(255,255,255,0.05) 10px);"></div>
                                         <div class="text-lg font-black text-white/90 drop-shadow-lg relative z-10">{{ article.source_initials }}</div>
                                     </div>
+                                    {% endif %}
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-start gap-1.5 mb-1">
                                             <span class="text-orange-500 text-xs mt-0.5 flex-shrink-0">🔥</span>
@@ -634,17 +633,20 @@
                     {% for article in newest_articles[:4] %}
                     <a href="{{ article.url }}" target="_blank" rel="noopener" class="group animate-fade-in-up" style="animation-delay: {{ loop.index * 0.15 }}s;">
                         <div class="bg-[#1a1a1a]/60 backdrop-blur-sm rounded-xl overflow-hidden border border-white/5 hover:border-blue-400/30 transition-all duration-500 h-full flex flex-col hover:scale-[1.02] hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10">
-                            <!-- Image container - always present -->
-                            <div class="aspect-[4/3] rounded-t-xl overflow-hidden bg-gray-900 {% if not (show_images and article.image_url and (article.image_url|default('')|trim)) %}hidden{% endif %} image-container">
+                            <!-- Image container - only when images enabled -->
+                            {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
+                            <div class="aspect-[4/3] rounded-t-xl overflow-hidden bg-gray-900 image-container">
                                 <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" style="aspect-ratio: 4/3;">
                                 <!-- Subtle overlay -->
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </div>
-                            <!-- Placeholder container - always present -->
-                            <div class="aspect-[4/3] rounded-t-xl bg-gradient-to-br {{ article.source_gradient or 'from-green-500/20 via-blue-500/20 to-purple-500/20' }} flex items-center justify-center relative overflow-hidden {% if show_images and article.image_url and (article.image_url|default('')|trim) %}hidden{% endif %} placeholder-container">
+                            {% else %}
+                            <!-- Placeholder container - only when images disabled -->
+                            <div class="aspect-[4/3] rounded-t-xl bg-gradient-to-br {{ article.source_gradient or 'from-green-500/20 via-blue-500/20 to-purple-500/20' }} flex items-center justify-center relative overflow-hidden placeholder-container">
                                 <div class="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.03)_10px,rgba(255,255,255,0.03)_20px)]"></div>
                                 <div class="text-4xl font-black text-white/40 drop-shadow-lg relative z-10">{{ article.source_initials }}</div>
                             </div>
+                            {% endif %}
                             <div class="p-5 flex flex-col flex-1">
                                 <h3 class="text-base font-semibold text-gray-100 line-clamp-2 mb-3 group-hover:text-blue-400 transition-colors duration-300 leading-snug">
                                     {{ article.title }}
@@ -669,8 +671,9 @@
                 {% for article in articles[:30] %}
             <article class="group relative bg-[#161616]/60 backdrop-blur-sm rounded-2xl overflow-hidden ring-1 ring-white/5 hover:ring-white/20 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-2 animate-fade-in-up" data-category="{{ article.category }}" data-neighborhoods="{{ article.neighborhoods|join(',') if article.neighborhoods else '' }}" style="animation-delay: {{ loop.index * 0.1 }}s;">
                 <a href="{{ article.url }}" target="_blank" rel="noopener" class="block">
-                    <!-- Image container - always present -->
-                    <div class="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-gradient-to-br {{ article.source_gradient or 'from-gray-600 to-gray-700' }} {% if not (show_images and article.image_url and (article.image_url|default('')|trim)) %}hidden{% endif %} image-container">
+                    <!-- Image container - only when images enabled -->
+                    {% if show_images and article.image_url and (article.image_url|default('')|trim) %}
+                    <div class="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-gradient-to-br {{ article.source_gradient or 'from-gray-600 to-gray-700' }} image-container">
                         <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy"
                              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                              style="aspect-ratio: 4/3;">
@@ -699,9 +702,9 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Placeholder container - always present -->
-                    <div class="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-gradient-to-br {{ article.source_gradient or 'from-gray-600 to-gray-700' }} {% if show_images and article.image_url and (article.image_url|default('')|trim) %}hidden{% endif %} placeholder-container">
+                    {% else %}
+                    <!-- Placeholder container - only when images disabled -->
+                    <div class="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-gradient-to-br {{ article.source_gradient or 'from-gray-600 to-gray-700' }} placeholder-container">
                         <!-- Subtle texture overlay -->
                         <div class="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(45deg,transparent,transparent_20px,rgba(255,255,255,0.03)_20px,rgba(255,255,255,0.03)_40px)]"></div>
 
@@ -733,6 +736,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                 </a>
             </article>
                 {% endfor %}
