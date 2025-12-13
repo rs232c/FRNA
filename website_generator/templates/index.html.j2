@@ -8,18 +8,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // Image display controlled by admin setting: show_images = {{ show_images }}
-        console.log('[IMAGE DEBUG] Template show_images value:', {{ show_images }});
-        console.log('[IMAGE DEBUG] Template show_images type:', typeof {{ show_images }});
 
-        // Count actual img tags in DOM
         document.addEventListener('DOMContentLoaded', function() {
             // Kill all images if disabled in localStorage
             if (localStorage.getItem('showImages') === 'false') {
                 document.body.classList.add('no-images');
             }
-
-            const imgTags = document.querySelectorAll('img');
-            console.log(`[IMAGE DEBUG] Found ${imgTags.length} img tags in DOM`);
 
             imgTags.forEach((img, index) => {
                 console.log(`[IMAGE DEBUG] Image ${index + 1}: ${img.src}`);
@@ -1042,23 +1036,12 @@
 
         // Image toggle functionality
         function toggleImages(showImages) {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1008',message:'toggleImages called',data:{showImages:showImages,adminAllowsImages:{% if show_images %}true{% else %}false{% endif %}},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
-
             // Find all image and placeholder containers on the page
             const imageContainers = document.querySelectorAll('.image-container');
             const placeholderContainers = document.querySelectorAll('.placeholder-container');
 
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1014',message:'container counts',data:{imageContainers:imageContainers.length,placeholderContainers:placeholderContainers.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
-
             // Only manipulate containers if they exist (admin allows images)
             if (imageContainers.length > 0) {
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1018',message:'manipulating image containers',data:{action:showImages?'show':'hide',count:imageContainers.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                // #endregion
                 // Toggle all image containers
                 imageContainers.forEach(container => {
                     if (showImages) {
@@ -1070,9 +1053,6 @@
             }
 
             if (placeholderContainers.length > 0) {
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1027',message:'manipulating placeholder containers',data:{action:showImages?'hide':'show',count:placeholderContainers.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                // #endregion
                 // Toggle all placeholder containers
                 placeholderContainers.forEach(container => {
                     if (showImages) {
@@ -1094,28 +1074,14 @@
             } else {
                 document.body.classList.add('no-images');
             }
-
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1040',message:'toggleImages completed',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
         }
 
         // Initialize image toggle
         const imageToggle = document.getElementById('toggle-images');
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1047',message:'initializing toggle',data:{toggleExists:!!imageToggle,adminAllowsImages:{% if show_images %}true{% else %}false{% endif %}},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
-
         if (imageToggle) {
             {% if show_images %}
             // Admin allows images - enable toggle functionality
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1052',message:'admin allows images - adding event listener',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-            // #endregion
             imageToggle.addEventListener('change', function() {
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1054',message:'toggle change event fired',data:{checked:this.checked},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-                // #endregion
                 toggleImages(this.checked);
             });
 
@@ -1132,9 +1098,6 @@
             }
             {% else %}
             // Admin has disabled images - completely disable toggle
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1070',message:'admin disabled images - disabling toggle',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-            // #endregion
             imageToggle.disabled = true;
             imageToggle.checked = false;
             // Ensure images are hidden by adding no-images class and calling toggleImages
@@ -1142,16 +1105,6 @@
             toggleImages(false);
             {% endif %}
         }
-
-        // Add scroll event listener to detect scroll issues
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1080',message:'adding scroll listener',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion
-        window.addEventListener('scroll', function() {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/9497b7ee-78b4-45c5-99fd-3c5b05e85c0a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html.j2:1082',message:'scroll event detected',data:{scrollY:window.scrollY,scrollX:window.scrollX},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-            // #endregion
-        });
 
         // Lazy image loading
         document.addEventListener('DOMContentLoaded', function() {
